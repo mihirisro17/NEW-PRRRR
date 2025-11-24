@@ -1,37 +1,92 @@
-/* ==================== STORAGE ANALYSIS MODAL - COMPLETE REDESIGN ==================== */
+/* ==================== STORAGE ANALYSIS MODAL - COMPLETE WITH STICKY TABS ==================== */
 
-/* Modal Content Size */
+/* Make modal full height and structured */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 9999;
+    backdrop-filter: blur(4px);
+}
+
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: var(--bg-primary);
+    border-radius: 20px;
+    max-width: 900px;
+    width: 90%;
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
 .modal-content.large {
     max-width: 1400px;
     width: 95%;
     max-height: 90vh;
-    display: flex;
-    flex-direction: column;
 }
 
+/* Modal Header - Fixed at Top */
 .modal-header {
     padding: 2rem;
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 100;
 }
 
 .modal-header h2 {
     color: white !important;
     margin: 0;
     font-size: 1.5rem;
+    font-weight: 700;
 }
 
-/* Storage Analysis Container */
+.close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+/* Storage Analysis Container - Main Wrapper */
 .storage-analysis-container {
-    padding: 0;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     flex: 1;
+    overflow: hidden;
+    position: relative;
 }
 
-/* Summary Cards at Top */
+/* Summary Cards - Below Header */
 .analysis-summary-cards {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -40,6 +95,8 @@
     background: var(--bg-primary);
     border-bottom: 2px solid var(--border);
     flex-shrink: 0;
+    position: relative;
+    z-index: 90;
 }
 
 .analysis-summary-card {
@@ -56,7 +113,7 @@
 .analysis-summary-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 24px var(--shadow);
-    border-color: var(--accent);
+    border-color: #667eea;
 }
 
 .summary-icon {
@@ -65,7 +122,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    background: linear-gradient(135deg, #667eea, #764ba2);
     border-radius: 12px;
     color: white;
     font-size: 1.75rem;
@@ -91,7 +148,7 @@
     font-weight: 500;
 }
 
-/* Tabs Section */
+/* STICKY TABS SECTION - ALWAYS VISIBLE */
 .analysis-tabs-modern {
     display: flex;
     gap: 0;
@@ -100,6 +157,10 @@
     border-bottom: 2px solid var(--border);
     overflow-x: auto;
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 95;
+    box-shadow: 0 2px 8px var(--shadow);
 }
 
 .analysis-tab-btn {
@@ -119,13 +180,13 @@
 }
 
 .analysis-tab-btn:hover {
-    color: var(--accent);
+    color: #667eea;
     background: rgba(102, 126, 234, 0.05);
 }
 
 .analysis-tab-btn.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
+    color: #667eea;
+    border-bottom-color: #667eea;
     background: rgba(102, 126, 234, 0.1);
 }
 
@@ -133,14 +194,36 @@
     font-size: 1.1rem;
 }
 
-/* Content Area */
+/* Content Area - Scrollable */
 .analysis-content-wrapper {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 2rem;
     background: var(--bg-primary);
+    position: relative;
 }
 
+/* Hide scrollbar for cleaner look */
+.analysis-content-wrapper::-webkit-scrollbar {
+    width: 10px;
+}
+
+.analysis-content-wrapper::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 5px;
+}
+
+.analysis-content-wrapper::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 5px;
+}
+
+.analysis-content-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #764ba2;
+}
+
+/* Analysis Sections */
 .analysis-section {
     display: none;
 }
@@ -174,7 +257,7 @@
 }
 
 .analysis-section h3 i {
-    color: var(--accent);
+    color: #667eea;
     font-size: 1.5rem;
 }
 
@@ -193,7 +276,10 @@
 }
 
 .modern-table thead {
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .modern-table th {
@@ -233,7 +319,7 @@
     justify-content: center;
     min-width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     border-radius: 10px;
     font-weight: 800;
@@ -244,7 +330,7 @@
 .size-tag {
     display: inline-block;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     border-radius: 10px;
     font-weight: 700;
@@ -260,7 +346,7 @@
     background: var(--bg-tertiary);
     padding: 0.5rem 0.75rem;
     border-radius: 8px;
-    border-left: 3px solid var(--accent);
+    border-left: 3px solid #667eea;
     display: block;
     word-break: break-all;
     line-height: 1.6;
@@ -285,7 +371,7 @@
 .file-type-card:hover {
     transform: translateY(-5px) scale(1.02);
     box-shadow: 0 12px 30px var(--shadow);
-    border-color: var(--accent);
+    border-color: #667eea;
 }
 
 .file-type-header {
@@ -301,7 +387,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     border-radius: 12px;
     font-weight: 800;
@@ -337,7 +423,7 @@
 
 .file-type-progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+    background: linear-gradient(90deg, #667eea, #764ba2);
     border-radius: 6px;
     transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
@@ -356,9 +442,7 @@
 }
 
 @keyframes shimmer {
-    to {
-        left: 200%;
-    }
+    to { left: 200%; }
 }
 
 /* Loading State */
@@ -374,7 +458,7 @@
     width: 60px;
     height: 60px;
     border: 5px solid var(--border);
-    border-top-color: var(--accent);
+    border-top-color: #667eea;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 2rem;
@@ -425,25 +509,6 @@
     font-size: 1.05rem;
 }
 
-/* Custom Scrollbar */
-.analysis-content-wrapper::-webkit-scrollbar {
-    width: 10px;
-}
-
-.analysis-content-wrapper::-webkit-scrollbar-track {
-    background: var(--bg-tertiary);
-    border-radius: 5px;
-}
-
-.analysis-content-wrapper::-webkit-scrollbar-thumb {
-    background: var(--accent);
-    border-radius: 5px;
-}
-
-.analysis-content-wrapper::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-hover);
-}
-
 /* Responsive Design */
 @media (max-width: 1200px) {
     .analysis-summary-cards {
@@ -459,8 +524,17 @@
 @media (max-width: 768px) {
     .modal-content.large {
         width: 100%;
+        max-width: 100%;
         max-height: 100vh;
         border-radius: 0;
+    }
+    
+    .modal-header {
+        padding: 1.5rem;
+    }
+    
+    .modal-header h2 {
+        font-size: 1.2rem;
     }
     
     .analysis-summary-cards {
@@ -494,5 +568,19 @@
     .modern-table th,
     .modern-table td {
         padding: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .analysis-summary-cards {
+        padding: 1rem;
+    }
+    
+    .analysis-content-wrapper {
+        padding: 1rem;
+    }
+    
+    .analysis-section h3 {
+        font-size: 1.1rem;
     }
 }
