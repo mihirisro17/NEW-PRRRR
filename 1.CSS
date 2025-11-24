@@ -1,209 +1,216 @@
-/* ==================== ROOT VARIABLES ==================== */
-:root {
-    --accent-rgb: 102, 126, 234;
-}
+Storage Analysis: 231 - H100 - V1G1 - /run
 
-.theme-dark {
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-tertiary: #334155;
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --border: #334155;
-    --shadow: rgba(0, 0, 0, 0.5);
-    --accent: #667eea;
-    --accent-hover: #5a67d8;
-}
-
-.theme-light {
-    --bg-primary: #ffffff;
-    --bg-secondary: #f8fafc;
-    --bg-tertiary: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-    --border: #e2e8f0;
-    --shadow: rgba(0, 0, 0, 0.1);
-    --accent: #667eea;
-    --accent-hover: #5a67d8;
-}
-
-.theme-blue {
-    --bg-primary: #0c1e35;
-    --bg-secondary: #1a2f4a;
-    --bg-tertiary: #2a4365;
-    --text-primary: #e2e8f0;
-    --text-secondary: #94a3b8;
-    --border: #2a4365;
-    --shadow: rgba(0, 0, 0, 0.5);
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
-}
-
-
-
-
-
-
-function renderStorageTab(server) {
-    if (!server.storage || server.storage.length === 0) {
-        document.getElementById('storage-tab').innerHTML = `
-            <div class="empty-storage-state">
-                <i class="fas fa-hdd fa-4x"></i>
-                <h3>No Storage Data</h3>
-                <p>Storage information is not available for this server</p>
-            </div>
-        `;
-        return;
-    }
-    
-    const html = `
-        <div class="storage-header-section">
-            <h3><i class="fas fa-database"></i> Storage Overview</h3>
-            <div class="storage-stats-summary">
-                <div class="storage-summary-item">
-                    <i class="fas fa-hdd"></i>
-                    <span>${server.storage.length} Partitions</span>
-                </div>
-                <div class="storage-summary-item">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span>${server.storage.filter(s => s.status !== 'normal').length} Alerts</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="storage-cards-grid">
-            ${server.storage.map((drive, index) => {
-                const usedPercent = drive.percent || 0;
-                
-                return `
-                    <div class="storage-card-modern ${drive.status}">
-                        <div class="storage-card-header">
-                            <div class="storage-icon-wrapper">
-                                <i class="fas ${drive.mountpoint === '/' ? 'fa-hard-drive' : 'fa-folder'}"></i>
-                            </div>
-                            <div class="storage-title-section">
-                                <h4>${drive.mountpoint}</h4>
-                                <span class="storage-filesystem">${drive.filesystem}</span>
-                            </div>
-                            <span class="storage-status-badge ${drive.status}">
-                                ${drive.status}
-                            </span>
-                        </div>
-                        
-                        <div class="storage-visualization">
-                            <canvas id="storage-chart-${index}" class="storage-mini-chart"></canvas>
-                            <div class="storage-center-info">
-                                <div class="storage-percent-large">${usedPercent.toFixed(1)}%</div>
-                                <div class="storage-percent-label">Used</div>
-                            </div>
-                        </div>
-                        
-                        <div class="storage-details-grid">
-                            <div class="storage-detail-item">
-                                <i class="fas fa-database"></i>
-                                <div class="storage-detail-content">
-                                    <span class="storage-detail-label">Total</span>
-                                    <span class="storage-detail-value">${formatBytes(drive.size)}</span>
-                                </div>
-                            </div>
-                            <div class="storage-detail-item">
-                                <i class="fas fa-chart-pie"></i>
-                                <div class="storage-detail-content">
-                                    <span class="storage-detail-label">Used</span>
-                                    <span class="storage-detail-value">${formatBytes(drive.used)}</span>
-                                </div>
-                            </div>
-                            <div class="storage-detail-item">
-                                <i class="fas fa-check-circle"></i>
-                                <div class="storage-detail-content">
-                                    <span class="storage-detail-label">Free</span>
-                                    <span class="storage-detail-value">${formatBytes(drive.available)}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="storage-progress-bar">
-                            <div class="storage-progress-fill ${drive.status}" style="width: ${usedPercent}%">
-                                <span class="storage-progress-text">${usedPercent.toFixed(1)}%</span>
-                            </div>
-                        </div>
-                        
-                        <button class="storage-analyze-btn" onclick="analyzeStorage('${server.name}', '${drive.mountpoint}')">
-                            <i class="fas fa-search-plus"></i>
-                            <span>Analyze Storage</span>
-                        </button>
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    `;
-    
-    document.getElementById('storage-tab').innerHTML = html;
-    
-    // Draw mini charts for each storage
-    server.storage.forEach((drive, index) => {
-        setTimeout(() => {
-            drawStorageMiniChart(index, drive.percent, drive.status);
-        }, 100);
-    });
-}
-
-function drawStorageMiniChart(index, usedPercent, status) {
-    const canvas = document.getElementById(`storage-chart-${index}`);
-    if (!canvas) {
-        console.error(`Canvas not found: storage-chart-${index}`);
-        return;
-    }
-    
-    const ctx = canvas.getContext('2d');
-    canvas.width = 160;
-    canvas.height = 160;
-    
-    const freePercent = 100 - usedPercent;
-    
-    // Color based on status
-    let usedColor = '#10b981'; // green
-    let freeColor = '#e5e7eb';
-    
-    if (status === 'critical') {
-        usedColor = '#ef4444'; // red
-    } else if (status === 'warning') {
-        usedColor = '#f59e0b'; // orange
-    } else if (status === 'moderate') {
-        usedColor = '#3b82f6'; // blue
-    }
-    
-    // Check if Chart is defined
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js is not loaded!');
-        // Draw simple text fallback
-        ctx.fillStyle = '#fff';
-        ctx.font = '20px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${usedPercent.toFixed(1)}%`, 80, 80);
-        return;
-    }
-    
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Used', 'Free'],
-            datasets: [{
-                data: [usedPercent, freePercent],
-                backgroundColor: [usedColor, freeColor],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: false,
-            maintainAspectRatio: false,
-            cutout: '75%',
-            plugins: {
-                legend: { display: false },
-                tooltip: { enabled: false }
-            }
-        }
-    });
-}
-
-
+       
+           
+               
+                   
+                   
+                       
+20
+                       
+Directories Analyzed
+                   
+               
+               
+                   
+                   
+                       
+20
+                       
+Files Analyzed
+                   
+               
+               
+                   
+                   
+                       
+10
+                       
+File Types Found
+                   
+               
+           
+                       
+                                    Top Directories                                                     Largest Files                                                     File Types                                                     Directory Summary                            
+                       
+               
+                   
+ Top 20 Largest Directories
+                   
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+#	Size	Path
+1	4.0G	/run/log/journal/7922becd6f7844429846aeb383d73436
+2	4.0G	/run/log/journal
+3	4.0G	/run/log
+4	3.1M	/run/udev/data
+5	3.1M	/run/udev
+6	536K	/run/systemd
+7	288K	/run/systemd/journal
+8	280K	/run/systemd/journal/streams
+9	180K	/run/snapd/ns
+10	180K	/run/snapd
+11	176K	/run/NetworkManager
+12	136K	/run/NetworkManager/devices
+13	84K	/run/user/1000
+14	84K	/run/user
+15	80K	/run/user/1000/systemd
+16	76K	/run/user/1000/systemd/generator.late
+17	64K	/run/systemd/transient
+18	64K	/run/systemd/sessions
+19	48K	/run/systemd/generator
+20	32K	/run/NetworkManager/system-connections
+                   
+               
+                               
+                   
+Top 20 Largest Files
+                   
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+#	Size	Path
+1	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001c5dc66-000640d5392be9ac.journal
+2	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001bff8e5-000640d51d7e824f.journal
+3	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001ba1bb3-000640d50298bbd8.journal
+4	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001b437b0-000640d4e990d2a4.journal
+5	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001ae59c7-000640d4cf810fc1.journal
+6	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001a89456-000640d49fbb2beb.journal
+7	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001a2b47b-000640d4827fee8f.journal
+8	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-00000000019ce033-000640d464267756.journal
+9	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001970da6-000640d4446cc2ff.journal
+10	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-000000000185aa95-000640d3ccca385d.journal
+11	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001746dad-000640d330444b51.journal
+12	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-00000000016e9a8a-000640d30e81b4da.journal
+13	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-000000000168b994-000640d2f38fce69.journal
+14	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-000000000162d999-000640d2da307ebc.journal
+15	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-00000000015cfd14-000640d2bf5eb5bd.journal
+16	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-00000000015736d8-000640d29157b2cc.journal
+17	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001515ddc-000640d26fe4f890.journal
+18	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-00000000014b81cd-000640d253835418.journal
+19	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-000000000145ab90-000640d23407cd84.journal
+20	95M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001e847e3-000640d6bf3153af.journal
+                   
+               
+                               
+                   
+File Type Distribution
+                   
+                                                       
+                                   
+                                        #1                                         .0                                         123                                    
+                                   
+                                       
+                                   
+                               
+                                                           
+                                   
+                                        #2                                         .1                                         66                                    
+                                   
+                                       
+                                   
+                               
+                                                           
+                                   
+                                        #3                                         .2                                         55                                    
+                                   
+                                       
+                                   
+                               
+                                                           
+                                   
+                                        #4                                         .journal                                         44                                    
+                                   
+                                       
+                                   
+                               
+                                                           
+                                   
+                                        #5                                         .4                                         41                                    
+                                   
+                                       
+                                   
+                               
+                                                           
+                                   
+                                        #6                                         .service                                         23                                    
+                                   
+                                       
+                                   
+                               
+                                                           
+                                   
+                                        #7                                         .5                                         21                                    
+                                   
+                                       
+                                   
+                               
+                                                           
+                                   
+                                        #8                                         .3                                         20                                    
+                                   
+                                       
+                                   
+                               
+                                                           
+                                   
+                                        #9                                         .7                                         18                                    
+                                   
+                                       
+                                   
+                               
+                                                           
+                                   
+                                        #10                                         .6                                         18                                    
+                                   
+                                       
+                                   
+                               
+                                               
+               
+                               
+                   
+ Directory Summary (Level 1)
+                   
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+Size	Path
+4.0G	/run/log
+4.0G	/run
+3.1M	/run/udev
+536K	/run/systemd
+180K	/run/snapd
+176K	/run/NetworkManager
+84K	/run/user
+16K	/run/cloud-init
+8.0K	/run/blkid
+4.0K	/run/ubuntu-advantage
+4.0K	/run/tmpfiles.d
+4.0K	/run/mount
+4.0K	/run/cups
+4.0K	/run/avahi-daemon
+0	/run/wpa_supplicant
+0	/run/uuidd
+0	/run/udisks2
+0	/run/thermald
+0	/run/sudo
+0	/run/sshd
+0	/run/spice-vdagentd
+0	/run/speech-dispatcher
+0	/run/setrans
+0	/run/sendsigs.omit.d
+0	/run/screen
+0	/run/rpc_pipefs
+0	/run/rpcbind
+0	/run/plymouth
+0	/run/openvpn-server
+0	/run/openvpn-client
+0	/run/openvpn
+0	/run/netns
+0	/run/motd.d
+0	/run/lock
+0	/run/initramfs
+0	/run/gdm3
+0	/run/dbus
+0	/run/credentials
+0	/run/console-setup
+                   
+               
+           
+       
