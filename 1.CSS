@@ -1,216 +1,432 @@
-Storage Analysis: 231 - H100 - V1G1 - /run
+/* ==================== STORAGE ANALYSIS MODAL - IMPROVED ==================== */
 
-       
-           
-               
-                   
-                   
-                       
-20
-                       
-Directories Analyzed
-                   
-               
-               
-                   
-                   
-                       
-20
-                       
-Files Analyzed
-                   
-               
-               
-                   
-                   
-                       
-10
-                       
-File Types Found
-                   
-               
-           
-                       
-                                    Top Directories                                                     Largest Files                                                     File Types                                                     Directory Summary                            
-                       
-               
-                   
- Top 20 Largest Directories
-                   
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
-#	Size	Path
-1	4.0G	/run/log/journal/7922becd6f7844429846aeb383d73436
-2	4.0G	/run/log/journal
-3	4.0G	/run/log
-4	3.1M	/run/udev/data
-5	3.1M	/run/udev
-6	536K	/run/systemd
-7	288K	/run/systemd/journal
-8	280K	/run/systemd/journal/streams
-9	180K	/run/snapd/ns
-10	180K	/run/snapd
-11	176K	/run/NetworkManager
-12	136K	/run/NetworkManager/devices
-13	84K	/run/user/1000
-14	84K	/run/user
-15	80K	/run/user/1000/systemd
-16	76K	/run/user/1000/systemd/generator.late
-17	64K	/run/systemd/transient
-18	64K	/run/systemd/sessions
-19	48K	/run/systemd/generator
-20	32K	/run/NetworkManager/system-connections
-                   
-               
-                               
-                   
-Top 20 Largest Files
-                   
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
-#	Size	Path
-1	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001c5dc66-000640d5392be9ac.journal
-2	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001bff8e5-000640d51d7e824f.journal
-3	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001ba1bb3-000640d50298bbd8.journal
-4	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001b437b0-000640d4e990d2a4.journal
-5	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001ae59c7-000640d4cf810fc1.journal
-6	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001a89456-000640d49fbb2beb.journal
-7	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001a2b47b-000640d4827fee8f.journal
-8	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-00000000019ce033-000640d464267756.journal
-9	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001970da6-000640d4446cc2ff.journal
-10	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-000000000185aa95-000640d3ccca385d.journal
-11	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001746dad-000640d330444b51.journal
-12	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-00000000016e9a8a-000640d30e81b4da.journal
-13	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-000000000168b994-000640d2f38fce69.journal
-14	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-000000000162d999-000640d2da307ebc.journal
-15	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-00000000015cfd14-000640d2bf5eb5bd.journal
-16	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-00000000015736d8-000640d29157b2cc.journal
-17	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001515ddc-000640d26fe4f890.journal
-18	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-00000000014b81cd-000640d253835418.journal
-19	96M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-000000000145ab90-000640d23407cd84.journal
-20	95M	/run/log/journal/7922becd6f7844429846aeb383d73436/system@de754b8dc84448608975f4436fc8dc4f-0000000001e847e3-000640d6bf3153af.journal
-                   
-               
-                               
-                   
-File Type Distribution
-                   
-                                                       
-                                   
-                                        #1                                         .0                                         123                                    
-                                   
-                                       
-                                   
-                               
-                                                           
-                                   
-                                        #2                                         .1                                         66                                    
-                                   
-                                       
-                                   
-                               
-                                                           
-                                   
-                                        #3                                         .2                                         55                                    
-                                   
-                                       
-                                   
-                               
-                                                           
-                                   
-                                        #4                                         .journal                                         44                                    
-                                   
-                                       
-                                   
-                               
-                                                           
-                                   
-                                        #5                                         .4                                         41                                    
-                                   
-                                       
-                                   
-                               
-                                                           
-                                   
-                                        #6                                         .service                                         23                                    
-                                   
-                                       
-                                   
-                               
-                                                           
-                                   
-                                        #7                                         .5                                         21                                    
-                                   
-                                       
-                                   
-                               
-                                                           
-                                   
-                                        #8                                         .3                                         20                                    
-                                   
-                                       
-                                   
-                               
-                                                           
-                                   
-                                        #9                                         .7                                         18                                    
-                                   
-                                       
-                                   
-                               
-                                                           
-                                   
-                                        #10                                         .6                                         18                                    
-                                   
-                                       
-                                   
-                               
-                                               
-               
-                               
-                   
- Directory Summary (Level 1)
-                   
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
-Size	Path
-4.0G	/run/log
-4.0G	/run
-3.1M	/run/udev
-536K	/run/systemd
-180K	/run/snapd
-176K	/run/NetworkManager
-84K	/run/user
-16K	/run/cloud-init
-8.0K	/run/blkid
-4.0K	/run/ubuntu-advantage
-4.0K	/run/tmpfiles.d
-4.0K	/run/mount
-4.0K	/run/cups
-4.0K	/run/avahi-daemon
-0	/run/wpa_supplicant
-0	/run/uuidd
-0	/run/udisks2
-0	/run/thermald
-0	/run/sudo
-0	/run/sshd
-0	/run/spice-vdagentd
-0	/run/speech-dispatcher
-0	/run/setrans
-0	/run/sendsigs.omit.d
-0	/run/screen
-0	/run/rpc_pipefs
-0	/run/rpcbind
-0	/run/plymouth
-0	/run/openvpn-server
-0	/run/openvpn-client
-0	/run/openvpn
-0	/run/netns
-0	/run/motd.d
-0	/run/lock
-0	/run/initramfs
-0	/run/gdm3
-0	/run/dbus
-0	/run/credentials
-0	/run/console-setup
-                   
-               
-           
-       
+.storage-analysis-container {
+    padding: 0;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+/* Summary Cards */
+.analysis-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+}
+
+.analysis-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.summary-icon {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    border-radius: 10px;
+    color: white;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.summary-info {
+    flex: 1;
+}
+
+.summary-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.summary-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.3rem;
+}
+
+/* Modern Analysis Tabs */
+.analysis-tabs-modern {
+    display: flex;
+    gap: 0;
+    margin: 0 1.5rem 1.5rem;
+    border-bottom: 2px solid var(--border);
+    overflow-x: auto;
+}
+
+.analysis-tab-btn {
+    padding: 1rem 1.5rem;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.analysis-tab-btn:hover {
+    color: var(--accent);
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.analysis-tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.analysis-tab-btn i {
+    font-size: 1rem;
+}
+
+/* Analysis Content Wrapper */
+.analysis-content-wrapper {
+    padding: 0 1.5rem 1.5rem;
+}
+
+.analysis-section {
+    display: none;
+}
+
+.analysis-section.active {
+    display: block;
+    animation: fadeInContent 0.3s ease;
+}
+
+@keyframes fadeInContent {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.analysis-section h3 {
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.analysis-section h3 i {
+    color: var(--accent);
+}
+
+/* Modern Table Styles */
+.analysis-table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+}
+
+.modern-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.modern-table thead {
+    background: var(--bg-tertiary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.modern-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--border);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.modern-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: all 0.2s ease;
+}
+
+.modern-table tbody tr:hover {
+    background: var(--bg-tertiary);
+}
+
+.modern-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.modern-table td {
+    padding: 0.9rem 1rem;
+    color: var(--text-secondary);
+    vertical-align: middle;
+}
+
+/* Rank Badge */
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    color: white;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 0.85rem;
+}
+
+/* Size Tag */
+.size-tag {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    color: white;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+/* Path Code */
+.path-code {
+    font-family: 'Courier New', monospace;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    word-break: break-all;
+    line-height: 1.5;
+    background: var(--bg-tertiary);
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    display: inline-block;
+    max-width: 100%;
+}
+
+/* File Types Grid */
+.file-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.file-type-card {
+    padding: 1.25rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.file-type-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px var(--shadow);
+    border-color: var(--accent);
+}
+
+.file-type-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.9rem;
+}
+
+.file-type-rank {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    color: white;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.file-type-ext {
+    flex: 1;
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+}
+
+.file-type-count {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.file-type-progress {
+    height: 10px;
+    background: var(--bg-tertiary);
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.file-type-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+    border-radius: 5px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.file-type-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+/* Loading and Error States */
+.analysis-loading-state,
+.analysis-error-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.analysis-loading-state .loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1.5rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.analysis-loading-state p {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+}
+
+.loading-subtext {
+    font-size: 0.9rem !important;
+    color: var(--text-secondary) !important;
+    margin-top: 0.5rem !important;
+}
+
+.analysis-error-state i {
+    color: #ef4444;
+    margin-bottom: 1rem;
+}
+
+.analysis-error-state h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    border: none;
+    padding: 0;
+}
+
+.analysis-error-state p {
+    color: var(--text-secondary);
+}
+
+/* Scrollbar Styling */
+.storage-analysis-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.storage-analysis-container::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.storage-analysis-container::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+}
+
+.storage-analysis-container::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .analysis-summary-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .file-types-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .storage-analysis-container {
+        padding: 0;
+    }
+    
+    .analysis-summary-cards {
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+    
+    .analysis-content-wrapper {
+        padding: 0 1rem 1rem;
+    }
+    
+    .analysis-tabs-modern {
+        margin: 0 1rem 1rem;
+        overflow-x: scroll;
+    }
+    
+    .analysis-tab-btn {
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .modern-table {
+        font-size: 0.8rem;
+    }
+    
+    .modern-table th,
+    .modern-table td {
+        padding: 0.7rem 0.5rem;
+    }
+}
+
+/* Make modal larger for analysis */
+.modal-content.large {
+    max-width: 1200px;
+    width: 95%;
+    max-height: 90vh;
+}
