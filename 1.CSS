@@ -1,1191 +1,954 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Processing Status Dashboard</title>
-  <script src="{{ url_for('process_monitoring.static', filename='js/vue.js') }}"></script>
-  <link rel="stylesheet" href="{{ url_for('process_monitoring.static', filename='css/style.css') }}">
-  <style>
-  </style>
-</head>
-<body class="dark">
-  <div id="app">
-    {% raw %}
-    <marquee class="server-usage-marquee" behavior="scroll" direction="left" scrollamount="6">
-      <span v-for="(usage, server) in serverUsage" :key="server" class="usage-item">
-        <strong>Server {{ server }}:</strong> <span v-html="formatUsage(usage)"></span>
-      </span>
-    </marquee>
-    {% endraw %}
-    <div>
-      <h1>Processing Status Dashboard</h1>
-
-    {% raw %}
-    <div v-if="loading" class="loading">Loading...</div>
-    <div v-else-if="services.length === 0" class="nodata">No data available</div>
-    {% endraw %}
-    <div class="status-container">
-      <div class="proc-status-counts">
-        <ul class="status-list">
-          {% raw %}
-          <li v-for="(count, status) in procStatusCounts" :key="status">
-            <div :class="['status-card', status]">
-              <div class="label"><i class="fas fa-check-circle"></i>{{ status === 'Not available' ? 'Inactive' : status }}</div>
-              <div class="count">{{ count }}</div>
-            </div>
-          </li>
-          {% endraw %}
-        </ul>
-      </div>
-    </div>
-    </div>
-        
-    <main class="table" id="customers_table">
-      <section class="table__header">
-        <div class="input-group styled-input">
-          {% raw %}
-          <input v-model="searchQuery" type="text" placeholder="Search ..." class="p-2 border rounded w-full md:w-1/3" />
-          {% endraw %}
-          </div>
-        {% raw %}
-        <select v-model="procStatusFilter" class="input-group styled-input">
-          <option value="">All Proc Status</option>
-          <option v-for="status in uniqueProcStatuses" :key="status" :value="status">
-            {{ status === 'Not available' ? 'Inactive' : status }}
-          </option>
-        </select>
-        <p class="input-group styled-input"><strong>Last Updated : </strong>{{ lastUpdated }}</p>
-        {% endraw %}
-      </section>
-      <section class="table__body">
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 50%;">Product Details</th>
-                <th style="width: 15%;">Proc Status</th>
-                <th style="width: 10%;">Logs</th>
-                <th style="width: 25%;">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% raw %}
-              <tr v-for="(item, index) in filteredAndSortedServices" :key="index">
-                <td style="width: 50%;">
-                  <div class="stats-card">
-                    <div class="stats-header">
-                      <div>
-                        {{ item.product_name }}
-                          <span :class="['status', item.service_status]" style="margin-left: 15px;">{{ item.service_status }}</span>
-                      </div>
-                      <div class="header-info">
-                          <span>{{ item.server }}</span>
-                      </div>
-                    </div>
-                    <div class="card-body">
-                      <span>{{ item.service_name }}</span>
-                      <div v-if="Array.isArray(item.product_id)">
-                        <div v-for="pid in item.product_id" :key="pid">
-                          {{ pid }} => {{ item.last_processed_date?.[pid] || 'N/A' }} | {{ item.last_published_date?.[pid] || 'N/A' }}
-                        </div>
-                      </div>
-                      <div v-else>
-                        {{ item.product_id }} => {{ item.last_processed_date?.[item.product_id] || 'N/A' }} | {{ item.last_published_date?.[item.product_id] || 'N/A' }}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td style="width: 15%;"><div><span :class="['proc-status', item.proc_status]">{{ item.proc_status }}</span></div></td>
-                <td style="width: 10%;"><button class="btn" @click="showLogs(item)">Show Logs</button></td>
-                <td style="width: 25%;">
-                  <button class="btn-restart" @click="openRestartModal(item.service_name)">Restart</button> 
-                  | 
-                  <button class="btn-script" @click="openScriptModal(item)">Script</button>
-                  | 
-                  <button class="btn-publish" @click="openPublishModal(item.service_name)">Publish</button> 
-                  | 
-                  <button v-if="!(item.proc_status === 'Failed' || item.proc_status === 'Inactive')" class="btn-script" @click="getProcDetails(item)">More</button>
-                </td>
-              </tr>
-              {% endraw %}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-        {% raw %}
-    <div v-if="showLogModal" class="modal">
-      <div class="modal-content">
-        <span class="close" @click="showLogModal = false">&times;</span>
-
-        <div class="log-box">
-          <h3>Journalctl Logs</h3>
-          <div class="log-content">{{ selectedService.journalctl_message || 'No logs available' }}</div>
-          </div>
-
-        <div class="log-box">
-          <h3>Log File Output</h3>
-          <div class="log-content">{{ selectedService.log_message || 'No log file output' }}</div>
-          </div>
-      </div>
-    </div>
-    {% endraw %}
-
-    {% raw %}
-    <div v-if="showScriptModal" class="modal">
-      <div class="script-modal-content">
-        <span class="close" @click="showScriptModal = false">&times;</span>
-        <div class="log-box" v-if="!showScript">
-          <h3>Python Script</h3>
-          <p>Enter admin credentials to see script for <strong>{{ selectedService.service_name }}</strong></p>
-          <input v-model="auth.username" placeholder="Username" />
-          <input v-model="auth.password" placeholder="Password" type="password" />
-          <div class="modal-actions">
-            <button @click="getScript">Confirm</button>
-            <button @click="showScriptModal = false">Cancel</button>
-          </div>
-          <p v-if="errorMessage" class="restart-msg">{{ errorMessage }}</p>
-        </div>
-        <div class="script-box" v-if="showScript">
-          <h3>Python Script</h3>
-          <div class="script-content">{{ selectedService.script || 'No script available' }}</div>
-        </div>
-      </div>
-    </div>
-    {% endraw %}
-
-    {% raw %}
-    <div v-if="showRestartModal" class="modal-overlay">
-      <div class="modal">
-        <div class="modal-content">
-          <span class="close" @click="showRestartModal = false">&times;</span>
-          <div class="log-box">
-            <h3>Restart Service</h3>
-            <p>Enter admin credentials to restart <strong>{{ selectedServiceName }}</strong></p>
-            <input v-model="auth.username" placeholder="Username" />
-            <input v-model="auth.password" placeholder="Password" type="password" />
-          </div>
-          <div class="modal-actions">
-            <button @click="restartService">Confirm</button>
-            <button @click="closeRestartModal">Cancel</button>
-          </div>
-          <p v-if="restartMessage" class="restart-msg">{{ restartMessage }}</p>
-        </div>
-      </div>
-    </div>
-    {% endraw %}
-
-    {% raw %}
-    <div v-if="showPublishModal" class="modal-overlay">
-      <div class="modal">
-        <div class="modal-content">
-          <span class="close" @click="showPublishModal = false">&times;</span>
-          <div class="log-box">
-            <h3>Publish Service</h3>
-            <p>Enter admin credentials to publish <strong>{{ selectedServiceName }}</strong></p>
-            <input v-model="auth.username" placeholder="Username" />
-            <input v-model="auth.password" placeholder="Password" type="password" />
-          </div>
-          <div class="modal-actions">
-            <button @click="publishService">Confirm</button>
-            <button @click="closePublishModal">Cancel</button>
-          </div>
-          <p v-if="publishMessage" class="publish-msg">{{ publishMessage }}</p>
-        </div>
-      </div>
-    </div>
-    {% endraw %}
-
-    {% raw %}
-    <div v-if="showDetails" class="modal">
-      <div class="script-modal-content">
-        <span class="close" @click="showDetails = false;">&times;</span>
-
-        <div class="">
-          <h3>Proc Details</h3>
-          <select v-model="procDetailFilter" class="input-group styled-input" style="width: 100%; padding: 12px 16px;">
-            <option value="">Select Details</option>
-            <option v-for="key in uniqueProcDetailsKeys" :key="key" :value="key">
-              {{ key }}
-            </option>
-          </select>
-        </div>
-        <div v-for="item in filteredProcDetails" class="">
-          <h4>{{ item.key }}</h4>
-          <div class="proc-detail-content">{{ item.value || 'No details available' }}</div>
-        </div>
-      </div>
-    </div>
-    {% endraw %}
-  </div>  
-  <script src="{{ url_for('process_monitoring.static',filename='js/app.js') }}"></script>
-</body>
-</html>
+<div class="server-usage-banner">
+  <div class="usage-scroll">
+    <span v-for="(usage, server) in serverUsage" :key="server" class="usage-item fade-in">
+      <i class="fas fa-server"></i>
+      <strong>{{ server }}:</strong> 
+      <span v-html="formatUsage(usage)"></span>
+    </span>
+  </div>
+</div>
 
 
 
+/* ============================================
+   MODERN DASHBOARD CSS WITH ANIMATIONS
+   ============================================ */
+
+:root {
+  --primary-color: #4a63f3;
+  --primary-hover: #3b4ddc;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --warning-color: #fd7e14;
+  --info-color: #17a2b8;
+  --purple-color: #6f42c1;
+  --gray-color: #6c757d;
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+  
+  --transition-fast: 0.2s ease-in-out;
+  --transition-normal: 0.3s ease-in-out;
+  --transition-slow: 0.5s ease-in-out;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 body {
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f3f4f6;
-    color: #333;
-    margin: 0;
-    padding: 20px;
-  }
-
-  h1 {
-    text-align: center;
-    color: #4a63f3;
-    /* margin-bottom: 30px; */
-    font-size: 2rem;
-  }
-
-  .table-container {
-    overflow-x: auto;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  thead {
-    background-color: #e8ebf8;
-  }
-
-  th, td {
-    padding: 12px 16px;
-    border: 1px solid #ddd;
-    text-align: left;
-    /* vertical-align: top; */
-  }
-
-  th {
-    font-weight: 600;
-    color: #333;
-  }
-
-  tr:hover {
-    background-color: #f9fafc;
-  }
-
-  /* td { padding: 10px; }  */
-  .stats-card { display: block; border: 1px solid #ddd; border-radius: 5px; box-shadow: 2px 2px 6px rgba(0,0,0,.1); background-color: #fff; } 
-  .stats-header { display:flex; align-items: center; justify-content: space-between; padding: 10px; font-weight: bold; border-bottom: 1px solid #ddd; } 
-  .header-info { margin: 10px 10px 10px 10px; } 
-  .status { padding: 5px 10px; color: #fff; border-radius: 3px; } 
-  .success { background-color: green; } 
-  .error { background-color: red; } 
-  .warning { background-color: orange; } 
-  .card-body { display: flex; justify-content: space-between; padding: 10px; }
-
-  .status-container {
-    /* display: flex; */
-    gap: 24px;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    /* padding: 20px; */
-  }
-  
-  .status-card {
-    flex: 1 1 200px;
-    /* max-width: 250px; */
-    padding: 20px;
-    border-radius: 20px;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
-    /* color: #fff; */
-    text-align: center;
-    transition: transform 0.3s;
-  }
-  
-  .status-card:hover {
-    transform: translateY(-4px);
-  }
-  
-  .status-card .label {
-    font-size: 18px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  
-  .status-card .count {
-    font-size: 24px;
-    font-weight: bold;
-    margin-top: 12px;
-  }
-  
-  /* Individual card colors */
-  .status-card.R {
-    background: linear-gradient(135deg, #4CAF50, #A5D6A7);
-  }
-  
-  .status-card.S {
-    background: linear-gradient(135deg, #17a2b8, #cadada);
-  }
-  
-  .status-card.D {
-    background: linear-gradient(135deg, #fd7e14, #dbbd91);
-    color: #333;
-  }
-  
-  .status-card.T {
-    background: linear-gradient(135deg, #e53935, #ef9a9a);
-  }
-
-  .status-card.Failed {
-    background: linear-gradient(135deg, #e53935, #ef9a9a);
-  }
-  
-  .status-card.Inactive {
-    background: linear-gradient(135deg, #9e9e9e, #e0e0e0);
-    color: #222;
-  }
-
-  .status-card.Deactivating {
-    background: linear-gradient(135deg, #8063b6, #ddb2f7);
-    color: #222;
-  }
-  
-  ul.status-list {
-    display: flex;
-    /* gap: 20px; */
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    /* flex-wrap: wrap; */
-    justify-content: space-between;
-  }
-  
-  ul.status-list li {
-    flex: 1 1 200px;
-    max-width: 350px;
-    /* background: linear-gradient(135deg, #ffffff, #f3f4f6);
-    border-radius: 20px;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08); */
-    padding: 20px;
-    text-align: center;
-    transition: transform 0.3s;
-    flex-wrap: wrap;
-  }
-  
-  ul.status-list li:hover {
-    transform: translateY(-4px);
-  }
-  
-  ul.status-list li .label {
-    font-size: 18px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  
-  ul.status-list li .count {
-    font-size: 24px;
-    font-weight: bold;
-    margin-top: 12px;
-  }
-  
-  /* Responsive */
-  @media (max-width: 768px) {
-    .status-container {
-      flex-direction: column;
-      align-items: center;
-    }
-  
-    .status-card {
-      width: 100%;
-      max-width: 300px;
-    }
-  }
-
-  .status {
-    /* padding: 0.8rem; */
-    border-radius: 2rem;
-    font-weight: 600;
-    text-align: center;
-    font-size: 14px;
-    color: #fff;
-    white-space: nowrap;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-    text-transform: capitalize;
-  }
-  
-  /* Status Colors */
-  .status.active {
-    background-color: #28a745; /* green */
-  }
-  
-  .status.inactive {
-    background-color: #6c757d; /* gray */
-  }
-  
-  .status.activating {
-    background-color: #17a2b8; /* teal/cyan */
-  }
-  
-  .status.deactivating {
-    background-color: #6f42c1; /* orange */
-  }
-  
-  .status.failed {
-    background-color: #dc3545; /* red */
-  }
-  
-  .status.other {
-    background-color: #fd7e14; /* purple */
-  }
-
-  .status:hover {
-    filter: brightness(1.1);
-    cursor: default;
-  }  
-
-  /* .status {
-    font-weight: bold;
-  }
-
-  .status.active {
-    color: green;
-  }
-
-  .status.failed,
-  .status.connection_error {
-    color: red;
-  }
-
-  .status.inactive {
-    color: orange;
-  } */
-
-  .proc-status {
-    padding: 8px 14px;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 14px;
-    color: #fff;
-    text-align: center;
-    /* white-space: nowrap; */
-    text-transform: capitalize;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Individual Process States */
-  .proc-status.R {
-    background-color: #28a745; /* green */
-  }
-  
-  .proc-status.S {
-    background-color: #17a2b8; /* cyan */
-  }
-  
-  .proc-status.D {
-    background-color: #fd7e14; /* orange */
-  }
-  
-  .proc-status.Z {
-    background-color: #6f42c1; /* purple */
-  }
-  
-  .proc-status.T {
-    background-color: #dc3545; /* red */
-  }
-
-  .proc-status.Failed {
-    background-color: #dc3545; /* red */
-  }
-
-  .proc-status.Inactive {
-    background-color: #6c757d; /* gray */
-  }
-
-  .proc-status.Deactivating {
-    background-color: #6f42c1; /* gray */
-  }
-
-  .proc-status:hover {
-    filter: brightness(1.1);
-    cursor: default;
-  }
-  
-  .proc-status-counts {
-    margin-top: 20px;
-    padding: 0px 15px;
-    /* border: 1px solid #eee;
-    border-radius: 8px;
-    background-color: #f9f9f9; */
-  }
-  .proc-status-counts ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  .proc-status-counts li {
-    margin-bottom: 5px;
-    font-size: 1rem;
-  }
-
-  .modal {
-    position: fixed;
-    top: -20px;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    padding: 1.5rem;
-    border-radius: 10px;
-  }
-
-  .modal-content {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    width: 95%;
-    max-width: 800px;
-    max-height: 90%;
-    overflow-y: auto;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .script-modal-content {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    width: 100%;
-    max-width: 90%;
-    max-height: 80%;
-    height: 100%;
-    /* overflow-y: auto; */
-    position: relative;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .script-content {
-    background-color: #f6f8fa;
-    padding: 10px;
-    border-radius: 6px;
-    white-space: pre-wrap;
-    font-size: 0.9rem;
-    color: #444;
-    height: 800px;
-    overflow-y: auto;
-  }
-
-  .proc-detail-content {
-    background-color: #f6f8fa;
-    padding: 10px;
-    border-radius: 6px;
-    white-space: pre-wrap;
-    font-size: 0.9rem;
-    color: #444;
-    height: 650px;
-    overflow-y: auto;
-    max-width: 90%;
-    width: -webkit-fill-available;
-  }
-
-  .script-box h3 {
-    margin-bottom: 8px;
-    font-size: 1rem;
-    font-weight: bold;
-    color: #4a63f3;
-  }
-
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .modal input {
-    width: -webkit-fill-available;
-    margin: 0.5rem;
-    padding: 0.4rem;
-  }
-
-  .modal-actions {
-    display: flex;
-    justify-content: center;
-    padding: 0.5rem;
-  }
-
-  /* Confirm Button */
-  .modal-actions button:first-child {
-    background-color: #22c55e;
-    color: white;
-    border: none;
-    padding: 0.5rem 1.2rem;
-    font-size: 0.95rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin: 1rem;
-  }
-  .modal-actions button:first-child:hover {
-    background-color: #16a34a;
-  }
-  
-  /* Cancel Button */
-  .modal-actions button:last-child {
-    background-color: #ef4444;
-    color: white;
-    border: none;
-    padding: 0.5rem 1.2rem;
-    font-size: 0.95rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin: 1rem;
-  }
-  .modal-actions button:last-child:hover {
-    background-color: #dc2626;
-  }
-  
-  /* .restart-msg {
-    margin-top: 10px;
-    font-size: 0.9rem;
-    color: #2d3748;
-  } */
-
-  /* Optional: Restart message */
-  .restart-msg {
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    color: #374151;
-    text-align: center;
-  }
-
-  .btn-restart {
-    background: #f97316;
-    color: white;
-    padding: 0.4rem 0.6rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-
-  .btn-restart:hover {
-    background: #ce5e0f;
-  }
-
-  .btn-publish {
-    background: #16c4f9;
-    color: white;
-    padding: 0.4rem 0.6rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-
-  .btn-publish:hover {
-    background: #08869c;
-  }
-
-  .btn-script {
-    background: #6f42c1;
-    color: white;
-    padding: 0.4rem 0.6rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-
-  .btn-script:hover {
-    background: #9732e9;
-  }
-
-  .close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 20px;
-    cursor: pointer;
-    color: #aaa;
-  }
-
-  .close:hover {
-    color: #333;
-  }
-
-  .log-box {
-    margin-bottom: 20px;
-  }
-
-  .log-box h3 {
-    margin-bottom: 8px;
-    font-size: 1rem;
-    font-weight: bold;
-    color: #4a63f3;
-  }
-
-  .log-content {
-    background-color: #f6f8fa;
-    padding: 10px;
-    border-radius: 6px;
-    white-space: pre-wrap;
-    font-size: 0.9rem;
-    color: #444;
-    max-height: 300px;
-    overflow-y: auto;
-  }
-
-  .btn {
-    padding: 6px 12px;
-    background-color: #4a63f3;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    cursor: pointer;
-  }
-
-  .btn:hover {
-    background-color: #3b4ddc;
-  }
-
-  .loading, .nodata {
-    text-align: center;
-    margin-top: 40px;
-    font-size: 1.2rem;
-    color: #777;
-  }
-
-  @media (max-width: 768px) {
-    .log-sections {
-      flex-direction: column;
-    }
-  }
-
-  /* 08072025 - UI Design From Github */
-
-  main.table {
-    width: 100%;
-    /* height: 90vh; */
-    background-color: #fff5;
-
-    backdrop-filter: blur(7px);
-    /* box-shadow: 0 .4rem .8rem #0005; */
-    border-radius: .8rem;
-
-    /* overflow: hidden; */
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-attachment: fixed;
+  color: #333;
+  padding: 20px;
+  animation: gradientShift 15s ease infinite;
 }
 
-.table__header {
-    /* width: 100%; */
-    height: 10%;
-    background-color: #fff4;
-    padding: .8rem 1rem;
-
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 1rem;
+@keyframes gradientShift {
+  0%, 100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  50% { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
 }
 
-.table__header .input-group {
-    width: 40%;
-    height: 100%;
-    background-color: #fff5;
-    padding: 0.8rem;
-    /* border-radius: 2rem; */
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    transition: .2s;
+h1 {
+  text-align: center;
+  color: #ffffff;
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: slideDown 0.6s ease-out;
+  margin-bottom: 20px;
 }
 
-.table__header .input-group:hover {
-    width: 42%;
-    background-color: #fff8;
-    box-shadow: 0 .5rem .8rem #0002;
-}
-
-/* .table__header .input-group img {
-    width: 1.2rem;
-    height: 1.2rem;
-} */
-
-.table__header .input-group input {
-    width: 100%;
-    /* padding: 0.5rem; */
-    background-color: transparent;
-    border: none;
-    outline: none;
-}
-
-.styled-input {
-  /* width: 100%; */
-  max-width: 400px;
-  /* padding: 12px 16px; */
-  border: 2px solid #ddd;
-  border-radius: 10px;
-  font-size: 16px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  transition: all 0.3s ease;
-  outline: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.styled-input:focus {
-  /* border-color: #4A90E2; */
-  box-shadow: 0 0 8px rgba(74, 144, 226, 0.4);
-  background-color: #f9f9ff;
-}
-
-.styled-input::placeholder {
-  color: #aaa;
-  transition: color 0.2s ease;
-}
-
-.styled-input:focus::placeholder {
-  color: #999;
-}
-
-input, select {
-  font-size: 1rem;
-  /* padding: 8px; */
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-
-select {
-  background-color: #f9f9f9;
-}
-
-.table__body {
-    width: 95%;
-    max-height: calc(89% - 1.6rem);
-    background-color: #fffb;
-
-    margin: .8rem auto;
-    border-radius: .6rem;
-
-    overflow: auto;
-    overflow: overlay;
-}
-
-
-.table__body::-webkit-scrollbar{
-    width: 0.5rem;
-    height: 0.5rem;
-}
-
-.table__body::-webkit-scrollbar-thumb{
-    border-radius: .5rem;
-    background-color: #0004;
-    visibility: hidden;
-}
-
-.table__body:hover::-webkit-scrollbar-thumb{ 
-    visibility: visible;
-}
-
-
-table {
-    width: 100%;
-}
-
-td img {
-    width: 36px;
-    height: 36px;
-    margin-right: .5rem;
-    border-radius: 50%;
-
-    vertical-align: middle;
-}
-
-table, th, td {
-    border-collapse: collapse;
-    padding: 1rem;
-    text-align: left;
-}
-
-thead th {
-    position: sticky;
-    top: 0;
-    left: 0;
-    background-color: #d5d1defe;
-    cursor: pointer;
-    text-transform: capitalize;
-}
-
-tbody tr:nth-child(even) {
-    background-color: #0000000b;
-}
-
-tbody tr {
-    --delay: .1s;
-    transition: .5s ease-in-out var(--delay), background-color 0s;
-}
-
-tbody tr.hide {
+@keyframes slideDown {
+  from {
     opacity: 0;
-    transform: translateX(100%);
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-tbody tr:hover {
-    background-color: #fff6 !important;
+/* ============================================
+   SERVER USAGE BANNER
+   ============================================ */
+
+.server-usage-banner {
+  background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+  background-size: 300% 100%;
+  animation: bannerGradient 8s ease infinite;
+  border-radius: 15px;
+  padding: 16px 20px;
+  margin-bottom: 25px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  position: relative;
 }
 
-tbody tr td,
-tbody tr td p,
-tbody tr td img {
-    transition: .2s ease-in-out;
+@keyframes bannerGradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
-tbody tr.hide td,
-tbody tr.hide td p {
-    padding: 0;
-    font: 0 / 0 sans-serif;
-    transition: .2s ease-in-out .5s;
-}
-
-tbody tr.hide td img {
-    width: 0;
-    height: 0;
-    transition: .2s ease-in-out .5s;
-}
-
-
-@media (max-width: 1000px) {
-    td:not(:first-of-type) {
-        min-width: 12.1rem;
-    }
-}
-
-thead th span.icon-arrow {
-    display: inline-block;
-    width: 1.3rem;
-    height: 1.3rem;
-    border-radius: 50%;
-    border: 1.4px solid transparent;
-    
-    text-align: center;
-    font-size: 1rem;
-    
-    margin-left: .5rem;
-    transition: .2s ease-in-out;
-}
-
-thead th:hover span.icon-arrow{
-    border: 1.4px solid #6c00bd;
-}
-
-thead th:hover {
-    color: #6c00bd;
-}
-
-thead th.active span.icon-arrow{
-    background-color: #6c00bd;
-    color: #fff;
-}
-
-thead th.asc span.icon-arrow{
-    transform: rotate(180deg);
-}
-
-thead th.active,tbody td.active {
-    color: #6c00bd;
-}
-
-/* 15072025 - Server Usage Design Details */
-
-.server-usage-marquee {
-  height: 20px;
-  background: linear-gradient(90deg, #f3adad, #f7ec88);
-  color: #000;
-  font-size: 16px;
-  font-weight: 500;
-  padding: 12px 20px;
+.usage-scroll {
+  display: flex;
+  animation: scrollLeft 30s linear infinite;
   white-space: nowrap;
-  border-radius: 0 0 10px 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes scrollLeft {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
 }
 
 .usage-item {
-  margin-right: 40px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 50px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.8s ease-in-out;
 }
 
-.usage-item strong {
-  color: #1524fa;
+.usage-item i {
+  margin-right: 8px;
+  animation: pulse 2s ease-in-out infinite;
 }
 
-.usage-section {
-  /* background: #fdfdfd;
-  border: 1px solid #e3e3e3; */
-  /* border-radius: 10px; */
-  /* padding: 20px; */
-  /* margin-bottom: 30px; */
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
 }
 
-.usage-section h2 {
-  justify-content: center;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ============================================
+   STATUS CARDS
+   ============================================ */
+
+.status-container {
+  margin-bottom: 30px;
+  animation: fadeInUp 0.7s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+ul.status-list {
   display: flex;
-  margin-bottom: 15px;
-  font-size: 1.25rem;
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+ul.status-list li {
+  flex: 1 1 200px;
+  max-width: 350px;
+  padding: 0;
+  transition: transform var(--transition-normal);
+  animation: scaleIn 0.5s ease-out backwards;
+}
+
+ul.status-list li:nth-child(1) { animation-delay: 0.1s; }
+ul.status-list li:nth-child(2) { animation-delay: 0.2s; }
+ul.status-list li:nth-child(3) { animation-delay: 0.3s; }
+ul.status-list li:nth-child(4) { animation-delay: 0.4s; }
+ul.status-list li:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.status-card {
+  padding: 25px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  color: #fff;
+  text-align: center;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.status-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(45deg);
+  transition: all 0.6s ease;
+}
+
+.status-card:hover::before {
+  left: 100%;
+}
+
+.status-card:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+.status-card .label {
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.status-card .label i {
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.status-card .count {
+  font-size: 32px;
   font-weight: bold;
+  margin-top: 12px;
+  position: relative;
+  z-index: 1;
+  animation: countUp 0.8s ease-out;
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.status-card.R {
+  background: linear-gradient(135deg, #4CAF50, #A5D6A7);
+}
+
+.status-card.S {
+  background: linear-gradient(135deg, #17a2b8, #84d8e8);
+}
+
+.status-card.D {
+  background: linear-gradient(135deg, #fd7e14, #ffc87a);
+}
+
+.status-card.T, .status-card.Failed {
+  background: linear-gradient(135deg, #e53935, #ef9a9a);
+}
+
+.status-card.Inactive {
+  background: linear-gradient(135deg, #9e9e9e, #e0e0e0);
   color: #333;
 }
 
-.usage-section ul {
-  list-style: none;
-  padding-left: 0;
-  margin: 0;
+.status-card.Deactivating {
+  background: linear-gradient(135deg, #8063b6, #ddb2f7);
+  color: #fff;
 }
 
-.usage-section li {
-  padding: 10px 0;
+/* ============================================
+   TABLE STYLES
+   ============================================ */
+
+main.table {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: fadeInUp 0.8s ease-out 0.3s backwards;
+}
+
+.table__header {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.table__header .input-group {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  padding: 12px 20px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  transition: all var(--transition-normal);
+  border: 2px solid transparent;
+}
+
+.table__header .input-group:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.02);
+}
+
+.table__header .input-group input,
+.table__header .input-group select,
+.table__header .input-group p {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.table__header .input-group input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.styled-input {
+  transition: all var(--transition-normal);
+}
+
+.styled-input:focus {
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+  transform: scale(1.02);
+}
+
+.table__body {
+  width: 95%;
+  max-height: calc(90vh - 400px);
+  margin: 20px auto;
+  overflow: auto;
+}
+
+.table__body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table__body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.table__body::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
+  transition: background var(--transition-fast);
+}
+
+.table__body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2, #667eea);
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  left: 0;
+  background: linear-gradient(135deg, #e0e7ff, #d5d1de);
+  padding: 16px;
+  font-weight: 700;
+  color: #333;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  z-index: 10;
+  transition: all var(--transition-fast);
+}
+
+thead th:hover {
+  background: linear-gradient(135deg, #d5d1de, #e0e7ff);
+  color: var(--primary-color);
+}
+
+tbody tr {
+  transition: all var(--transition-normal);
+  animation: slideInLeft 0.5s ease-out backwards;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+tbody tr:hover {
+  background: linear-gradient(90deg, #f0f4ff, #fef3ff) !important;
+  transform: scale(1.01);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+td {
+  padding: 16px;
+  vertical-align: middle;
   border-bottom: 1px solid #eee;
-  font-size: 1rem;
+}
+
+/* ============================================
+   STATS CARD IN TABLE
+   ============================================ */
+
+.stats-card {
+  display: block;
+  border: 2px solid #e8ebf8;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  background: #fff;
+  transition: all var(--transition-normal);
+  overflow: hidden;
+}
+
+.stats-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.stats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-bottom: 2px solid #dee2e6;
+}
+
+.header-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6c757d;
+  padding: 6px 12px;
+  background: #fff;
+  border-radius: 20px;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  gap: 8px;
+  font-size: 13px;
+  color: #495057;
+}
+
+/* ============================================
+   STATUS BADGES
+   ============================================ */
+
+.status {
+  padding: 6px 14px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: all var(--transition-fast);
+  display: inline-block;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.status:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.status.active {
+  background: linear-gradient(135deg, #28a745, #20c997);
+}
+
+.status.inactive {
+  background: linear-gradient(135deg, #6c757d, #adb5bd);
+}
+
+.status.activating {
+  background: linear-gradient(135deg, #17a2b8, #20c997);
+}
+
+.status.deactivating {
+  background: linear-gradient(135deg, #6f42c1, #e83e8c);
+}
+
+.status.failed {
+  background: linear-gradient(135deg, #dc3545, #fd7e14);
+}
+
+.proc-status {
+  padding: 8px 16px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #fff;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+  display: inline-block;
+}
+
+.proc-status:hover {
+  transform: scale(1.08);
+  box-shadow: var(--shadow-md);
+}
+
+.proc-status.R {
+  background: linear-gradient(135deg, #28a745, #A5D6A7);
+}
+
+.proc-status.S {
+  background: linear-gradient(135deg, #17a2b8, #84d8e8);
+}
+
+.proc-status.D {
+  background: linear-gradient(135deg, #fd7e14, #ffc87a);
+}
+
+.proc-status.T, .proc-status.Failed {
+  background: linear-gradient(135deg, #dc3545, #ef9a9a);
+}
+
+.proc-status.Inactive {
+  background: linear-gradient(135deg, #6c757d, #adb5bd);
+}
+
+.proc-status.Deactivating {
+  background: linear-gradient(135deg, #6f42c1, #ddb2f7);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.btn, .btn-restart, .btn-script, .btn-publish {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before, .btn-restart::before, .btn-script::before, .btn-publish::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before, .btn-restart:hover::before, 
+.btn-script:hover::before, .btn-publish:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn {
+  background: linear-gradient(135deg, #4a63f3, #3b4ddc);
+  color: white;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-restart {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+}
+
+.btn-restart:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+}
+
+.btn-script {
+  background: linear-gradient(135deg, #6f42c1, #9333ea);
+  color: white;
+}
+
+.btn-script:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(111, 66, 193, 0.4);
+}
+
+.btn-publish {
+  background: linear-gradient(135deg, #16c4f9, #0891b2);
+  color: white;
+}
+
+.btn-publish:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(22, 196, 249, 0.4);
+}
+
+/* ============================================
+   MODALS
+   ============================================ */
+
+.modal, .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
 }
 
-.usage-section li:last-child {
-  border-bottom: none;
+.modal-content, .script-modal-content {
+  background: #fff;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  animation: slideUp 0.4s ease-out;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
-.server-label {
-  font-weight: bold;
-  color: #444;
-  margin-right: 10px;
-}
-
-.usage-stats {
-  font-family: monospace;
-}
-
-/* Color indicators */
-.usage-green {
-  color: #12ac04;
-}
-
-.usage-yellow {
-  color: #997b05;
-}
-
-.usage-red {
-  color: #a72112;
-}
-
-/* 15072025 - Server Usage Design Details */
-
-  /* 08072025 - UI Design From Github */
-
-  /* .btn {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
   }
-  .btn-logs {
-    background: #2563eb;
-    color: white;
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
-  .btn-restart {
-    background: #f97316;
-    color: white;
-  }
+}
 
-  .modal-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: flex;
+.modal-content {
+  width: 90%;
+  max-width: 800px;
+}
+
+.script-modal-content {
+  width: 95%;
+  max-width: 1200px;
+  max-height: 90vh;
+}
+
+.close {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 28px;
+  cursor: pointer;
+  color: #999;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.close:hover {
+  color: #dc3545;
+  background: #f8f9fa;
+  transform: rotate(90deg);
+}
+
+.log-box, .script-box {
+  margin-bottom: 20px;
+}
+
+.log-box h3, .script-box h3 {
+  margin-bottom: 12px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.log-box h3::before {
+  content: '📋';
+  font-size: 1.5rem;
+}
+
+.script-box h3::before {
+  content: '💻';
+  font-size: 1.5rem;
+}
+
+.log-content, .script-content, .proc-detail-content {
+  background: linear-gradient(135deg, #f6f8fa, #e9ecef);
+  padding: 20px;
+  border-radius: 12px;
+  border: 2px solid #dee2e6;
+  white-space: pre-wrap;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #2c3e50;
+  max-height: 400px;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-normal);
+}
+
+.log-content:hover, .script-content:hover, .proc-detail-content:hover {
+  border-color: var(--primary-color);
+}
+
+.script-content {
+  max-height: 600px;
+}
+
+.proc-detail-content {
+  max-height: 500px;
+}
+
+.modal input {
+  width: 100%;
+  padding: 12px 16px;
+  margin: 10px 0;
+  border: 2px solid #dee2e6;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all var(--transition-normal);
+  background: #f8f9fa;
+}
+
+.modal input:focus {
+  border-color: var(--primary-color);
+  background: #fff;
+  box-shadow: 0 0 12px rgba(74, 99, 243, 0.2);
+  outline: none;
+  transform: scale(1.02);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.modal-actions button {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-sm);
+}
+
+.modal-actions button:first-child {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+}
+
+.modal-actions button:first-child:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
+}
+
+.modal-actions button:last-child {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.modal-actions button:last-child:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+.restart-msg, .publish-msg {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  font-weight: 600;
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  color: #2e7d32;
+  border: 2px solid #4caf50;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* ============================================
+   LOADING & NO DATA
+   ============================================ */
+
+.loading, .nodata {
+  text-align: center;
+  margin: 60px 0;
+  font-size: 1.5rem;
+  color: #fff;
+  font-weight: 600;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading::after {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #fff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  margin-left: 10px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 1024px) {
+  ul.status-list {
     justify-content: center;
-    align-items: center;
-    z-index: 999;
   }
-
-  .modal {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 10px;
-    width: 400px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  
+  .table__header {
+    flex-direction: column;
+    align-items: stretch;
   }
-
-  .modal h2 {
-    font-size: 1.2rem;
-    margin-bottom: 10px;
-  }
-
-  .modal input {
+  
+  .table__header .input-group {
     width: 100%;
-    margin: 8px 0;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
   }
+}
 
-  .modal-actions {
-    margin-top: 10px;
-    display: flex;
-    justify-content: space-between;
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.8rem;
   }
-
-  .modal-actions button {
-    padding: 8px 14px;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    cursor: pointer;
+  
+  .status-card {
+    padding: 20px;
   }
-
-  .modal-actions button:first-child {
-    background-color: #22c55e;
-    color: white;
+  
+  .usage-item {
+    font-size: 14px;
   }
-
-  .modal-actions button:last-child {
-    background-color: #ef4444;
-    color: white;
+  
+  td {
+    min-width: 150px;
   }
-
-  .restart-msg {
-    margin-top: 10px;
-    font-size: 0.85rem;
-    text-align: center;
-    color: #374151;
+  
+  .modal-content, .script-modal-content {
+    width: 95%;
+    padding: 20px;
   }
+}
 
-  pre {
-    background: #f3f3f3;
-    padding: 8px;
-    font-size: 0.85rem;
-    max-height: 200px;
-    overflow-y: auto;
-    white-space: pre-wrap;
-  } */
+/* ============================================
+   ADDITIONAL ANIMATIONS
+   ============================================ */
 
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
 
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(74, 99, 243, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(74, 99, 243, 0.8); }
+}
 
-this is my index and
+/* Add glow effect to focused elements */
+.table__header .input-group:focus-within {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection color */
+::selection {
+  background: var(--primary-color);
+  color: #fff;
+}
