@@ -1,209 +1,775 @@
-i want to make one dashboard from where i can see all my this application with button one by one in left panel as my applications links are 
-http://192.168.2.137:8080/monitoring_server/home
-http://192.168.2.137:8080/monitoring_datasets/
-http://192.168.2.137:8080/process_monitoring/
-http://192.168.2.137:8080/ridam_registration/
-http://192.168.2.137:8080/monitoring_sentinel/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VEDAS Management Information System</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-and i want alert in right side as floating with trnsoarent background and itcan be collapse up side and for off left side and i can do clear all them and clear one by one and it for server alert it should be check every 1 minute if after clkear alert generated then show that again here is my serevr alert api and its content
-http://192.168.2.137:8080/monitoring_server/api/alerts
-{
-  "alert_servers": 4,
-  "alerts": [
-    {
-      "message": "Server '2.38 - V1C7' is offline",
-      "server": "2.38 - V1C7",
-      "type": "Offline"
-    },
-    {
-      "message": "Root storage usage is high (87.0%)",
-      "server": "231 - H100 - V1G1",
-      "type": "Storage"
-    },
-    {
-      "message": "Root storage usage is high (94.0%)",
-      "server": "2.149 - V1CS5",
-      "type": "Storage"
-    },
-    {
-      "message": "Root storage usage is high (76.0%)",
-      "server": "2.135 - V1C1",
-      "type": "Storage"
-    }
-  ],
-  "total_servers": 20
-}
-here is my processing alerts
-http://192.168.2.137:8080/process_monitoring/get-alerts
-{
-  "data": {
-    "alert_services": 6,
-    "alerts": [
-      {
-        "message": "Service prg_hem_gtif has status failed.",
-        "server": "135 | prg_hem_gtif",
-        "type": "Failed"
-      },
-      {
-        "message": "Service prg_ND_blue_swir has status failed.",
-        "server": "135 | prg_ND_blue_swir",
-        "type": "Failed"
-      },
-      {
-        "message": "Service prg_ND_concrete_and_tin_index has status failed.",
-        "server": "135 | prg_ND_concrete_and_tin_index",
-        "type": "Failed"
-      },
-      {
-        "message": "Service prg_S1DownloadAntarcticSnowAdvisory has status failed.",
-        "server": "135 | prg_S1DownloadAntarcticSnowAdvisory",
-        "type": "Failed"
-      },
-      {
-        "message": "Service imd_rain_gtiff has status failed.",
-        "server": "135 | imd_rain_gtiff",
-        "type": "Failed"
-      },
-      {
-        "message": "Service prg_S2_cloudmask has status failed.",
-        "server": "214 | prg_S2_cloudmask",
-        "type": "Failed"
-      }
-    ],
-    "total_services": 41
-  },
-  "last_updated_time": "26-11-2025 10:11:16",
-  "message": "alert data fetched.",
-  "status": "success"
-}
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --bg-color: #ecf0f1;
+            --text-color: #2c3e50;
+            --sidebar-bg: #34495e;
+            --sidebar-text: #ecf0f1;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+            --border-radius: 8px;
+        }
 
+        .theme-dark {
+            --primary-color: #1a252f;
+            --secondary-color: #2980b9;
+            --bg-color: #1e272e;
+            --text-color: #ecf0f1;
+            --sidebar-bg: #14181c;
+            --card-bg: #2c3e50;
+        }
 
-in alert show colour wise like moderate alert and warning and all make it attractive beautiful and in home page i want to show 
-Welcome To The VEDAS Software Hub
-Empowering data-driven decisions for the future. in centre and above this text i want to show one logo and in left hand side live time website title will be "VEDAS Management Information System"
-make like left panel also collapse and i have to do like
-<VirtualHost *:8080>
-    ServerName 192.168.2.137
-    DocumentRoot /home/sac/webapps/physical_monitoring_portal/
-    
-    # CORS configuration
-    <IfModule mod_headers.c>
-        # Allow requests only from a specific frontend domain
-        Header set Access-Control-Allow-Origin "*"
-        # Allow methods you need for your API
-        Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        # Allow the necessary headers
-        Header set Access-Control-Allow-Headers "Content-Type, Authorization"
-        # If you are using credentials (cookies or auth headers), allow them
-        Header set Access-Control-Allow-Credentials "true"
-    </IfModule>
+        .theme-ocean {
+            --primary-color: #006994;
+            --secondary-color: #0099cc;
+            --accent-color: #00d4ff;
+            --bg-color: #e8f4f8;
+            --sidebar-bg: #004d6d;
+        }
 
-    # Handle OPTIONS requests (Preflight requests)
-    <IfModule mod_rewrite.c>
-        RewriteEngine On
-        RewriteCond %{REQUEST_METHOD} OPTIONS
-        RewriteRule ^(.*)$ - [R=200,L]
-    </IfModule>
+        .theme-forest {
+            --primary-color: #1b4332;
+            --secondary-color: #2d6a4f;
+            --success-color: #40916c;
+            --bg-color: #d8f3dc;
+            --sidebar-bg: #081c15;
+        }
 
-    # Alias for /physical_monitoring_portal
-    Alias /physical_monitoring_portal /home/sac/webapps/physical_monitoring_portal
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
 
-    <Directory /home/sac/webapps/physical_monitoring_portal>
-        # Allow access to the directory
-        Require all granted
-        Options FollowSymLinks
-        AllowOverride All
-    </Directory>
-        ProxyPass "/taskboard/api/" "http://localhost:5501/taskboard/api/"
-        ProxyPassReverse "/taskboard/api/" "http://localhost:5501/taskboard/api/"
+        #app {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
 
-       # ProxyPass "/taskboard/home/" "http://localhost:5501/taskboard/home/"
-       # ProxyPassReverse "/taskboard/home/" "http://localhost:5501/taskboard/home/"
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--primary-color);
+            color: var(--sidebar-text);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+        }
 
-        ProxyPass "/monitoring_server/static" "http://127.0.0.1:5011/static"
-        ProxyPassReverse "/monitoring_server/api/static" "http://127.0.0.1:5011/static"
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
 
-        ProxyPass "/iconiq" "http://192.168.2.231:9005/"
-        ProxyPassReverse "/iconiq" "http://192.168.2.231:9005/"
+        .menu-toggle {
+            background: none;
+            border: none;
+            color: var(--sidebar-text);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: var(--border-radius);
+            transition: background 0.3s;
+        }
 
-        ProxyPass "/monitoring_server/" "http://127.0.0.1:5011/monitoring_server/"
-        ProxyPassReverse "/monitoring_server/" "http://127.0.0.1:5011/monitoring_server/"
+        .menu-toggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
 
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
 
-        ProxyPass "/monitoring_server/api" "http://127.0.0.1:5011/monitoring_server/api"
-        ProxyPassReverse "/monitoring_server/api" "http://127.0.0.1:5011/monitoring_server/api"
+        .header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
 
+        .live-time {
+            font-size: 16px;
+            font-weight: 500;
+        }
 
-        ProxyPass "/monitoring_sentinel/static" "http://127.0.0.1:1113/static"
-        ProxyPassReverse "/monitoring_sentinel/api/static" "http://127.0.0.1:1113/static"
+        .theme-selector {
+            padding: 8px 15px;
+            border-radius: var(--border-radius);
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: var(--sidebar-text);
+            cursor: pointer;
+            font-size: 14px;
+        }
 
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 60px;
+            width: 280px;
+            height: calc(100vh - 60px);
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            padding: 20px;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 999;
+            box-shadow: var(--shadow);
+        }
 
-        ProxyPass "/monitoring_sentinel/" "http://127.0.0.1:1113/monitoring_sentinel/"
-        ProxyPassReverse "/monitoring_sentinel/" "http://127.0.0.1:1113/monitoring_sentinel/"
+        .sidebar.collapsed {
+            transform: translateX(-280px);
+        }
 
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
 
-        ProxyPass "/monitoring_sentinel/api" "http://127.0.0.1:1113/monitoring_sentinel/api"
-        ProxyPassReverse "/monitoring_sentinel/api" "http://127.0.0.1:1113/monitoring_sentinel/api"
+        .nav-button {
+            display: block;
+            width: 100%;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: var(--border-radius);
+            color: var(--sidebar-text);
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
 
+        .nav-button:hover {
+            background: var(--secondary-color);
+            transform: translateX(5px);
+        }
 
-        ProxyPass "/ridam_registration/static" "http://127.0.0.1:5678/ridam_registration/static"
-        ProxyPassReverse "/ridam_registration/api/static" "http://127.0.0.1:5678/ridam_registration/static"
+        .nav-button.active {
+            background: var(--secondary-color);
+            font-weight: 600;
+        }
 
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            margin-top: 60px;
+            width: calc(100% - 280px);
+            height: calc(100vh - 60px);
+            padding: 30px;
+            overflow-y: auto;
+            transition: margin-left 0.3s ease, width 0.3s ease;
+        }
 
-        ProxyPass "/ridam_registration/api" "http://127.0.0.1:5678/ridam_registration/api" 
-        ProxyPassReverse "/ridam_registration/api" "http://127.0.0.1:5678/ridam_registration/api"
+        .main-content.expanded {
+            margin-left: 0;
+            width: 100%;
+        }
 
+        /* Home Page */
+        .home-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+        }
 
-        ProxyPass "/ridam_registration/" "http://127.0.0.1:5678/ridam_registration/"
-        ProxyPassReverse "/ridam_registration/" "http://127.0.0.1:5678/ridam_registration/"
+        .logo-container {
+            margin-bottom: 30px;
+        }
 
-        ProxyPass "/monitoring_health" "http://127.0.0.1:5502/monitoring_health"
-        ProxyPassReverse "/monitoring_health" "http://127.0.0.1:5502/monitoring_health"
+        .logo {
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
 
-        #ProxyPass "/monitoring_health/api/" "http://127.0.0.1:5502/monitoring_health/api/"
-        #ProxyPassReverse "/monitoring_health/api/" "http://127.0.0.1:5502/monitoring_health/api/"
+        .welcome-title {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
+        .welcome-subtitle {
+            font-size: 20px;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
 
-        # This handles the main app AND the static files because the prefix matches both
-        ProxyPass "/process_monitoring/" "http://127.0.0.1:5089/process_monitoring/"
-        ProxyPassReverse "/process_monitoring/" "http://127.0.0.1:5089/process_monitoring/"
+        /* Application Frame */
+        .app-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
 
-        ProxyPass "/data_api/product/" "http://192.168.2.136:5678/product/"
-        ProxyPassReverse "/data_api/product/" "http://192.168.2.136:5678/product/"
-        
-        # Theme APIs
-        ProxyPass "/data_api/theme/" "http://192.168.2.136:5678/theme/"
-        ProxyPassReverse "/data_api/theme/" "http://192.168.2.136:5678/theme/"
-        
-        # Subtheme APIs
-        ProxyPass "/data_api/subtheme/" "http://192.168.2.136:5678/subtheme/"
-        ProxyPassReverse "/data_api/subtheme/" "http://192.168.2.136:5678/subtheme/"
-        
-        # Pyramid APIs
-        ProxyPass "/data_api/pyramid_pool/" "http://192.168.2.136:5678/pyramid_pool/"
-        ProxyPassReverse "/data_api/pyramid_pool/" "http://192.168.2.136:5678/pyramid_pool/"
+        /* Alert Panel */
+        .alert-panel {
+            position: fixed;
+            right: 20px;
+            top: 80px;
+            width: 400px;
+            max-height: calc(100vh - 100px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            z-index: 998;
+            display: flex;
+            flex-direction: column;
+        }
 
-        #Monitoring datasets
-        ProxyPass "/monitoring_datasets/static/" "http://127.0.0.1:5000/static/"
-        ProxyPassReverse "/monitoring_datasets/static/" "http://127.0.0.1:5000/static/"
+        .theme-dark .alert-panel {
+            background: rgba(44, 62, 80, 0.95);
+        }
 
-        ProxyPass "/monitoring_datasets/api" "http://127.0.0.1:5000/monitoring_datasets/api"
-        ProxyPassReverse "/monitoring_datasets/api" "http://127.0.0.1:5000/monitoring_datasets/api"
-        
-        ProxyPass "/monitoring_datasets" "http://127.0.0.1:5000/monitoring_datasets"
-        ProxyPassReverse "/monitoring_datasets" "http://127.0.0.1:5000/monitoring_datasets"
+        .alert-panel.collapsed-up {
+            transform: translateY(-100%);
+            top: -20px;
+        }
 
-        ProxyPass "/vedas/" "http://192.168.2.138"
-        ProxyPassReverse "/vedas/" "http://192.168.2.138"
+        .alert-panel.collapsed-left {
+            transform: translateX(450px);
+        }
 
-        ProxyPass "/netapp_107" "http://192.168.2.107/sysmgr/login"
-        ProxyPassReverse "/netapp_107" "http://192.168.2.107/sysmgr/login"
+        .alert-header {
+            padding: 15px 20px;
+            background: var(--primary-color);
+            color: var(--sidebar-text);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-        RequestHeader set X-Forwarded-Proto "http"
-        RequestHeader set X-Forwarded-Port "8080"
+        .alert-header-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-        ErrorLog ${APACHE_LOG_DIR}/physical_monitoring_portal.log
-        CustomLog ${APACHE_LOG_DIR}/physical_monitoring_portal.log combined
-    
-</VirtualHost>
-so make based on that
+        .alert-badge {
+            background: var(--danger-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .alert-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .alert-control-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: var(--sidebar-text);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .alert-control-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .alert-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .alert-section {
+            margin-bottom: 20px;
+        }
+
+        .alert-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+
+        .alert-item {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: var(--border-radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-offline {
+            background: #fee;
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .alert-storage {
+            background: #fef5e7;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .alert-failed {
+            background: #ffe6e6;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-type {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .alert-offline .alert-type {
+            color: var(--danger-color);
+        }
+
+        .alert-storage .alert-type {
+            color: var(--warning-color);
+        }
+
+        .alert-failed .alert-type {
+            color: var(--accent-color);
+        }
+
+        .alert-message {
+            font-size: 13px;
+            color: var(--text-color);
+            line-height: 1.4;
+        }
+
+        .alert-server {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .alert-delete-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .alert-delete-btn:hover {
+            background: rgba(0,0,0,0.1);
+            color: var(--danger-color);
+        }
+
+        .no-alerts {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .last-updated {
+            padding: 10px 15px;
+            background: var(--bg-color);
+            border-top: 1px solid rgba(0,0,0,0.1);
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+            }
+
+            .sidebar.collapsed {
+                transform: translateX(-250px);
+            }
+
+            .main-content {
+                margin-left: 250px;
+                width: calc(100% - 250px);
+            }
+
+            .alert-panel {
+                width: 320px;
+                right: 10px;
+            }
+
+            .welcome-title {
+                font-size: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <button class="menu-toggle" @click="toggleSidebar">☰</button>
+                <div class="header-title">VEDAS Management Information System</div>
+            </div>
+            <div class="header-right">
+                <div class="live-time">{{ currentTime }}</div>
+                <select class="theme-selector" v-model="currentTheme">
+                    <option value="">Light</option>
+                    <option value="theme-dark">Dark</option>
+                    <option value="theme-ocean">Ocean</option>
+                    <option value="theme-forest">Forest</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+            <div class="sidebar-title">My Applications</div>
+            <a href="javascript:void(0)" class="nav-button" :class="{ active: currentPage === 'home' }" @click="navigateTo('home')">
+                🏠 Home
+            </a>
+            <a v-for="app in applications" :key="app.id" :href="app.url" target="app-frame" class="nav-button" @click="setActive(app.id)">
+                {{ app.icon }} {{ app.name }}
+            </a>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" :class="{ expanded: sidebarCollapsed }">
+            <div v-if="currentPage === 'home'" class="home-container">
+                <div class="logo-container">
+                    <div class="logo">V</div>
+                </div>
+                <h1 class="welcome-title">Welcome To The VEDAS Software Hub</h1>
+                <p class="welcome-subtitle">Empowering data-driven decisions for the future.</p>
+            </div>
+            <iframe v-else name="app-frame" class="app-frame" :src="currentAppUrl"></iframe>
+        </div>
+
+        <!-- Alert Panel -->
+        <div class="alert-panel" :class="{ 'collapsed-up': alertPanelCollapsedUp, 'collapsed-left': alertPanelCollapsedLeft }">
+            <div class="alert-header">
+                <div class="alert-header-title">
+                    🔔 Alerts
+                    <span class="alert-badge" v-if="totalAlerts > 0">{{ totalAlerts }}</span>
+                </div>
+                <div class="alert-controls">
+                    <button class="alert-control-btn" @click="clearAllAlerts" v-if="totalAlerts > 0">Clear All</button>
+                    <button class="alert-control-btn" @click="toggleAlertPanelUp">{{ alertPanelCollapsedUp ? '▼' : '▲' }}</button>
+                    <button class="alert-control-btn" @click="toggleAlertPanelLeft">{{ alertPanelCollapsedLeft ? '◀' : '▶' }}</button>
+                </div>
+            </div>
+            <div class="alert-body" v-if="!alertPanelCollapsedUp">
+                <div v-if="totalAlerts === 0" class="no-alerts">
+                    ✅ No alerts at the moment
+                </div>
+                <div v-else>
+                    <!-- Server Alerts -->
+                    <div class="alert-section" v-if="serverAlerts.length > 0">
+                        <div class="alert-section-title">Server Alerts ({{ serverAlerts.length }})</div>
+                        <div v-for="(alert, index) in serverAlerts" :key="'server-' + index" 
+                             class="alert-item" 
+                             :class="'alert-' + alert.type.toLowerCase()">
+                            <div class="alert-content">
+                                <div class="alert-type">{{ alert.type }}</div>
+                                <div class="alert-message">{{ alert.message }}</div>
+                                <div class="alert-server">{{ alert.server }}</div>
+                            </div>
+                            <button class="alert-delete-btn" @click="removeAlert('server', index)">×</button>
+                        </div>
+                    </div>
+
+                    <!-- Process Alerts -->
+                    <div class="alert-section" v-if="processAlerts.length > 0">
+                        <div class="alert-section-title">Process Alerts ({{ processAlerts.length }})</div>
+                        <div v-for="(alert, index) in processAlerts" :key="'process-' + index" 
+                             class="alert-item" 
+                             :class="'alert-' + alert.type.toLowerCase()">
+                            <div class="alert-content">
+                                <div class="alert-type">{{ alert.type }}</div>
+                                <div class="alert-message">{{ alert.message }}</div>
+                                <div class="alert-server">{{ alert.server }}</div>
+                            </div>
+                            <button class="alert-delete-btn" @click="removeAlert('process', index)">×</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="last-updated" v-if="lastUpdated">
+                    Last updated: {{ lastUpdated }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    currentTheme: '',
+                    currentTime: '',
+                    sidebarCollapsed: false,
+                    currentPage: 'home',
+                    currentAppUrl: '',
+                    alertPanelCollapsedUp: false,
+                    alertPanelCollapsedLeft: false,
+                    serverAlerts: [],
+                    processAlerts: [],
+                    clearedAlerts: new Set(),
+                    lastUpdated: '',
+                    applications: [
+                        {
+                            id: 'monitoring_server',
+                            name: 'Monitoring Server',
+                            icon: '🖥️',
+                            url: 'http://192.168.2.137:8080/monitoring_server/home'
+                        },
+                        {
+                            id: 'monitoring_datasets',
+                            name: 'Monitoring Datasets',
+                            icon: '📊',
+                            url: 'http://192.168.2.137:8080/monitoring_datasets/'
+                        },
+                        {
+                            id: 'process_monitoring',
+                            name: 'Process Monitoring',
+                            icon: '⚙️',
+                            url: 'http://192.168.2.137:8080/process_monitoring/'
+                        },
+                        {
+                            id: 'ridam_registration',
+                            name: 'RIDAM Registration',
+                            icon: '📝',
+                            url: 'http://192.168.2.137:8080/ridam_registration/'
+                        },
+                        {
+                            id: 'monitoring_sentinel',
+                            name: 'Monitoring Sentinel',
+                            icon: '🛰️',
+                            url: 'http://192.168.2.137:8080/monitoring_sentinel/'
+                        }
+                    ]
+                };
+            },
+            computed: {
+                totalAlerts() {
+                    return this.serverAlerts.length + this.processAlerts.length;
+                }
+            },
+            methods: {
+                toggleSidebar() {
+                    this.sidebarCollapsed = !this.sidebarCollapsed;
+                },
+                navigateTo(page) {
+                    this.currentPage = page;
+                    if (page === 'home') {
+                        this.currentAppUrl = '';
+                    }
+                },
+                setActive(appId) {
+                    this.currentPage = appId;
+                    const app = this.applications.find(a => a.id === appId);
+                    if (app) {
+                        this.currentAppUrl = app.url;
+                    }
+                },
+                toggleAlertPanelUp() {
+                    this.alertPanelCollapsedUp = !this.alertPanelCollapsedUp;
+                },
+                toggleAlertPanelLeft() {
+                    this.alertPanelCollapsedLeft = !this.alertPanelCollapsedLeft;
+                },
+                updateTime() {
+                    const now = new Date();
+                    const options = { 
+                        weekday: 'short', 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    };
+                    this.currentTime = now.toLocaleString('en-IN', options);
+                },
+                async fetchAlerts() {
+                    try {
+                        // Fetch server alerts
+                        const serverResponse = await fetch('http://192.168.2.137:8080/monitoring_server/api/alerts');
+                        const serverData = await serverResponse.json();
+
+                        // Fetch process alerts
+                        const processResponse = await fetch('http://192.168.2.137:8080/process_monitoring/get-alerts');
+                        const processData = await processResponse.json();
+
+                        // Filter out cleared alerts and update
+                        if (serverData.alerts) {
+                            this.serverAlerts = serverData.alerts.filter(alert => 
+                                !this.clearedAlerts.has(this.getAlertKey('server', alert))
+                            );
+                        }
+
+                        if (processData.data && processData.data.alerts) {
+                            this.processAlerts = processData.data.alerts.filter(alert => 
+                                !this.clearedAlerts.has(this.getAlertKey('process', alert))
+                            );
+                            this.lastUpdated = processData.last_updated_time || '';
+                        }
+
+                        // Check if any cleared alerts have reappeared
+                        const currentAlertKeys = new Set();
+                        [...serverData.alerts || [], ...(processData.data?.alerts || [])].forEach(alert => {
+                            const key = this.getAlertKey('server', alert) || this.getAlertKey('process', alert);
+                            currentAlertKeys.add(key);
+                        });
+
+                        // Remove cleared alerts that no longer exist from the cleared set
+                        this.clearedAlerts = new Set(
+                            [...this.clearedAlerts].filter(key => currentAlertKeys.has(key))
+                        );
+
+                    } catch (error) {
+                        console.error('Error fetching alerts:', error);
+                    }
+                },
+                getAlertKey(type, alert) {
+                    return `${type}-${alert.server}-${alert.type}-${alert.message}`;
+                },
+                removeAlert(type, index) {
+                    if (type === 'server') {
+                        const alert = this.serverAlerts[index];
+                        this.clearedAlerts.add(this.getAlertKey('server', alert));
+                        this.serverAlerts.splice(index, 1);
+                    } else {
+                        const alert = this.processAlerts[index];
+                        this.clearedAlerts.add(this.getAlertKey('process', alert));
+                        this.processAlerts.splice(index, 1);
+                    }
+                },
+                clearAllAlerts() {
+                    this.serverAlerts.forEach(alert => {
+                        this.clearedAlerts.add(this.getAlertKey('server', alert));
+                    });
+                    this.processAlerts.forEach(alert => {
+                        this.clearedAlerts.add(this.getAlertKey('process', alert));
+                    });
+                    this.serverAlerts = [];
+                    this.processAlerts = [];
+                }
+            },
+            watch: {
+                currentTheme(newTheme) {
+                    document.body.className = newTheme;
+                }
+            },
+            mounted() {
+                // Update time immediately and every second
+                this.updateTime();
+                setInterval(this.updateTime, 1000);
+
+                // Fetch alerts immediately and every minute
+                this.fetchAlerts();
+                setInterval(this.fetchAlerts, 60000);
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
