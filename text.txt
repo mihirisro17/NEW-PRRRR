@@ -269,22 +269,10 @@
             }
         }
 
-        .logo {
-            width: auto;
-            height: auto;
-            max-width: 100%;
-        }
-
+        /* Logo - NO STYLING - just display the image as-is */
         .logo img {
             width: 350px;
             height: auto;
-            display: block;
-        }
-
-        .logo-text {
-            font-size: 64px;
-            font-weight: bold;
-            color: white;
         }
 
         .welcome-title {
@@ -728,10 +716,8 @@
         <div class="main-content" :class="{ expanded: sidebarCollapsed }">
             <div v-if="currentPage === 'home'" class="home-container">
                 <div class="logo-container">
-                    <div class="logo">
-                        <!-- Logo displays as original image without styling -->
-                        <img src="vedas_logo.png" alt="VEDAS Logo">
-                    </div>
+                    <!-- Logo image displays exactly as uploaded with NO styling -->
+                    <img src="vedas_logo.png" alt="VEDAS Logo" class="logo">
                 </div>
                 <h1 class="welcome-title">Welcome To The VEDAS Software Hub</h1>
                 <p class="welcome-subtitle">Empowering data-driven decisions for the future.</p>
