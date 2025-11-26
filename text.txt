@@ -1,0 +1,209 @@
+i want to make one dashboard from where i can see all my this application with button one by one in left panel as my applications links are 
+http://192.168.2.137:8080/monitoring_server/home
+http://192.168.2.137:8080/monitoring_datasets/
+http://192.168.2.137:8080/process_monitoring/
+http://192.168.2.137:8080/ridam_registration/
+http://192.168.2.137:8080/monitoring_sentinel/
+
+and i want alert in right side as floating with trnsoarent background and itcan be collapse up side and for off left side and i can do clear all them and clear one by one and it for server alert it should be check every 1 minute if after clkear alert generated then show that again here is my serevr alert api and its content
+http://192.168.2.137:8080/monitoring_server/api/alerts
+{
+  "alert_servers": 4,
+  "alerts": [
+    {
+      "message": "Server '2.38 - V1C7' is offline",
+      "server": "2.38 - V1C7",
+      "type": "Offline"
+    },
+    {
+      "message": "Root storage usage is high (87.0%)",
+      "server": "231 - H100 - V1G1",
+      "type": "Storage"
+    },
+    {
+      "message": "Root storage usage is high (94.0%)",
+      "server": "2.149 - V1CS5",
+      "type": "Storage"
+    },
+    {
+      "message": "Root storage usage is high (76.0%)",
+      "server": "2.135 - V1C1",
+      "type": "Storage"
+    }
+  ],
+  "total_servers": 20
+}
+here is my processing alerts
+http://192.168.2.137:8080/process_monitoring/get-alerts
+{
+  "data": {
+    "alert_services": 6,
+    "alerts": [
+      {
+        "message": "Service prg_hem_gtif has status failed.",
+        "server": "135 | prg_hem_gtif",
+        "type": "Failed"
+      },
+      {
+        "message": "Service prg_ND_blue_swir has status failed.",
+        "server": "135 | prg_ND_blue_swir",
+        "type": "Failed"
+      },
+      {
+        "message": "Service prg_ND_concrete_and_tin_index has status failed.",
+        "server": "135 | prg_ND_concrete_and_tin_index",
+        "type": "Failed"
+      },
+      {
+        "message": "Service prg_S1DownloadAntarcticSnowAdvisory has status failed.",
+        "server": "135 | prg_S1DownloadAntarcticSnowAdvisory",
+        "type": "Failed"
+      },
+      {
+        "message": "Service imd_rain_gtiff has status failed.",
+        "server": "135 | imd_rain_gtiff",
+        "type": "Failed"
+      },
+      {
+        "message": "Service prg_S2_cloudmask has status failed.",
+        "server": "214 | prg_S2_cloudmask",
+        "type": "Failed"
+      }
+    ],
+    "total_services": 41
+  },
+  "last_updated_time": "26-11-2025 10:11:16",
+  "message": "alert data fetched.",
+  "status": "success"
+}
+
+
+in alert show colour wise like moderate alert and warning and all make it attractive beautiful and in home page i want to show 
+Welcome To The VEDAS Software Hub
+Empowering data-driven decisions for the future. in centre and above this text i want to show one logo and in left hand side live time website title will be "VEDAS Management Information System"
+make like left panel also collapse and i have to do like
+<VirtualHost *:8080>
+    ServerName 192.168.2.137
+    DocumentRoot /home/sac/webapps/physical_monitoring_portal/
+    
+    # CORS configuration
+    <IfModule mod_headers.c>
+        # Allow requests only from a specific frontend domain
+        Header set Access-Control-Allow-Origin "*"
+        # Allow methods you need for your API
+        Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        # Allow the necessary headers
+        Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+        # If you are using credentials (cookies or auth headers), allow them
+        Header set Access-Control-Allow-Credentials "true"
+    </IfModule>
+
+    # Handle OPTIONS requests (Preflight requests)
+    <IfModule mod_rewrite.c>
+        RewriteEngine On
+        RewriteCond %{REQUEST_METHOD} OPTIONS
+        RewriteRule ^(.*)$ - [R=200,L]
+    </IfModule>
+
+    # Alias for /physical_monitoring_portal
+    Alias /physical_monitoring_portal /home/sac/webapps/physical_monitoring_portal
+
+    <Directory /home/sac/webapps/physical_monitoring_portal>
+        # Allow access to the directory
+        Require all granted
+        Options FollowSymLinks
+        AllowOverride All
+    </Directory>
+        ProxyPass "/taskboard/api/" "http://localhost:5501/taskboard/api/"
+        ProxyPassReverse "/taskboard/api/" "http://localhost:5501/taskboard/api/"
+
+       # ProxyPass "/taskboard/home/" "http://localhost:5501/taskboard/home/"
+       # ProxyPassReverse "/taskboard/home/" "http://localhost:5501/taskboard/home/"
+
+        ProxyPass "/monitoring_server/static" "http://127.0.0.1:5011/static"
+        ProxyPassReverse "/monitoring_server/api/static" "http://127.0.0.1:5011/static"
+
+        ProxyPass "/iconiq" "http://192.168.2.231:9005/"
+        ProxyPassReverse "/iconiq" "http://192.168.2.231:9005/"
+
+        ProxyPass "/monitoring_server/" "http://127.0.0.1:5011/monitoring_server/"
+        ProxyPassReverse "/monitoring_server/" "http://127.0.0.1:5011/monitoring_server/"
+
+
+        ProxyPass "/monitoring_server/api" "http://127.0.0.1:5011/monitoring_server/api"
+        ProxyPassReverse "/monitoring_server/api" "http://127.0.0.1:5011/monitoring_server/api"
+
+
+        ProxyPass "/monitoring_sentinel/static" "http://127.0.0.1:1113/static"
+        ProxyPassReverse "/monitoring_sentinel/api/static" "http://127.0.0.1:1113/static"
+
+
+        ProxyPass "/monitoring_sentinel/" "http://127.0.0.1:1113/monitoring_sentinel/"
+        ProxyPassReverse "/monitoring_sentinel/" "http://127.0.0.1:1113/monitoring_sentinel/"
+
+
+        ProxyPass "/monitoring_sentinel/api" "http://127.0.0.1:1113/monitoring_sentinel/api"
+        ProxyPassReverse "/monitoring_sentinel/api" "http://127.0.0.1:1113/monitoring_sentinel/api"
+
+
+        ProxyPass "/ridam_registration/static" "http://127.0.0.1:5678/ridam_registration/static"
+        ProxyPassReverse "/ridam_registration/api/static" "http://127.0.0.1:5678/ridam_registration/static"
+
+
+        ProxyPass "/ridam_registration/api" "http://127.0.0.1:5678/ridam_registration/api" 
+        ProxyPassReverse "/ridam_registration/api" "http://127.0.0.1:5678/ridam_registration/api"
+
+
+        ProxyPass "/ridam_registration/" "http://127.0.0.1:5678/ridam_registration/"
+        ProxyPassReverse "/ridam_registration/" "http://127.0.0.1:5678/ridam_registration/"
+
+        ProxyPass "/monitoring_health" "http://127.0.0.1:5502/monitoring_health"
+        ProxyPassReverse "/monitoring_health" "http://127.0.0.1:5502/monitoring_health"
+
+        #ProxyPass "/monitoring_health/api/" "http://127.0.0.1:5502/monitoring_health/api/"
+        #ProxyPassReverse "/monitoring_health/api/" "http://127.0.0.1:5502/monitoring_health/api/"
+
+
+        # This handles the main app AND the static files because the prefix matches both
+        ProxyPass "/process_monitoring/" "http://127.0.0.1:5089/process_monitoring/"
+        ProxyPassReverse "/process_monitoring/" "http://127.0.0.1:5089/process_monitoring/"
+
+        ProxyPass "/data_api/product/" "http://192.168.2.136:5678/product/"
+        ProxyPassReverse "/data_api/product/" "http://192.168.2.136:5678/product/"
+        
+        # Theme APIs
+        ProxyPass "/data_api/theme/" "http://192.168.2.136:5678/theme/"
+        ProxyPassReverse "/data_api/theme/" "http://192.168.2.136:5678/theme/"
+        
+        # Subtheme APIs
+        ProxyPass "/data_api/subtheme/" "http://192.168.2.136:5678/subtheme/"
+        ProxyPassReverse "/data_api/subtheme/" "http://192.168.2.136:5678/subtheme/"
+        
+        # Pyramid APIs
+        ProxyPass "/data_api/pyramid_pool/" "http://192.168.2.136:5678/pyramid_pool/"
+        ProxyPassReverse "/data_api/pyramid_pool/" "http://192.168.2.136:5678/pyramid_pool/"
+
+        #Monitoring datasets
+        ProxyPass "/monitoring_datasets/static/" "http://127.0.0.1:5000/static/"
+        ProxyPassReverse "/monitoring_datasets/static/" "http://127.0.0.1:5000/static/"
+
+        ProxyPass "/monitoring_datasets/api" "http://127.0.0.1:5000/monitoring_datasets/api"
+        ProxyPassReverse "/monitoring_datasets/api" "http://127.0.0.1:5000/monitoring_datasets/api"
+        
+        ProxyPass "/monitoring_datasets" "http://127.0.0.1:5000/monitoring_datasets"
+        ProxyPassReverse "/monitoring_datasets" "http://127.0.0.1:5000/monitoring_datasets"
+
+        ProxyPass "/vedas/" "http://192.168.2.138"
+        ProxyPassReverse "/vedas/" "http://192.168.2.138"
+
+        ProxyPass "/netapp_107" "http://192.168.2.107/sysmgr/login"
+        ProxyPassReverse "/netapp_107" "http://192.168.2.107/sysmgr/login"
+
+        RequestHeader set X-Forwarded-Proto "http"
+        RequestHeader set X-Forwarded-Port "8080"
+
+        ErrorLog ${APACHE_LOG_DIR}/physical_monitoring_portal.log
+        CustomLog ${APACHE_LOG_DIR}/physical_monitoring_portal.log combined
+    
+</VirtualHost>
+so make based on that
