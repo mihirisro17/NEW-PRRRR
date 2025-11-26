@@ -31,7 +31,7 @@
             --shadow-lg: 0 20px 60px rgba(0,0,0,0.15);
             --shadow-xl: 0 25px 80px rgba(0,0,0,0.2);
             --border-radius: 24px;
-            --alert-bg: rgba(255, 255, 255, 0.12);
+            --alert-bg: rgba(255, 255, 255, 0.08);
         }
 
         .theme-dark {
@@ -41,7 +41,7 @@
             --text-color: #f1f5f9;
             --sidebar-bg: linear-gradient(180deg, #020617 0%, #0f172a 100%);
             --card-bg: #1e293b;
-            --alert-bg: rgba(30, 41, 59, 0.18);
+            --alert-bg: rgba(30, 41, 59, 0.1);
         }
 
         .theme-ocean {
@@ -51,7 +51,7 @@
             --bg-gradient: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #3b82f6 100%);
             --bg-color: #ecfeff;
             --sidebar-bg: linear-gradient(180deg, #164e63 0%, #0c4a6e 100%);
-            --alert-bg: rgba(236, 254, 255, 0.12);
+            --alert-bg: rgba(236, 254, 255, 0.08);
         }
 
         .theme-forest {
@@ -61,7 +61,7 @@
             --bg-gradient: linear-gradient(135deg, #10b981 0%, #14b8a6 50%, #22c55e 100%);
             --bg-color: #ecfdf5;
             --sidebar-bg: linear-gradient(180deg, #064e3b 0%, #065f46 100%);
-            --alert-bg: rgba(236, 253, 245, 0.12);
+            --alert-bg: rgba(236, 253, 245, 0.08);
         }
 
         .theme-sunset {
@@ -71,7 +71,50 @@
             --bg-gradient: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ef4444 100%);
             --bg-color: #fffbeb;
             --sidebar-bg: linear-gradient(180deg, #78350f 0%, #7c2d12 100%);
-            --alert-bg: rgba(255, 251, 235, 0.12);
+            --alert-bg: rgba(255, 251, 235, 0.08);
+        }
+
+        /* Time-Based Themes */
+        .theme-auto-morning {
+            --primary-color: #f59e0b;
+            --secondary-color: #fb923c;
+            --accent-color: #fbbf24;
+            --bg-gradient: linear-gradient(135deg, #fbbf24 0%, #fb923c 50%, #f59e0b 100%);
+            --bg-color: #fffbeb;
+            --sidebar-bg: linear-gradient(180deg, #78350f 0%, #92400e 100%);
+            --alert-bg: rgba(255, 251, 235, 0.08);
+        }
+
+        .theme-auto-afternoon {
+            --primary-color: #0ea5e9;
+            --secondary-color: #38bdf8;
+            --accent-color: #3b82f6;
+            --bg-gradient: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #3b82f6 100%);
+            --bg-color: #e0f2fe;
+            --sidebar-bg: linear-gradient(180deg, #075985 0%, #0c4a6e 100%);
+            --alert-bg: rgba(224, 242, 254, 0.08);
+        }
+
+        .theme-auto-evening {
+            --primary-color: #ec4899;
+            --secondary-color: #f472b6;
+            --accent-color: #f43f5e;
+            --bg-gradient: linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #f43f5e 100%);
+            --bg-color: #fdf2f8;
+            --sidebar-bg: linear-gradient(180deg, #831843 0%, #9f1239 100%);
+            --alert-bg: rgba(253, 242, 248, 0.08);
+        }
+
+        .theme-auto-night {
+            --primary-color: #6366f1;
+            --secondary-color: #818cf8;
+            --accent-color: #8b5cf6;
+            --bg-gradient: linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #8b5cf6 100%);
+            --bg-color: #1e1b4b;
+            --text-color: #e0e7ff;
+            --sidebar-bg: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%);
+            --card-bg: #312e81;
+            --alert-bg: rgba(49, 46, 129, 0.1);
         }
 
         body {
@@ -618,23 +661,24 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
-        /* Ultra-Transparent Premium Alert Panel */
+        /* Ultra-Transparent Premium Alert Panel - SMALLER HEIGHT */
         .alert-panel {
             position: fixed;
             right: 40px;
             top: 110px;
-            width: 450px;
+            width: 420px;
             max-height: calc(100vh - 140px);
             background: var(--alert-bg);
-            backdrop-filter: blur(50px) saturate(200%);
-            -webkit-backdrop-filter: blur(50px) saturate(200%);
+            backdrop-filter: blur(60px) saturate(220%);
+            -webkit-backdrop-filter: blur(60px) saturate(220%);
             border-radius: 28px;
-            box-shadow: var(--shadow-xl);
+            box-shadow: 0 20px 80px rgba(0,0,0,0.08);
             transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 998;
             display: flex;
             flex-direction: column;
-            border: 2px solid rgba(255,255,255,0.5);
+            border: 1px solid rgba(255,255,255,0.3);
+            pointer-events: auto;
         }
 
         .alert-panel.collapsed-up {
@@ -645,54 +689,56 @@
             transform: translateX(550px);
         }
 
+        /* SMALLER ALERT HEADER */
         .alert-header {
-            padding: 26px 30px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(139, 92, 246, 0.9));
+            padding: 18px 24px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.85), rgba(139, 92, 246, 0.85));
             backdrop-filter: blur(20px);
             color: var(--sidebar-text);
             border-radius: 28px 28px 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.15);
         }
 
         .alert-header-title {
-            font-size: 20px;
+            font-size: 17px;
             font-weight: 900;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 18px;
             letter-spacing: 0.3px;
         }
 
-        /* RED BADGE FOR ALERT COUNT */
+        /* RED BADGE WITH GAP */
         .alert-badge {
             background: linear-gradient(135deg, #ef4444, #dc2626);
             color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
+            padding: 6px 14px;
+            border-radius: 18px;
+            font-size: 13px;
             font-weight: 900;
             animation: bounce 1.5s infinite;
             backdrop-filter: blur(10px);
             border: 2px solid rgba(255,255,255,0.4);
             box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            margin-left: 8px;
         }
 
         .alert-controls {
             display: flex;
-            gap: 12px;
+            gap: 10px;
         }
 
         .alert-control-btn {
             background: rgba(255,255,255,0.3);
-            border: 2px solid rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.4);
             color: var(--sidebar-text);
-            padding: 10px 18px;
-            border-radius: 14px;
+            padding: 8px 15px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 900;
             transition: all 0.4s;
             backdrop-filter: blur(10px);
@@ -708,11 +754,11 @@
         .alert-body {
             flex: 1;
             overflow-y: auto;
-            padding: 26px;
+            padding: 20px;
         }
 
         .alert-section {
-            margin-bottom: 26px;
+            margin-bottom: 20px;
             animation: slideIn 0.6s ease;
         }
 
@@ -720,33 +766,33 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             cursor: pointer;
-            padding: 16px 20px;
-            background: rgba(0,0,0,0.08);
+            padding: 14px 18px;
+            background: rgba(0,0,0,0.06);
             backdrop-filter: blur(15px);
-            border-radius: 16px;
+            border-radius: 14px;
             transition: all 0.4s;
-            border: 2px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.04);
         }
 
         .alert-section-header:hover {
-            background: rgba(0,0,0,0.12);
+            background: rgba(0,0,0,0.1);
             transform: translateX(-4px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         }
 
         .alert-section-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 900;
             color: var(--text-color);
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
 
         .collapse-icon {
-            font-size: 14px;
+            font-size: 13px;
             transition: transform 0.4s;
             font-weight: 900;
         }
@@ -768,22 +814,22 @@
         }
 
         .alert-item {
-            padding: 20px 22px;
-            margin-bottom: 16px;
-            border-radius: 18px;
+            padding: 16px 18px;
+            margin-bottom: 12px;
+            border-radius: 16px;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            gap: 18px;
+            gap: 16px;
             animation: slideIn 0.5s ease;
             transition: all 0.5s;
             backdrop-filter: blur(20px);
-            border: 2px solid rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.06);
         }
 
         .alert-item:hover {
             transform: translateX(-8px) scale(1.03);
-            box-shadow: 0 12px 36px rgba(0,0,0,0.18);
+            box-shadow: 0 12px 36px rgba(0,0,0,0.12);
         }
 
         @keyframes slideIn {
@@ -797,22 +843,22 @@
             }
         }
 
-        /* Premium Alert Types */
+        /* Premium Alert Types - VERY TRANSPARENT */
         .alert-offline {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.22) 100%);
-            border-left: 6px solid var(--danger-color);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.15) 100%);
+            border-left: 5px solid var(--danger-color);
             animation: blinkRed 3s ease-in-out infinite;
         }
 
         .alert-storage {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(234, 179, 8, 0.22) 100%);
-            border-left: 6px solid var(--warning-color);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(234, 179, 8, 0.15) 100%);
+            border-left: 5px solid var(--warning-color);
             animation: blinkOrange 3s ease-in-out infinite;
         }
 
         .alert-failed {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.22) 100%);
-            border-left: 6px solid var(--danger-color);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.15) 100%);
+            border-left: 5px solid var(--danger-color);
             animation: blinkRed 3s ease-in-out infinite;
         }
 
@@ -821,7 +867,7 @@
                 box-shadow: 0 0 0 rgba(239, 68, 68, 0);
             }
             50% {
-                box-shadow: 0 0 40px rgba(239, 68, 68, 0.5);
+                box-shadow: 0 0 40px rgba(239, 68, 68, 0.35);
             }
         }
 
@@ -830,7 +876,7 @@
                 box-shadow: 0 0 0 rgba(245, 158, 11, 0);
             }
             50% {
-                box-shadow: 0 0 40px rgba(245, 158, 11, 0.5);
+                box-shadow: 0 0 40px rgba(245, 158, 11, 0.35);
             }
         }
 
@@ -839,10 +885,10 @@
         }
 
         .alert-type {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 900;
             text-transform: uppercase;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             letter-spacing: 1.5px;
             opacity: 0.9;
         }
@@ -852,29 +898,29 @@
         .alert-failed .alert-type { color: var(--danger-color); }
 
         .alert-message {
-            font-size: 15px;
+            font-size: 14px;
             color: var(--text-color);
-            line-height: 1.8;
+            line-height: 1.7;
             font-weight: 700;
         }
 
         .alert-server {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-color);
-            margin-top: 8px;
+            margin-top: 6px;
             font-weight: 800;
             opacity: 0.6;
         }
 
         .alert-delete-btn {
-            background: rgba(239, 68, 68, 0.2);
-            border: 2px solid rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
             color: var(--danger-color);
             cursor: pointer;
-            font-size: 24px;
+            font-size: 22px;
             padding: 0;
-            width: 38px;
-            height: 38px;
+            width: 34px;
+            height: 34px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -892,19 +938,19 @@
 
         .no-alerts {
             text-align: center;
-            padding: 80px 30px;
+            padding: 60px 25px;
             color: var(--text-color);
             opacity: 0.5;
-            font-size: 17px;
+            font-size: 15px;
             font-weight: 700;
         }
 
         .last-updated {
-            padding: 18px 26px;
-            background: rgba(0,0,0,0.05);
+            padding: 14px 20px;
+            background: rgba(0,0,0,0.04);
             backdrop-filter: blur(15px);
-            border-top: 2px solid rgba(0,0,0,0.08);
-            font-size: 12px;
+            border-top: 1px solid rgba(0,0,0,0.06);
+            font-size: 11px;
             color: var(--text-color);
             text-align: center;
             font-weight: 800;
@@ -913,12 +959,12 @@
 
         /* Premium Gradient Scrollbar */
         ::-webkit-scrollbar {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
         }
 
         ::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.03);
+            background: rgba(0,0,0,0.02);
             border-radius: 14px;
         }
 
@@ -957,7 +1003,7 @@
             }
 
             .alert-panel {
-                width: 360px;
+                width: 350px;
                 right: 25px;
                 top: 90px;
             }
@@ -987,12 +1033,13 @@
             </div>
             <div class="header-right">
                 <div class="live-time">{{ currentTime }}</div>
-                <select class="theme-selector" v-model="currentTheme">
+                <select class="theme-selector" v-model="currentTheme" @change="handleThemeChange">
                     <option value="">🌟 Light</option>
                     <option value="theme-dark">🌙 Dark</option>
                     <option value="theme-ocean">🌊 Ocean</option>
                     <option value="theme-forest">🌲 Forest</option>
                     <option value="theme-sunset">🌅 Sunset</option>
+                    <option value="auto">🕐 Auto (Time-Based)</option>
                 </select>
             </div>
         </div>
@@ -1068,25 +1115,25 @@
         <div class="alert-panel" :class="{ 'collapsed-up': alertPanelCollapsedUp, 'collapsed-left': alertPanelCollapsedLeft }">
             <div class="alert-header">
                 <div class="alert-header-title">
-                    🔔 System Alerts
+                    🔔 Alerts
                     <span class="alert-badge" v-if="totalAlerts > 0">{{ totalAlerts }}</span>
                 </div>
                 <div class="alert-controls">
-                    <button class="alert-control-btn" @click="clearAllAlerts" v-if="totalAlerts > 0">Clear All</button>
+                    <button class="alert-control-btn" @click="clearAllAlerts" v-if="totalAlerts > 0">Clear</button>
                     <button class="alert-control-btn" @click="toggleAlertPanelUp">{{ alertPanelCollapsedUp ? '▼' : '▲' }}</button>
                     <button class="alert-control-btn" @click="toggleAlertPanelLeft">{{ alertPanelCollapsedLeft ? '◀' : '▶' }}</button>
                 </div>
             </div>
             <div class="alert-body">
                 <div v-if="totalAlerts === 0" class="no-alerts">
-                    ✅ No alerts at the moment<br>All systems operational
+                    ✅ No alerts<br>All systems operational
                 </div>
                 <div v-else>
                     <!-- Server Alerts -->
                     <div class="alert-section" v-if="serverAlerts.length > 0">
                         <div class="alert-section-header" @click="toggleServerSection">
                             <div class="alert-section-title">
-                                🖥️ Server Alerts ({{ serverAlerts.length }})
+                                🖥️ Server ({{ serverAlerts.length }})
                             </div>
                             <span class="collapse-icon" :class="{ collapsed: serverSectionCollapsed }">▼</span>
                         </div>
@@ -1108,7 +1155,7 @@
                     <div class="alert-section" v-if="processAlerts.length > 0">
                         <div class="alert-section-header" @click="toggleProcessSection">
                             <div class="alert-section-title">
-                                ⚙️ Process Alerts ({{ processAlerts.length }})
+                                ⚙️ Process ({{ processAlerts.length }})
                             </div>
                             <span class="collapse-icon" :class="{ collapsed: processSectionCollapsed }">▼</span>
                         </div>
@@ -1127,7 +1174,7 @@
                     </div>
                 </div>
                 <div class="last-updated" v-if="lastUpdated">
-                    ⏱️ Last updated: {{ lastUpdated }}
+                    ⏱️ {{ lastUpdated }}
                 </div>
             </div>
         </div>
@@ -1140,6 +1187,7 @@
             data() {
                 return {
                     currentTheme: '',
+                    autoThemeEnabled: false,
                     currentTime: '',
                     sidebarCollapsed: false,
                     currentPage: 'home',
@@ -1213,6 +1261,35 @@
                         this.currentAppUrl = app.url;
                     }
                 },
+                handleThemeChange() {
+                    if (this.currentTheme === 'auto') {
+                        this.autoThemeEnabled = true;
+                        this.applyAutoTheme();
+                    } else {
+                        this.autoThemeEnabled = false;
+                        document.body.className = this.currentTheme;
+                    }
+                },
+                applyAutoTheme() {
+                    const hour = new Date().getHours();
+                    let themeClass = '';
+
+                    if (hour >= 5 && hour < 12) {
+                        // Morning: 5 AM - 12 PM
+                        themeClass = 'theme-auto-morning';
+                    } else if (hour >= 12 && hour < 17) {
+                        // Afternoon: 12 PM - 5 PM
+                        themeClass = 'theme-auto-afternoon';
+                    } else if (hour >= 17 && hour < 21) {
+                        // Evening: 5 PM - 9 PM
+                        themeClass = 'theme-auto-evening';
+                    } else {
+                        // Night: 9 PM - 5 AM
+                        themeClass = 'theme-auto-night';
+                    }
+
+                    document.body.className = themeClass;
+                },
                 toggleAlertPanelUp() {
                     this.alertPanelCollapsedUp = !this.alertPanelCollapsedUp;
                     if (this.alertPanelCollapsedLeft) {
@@ -1246,6 +1323,11 @@
                         second: '2-digit'
                     };
                     this.currentTime = now.toLocaleString('en-IN', options);
+
+                    // Update auto theme every minute
+                    if (this.autoThemeEnabled) {
+                        this.applyAutoTheme();
+                    }
                 },
                 async fetchAlerts() {
                     try {
@@ -1317,7 +1399,9 @@
             },
             watch: {
                 currentTheme(newTheme) {
-                    document.body.className = newTheme;
+                    if (newTheme !== 'auto') {
+                        document.body.className = newTheme;
+                    }
                 }
             },
             mounted() {
