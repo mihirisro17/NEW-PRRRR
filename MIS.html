@@ -1,154 +1,34 @@
-/* Premium Alert Types - Enhanced with stronger colors */
-.alert-offline,
-.alert-memory,
-.alert-cpu {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.25) 100%) !important;
-    border-left: 6px solid #ef4444 !important;
-    animation: blinkRed 3s ease-in-out infinite;
-    backdrop-filter: blur(20px);
-}
+mounted() {
+    this.updateTime();
+    setInterval(this.updateTime, 1000);
+    this.fetchAlerts();
+    setInterval(this.fetchAlerts, 60000);
 
-.alert-storage,
-.alert-disk {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(234, 179, 8, 0.25) 100%) !important;
-    border-left: 6px solid #f59e0b !important;
-    animation: blinkOrange 3s ease-in-out infinite;
-    backdrop-filter: blur(20px);
-}
-
-.alert-failed {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.25) 100%) !important;
-    border-left: 6px solid #ef4444 !important;
-    animation: blinkRed 3s ease-in-out infinite;
-}
-
-/* VEDAS Theme Alert Colors - Override to maintain visibility */
-.theme-vedas .alert-offline,
-.theme-vedas .alert-memory,
-.theme-vedas .alert-cpu {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.2) 100%) !important;
-    border-left: 6px solid #dc2626 !important;
-    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2) !important;
-}
-
-.theme-vedas .alert-storage,
-.theme-vedas .alert-disk {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(234, 179, 8, 0.2) 100%) !important;
-    border-left: 6px solid #f59e0b !important;
-    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2) !important;
-}
-
-.theme-vedas .alert-failed {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.2) 100%) !important;
-    border-left: 6px solid #dc2626 !important;
-}
-
-@keyframes blinkRed {
-    0%, 100% {
-        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
-    }
-    50% {
-        box-shadow: 0 8px 40px rgba(239, 68, 68, 0.6);
-    }
-}
-
-@keyframes blinkOrange {
-    0%, 100% {
-        box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
-    }
-    50% {
-        box-shadow: 0 8px 40px rgba(245, 158, 11, 0.6);
-    }
-}
-
-/* Alert Type Labels - Stronger Colors */
-.alert-offline .alert-type,
-.alert-memory .alert-type,
-.alert-cpu .alert-type,
-.alert-failed .alert-type {
-    color: #dc2626 !important;
-    font-weight: 900;
-}
-
-.alert-storage .alert-type,
-.alert-disk .alert-type {
-    color: #f59e0b !important;
-    font-weight: 900;
-}
-
-
-async fetchAlerts() {
-    try {
-        const serverResponse = await fetch('http://192.168.2.137:8080/monitoring_server/api/alerts');
-        const serverData = await serverResponse.json();
-
-        const processResponse = await fetch('http://192.168.2.137:8080/process_monitoring/get-alerts');
-        const processData = await processResponse.json();
-
-        if (serverData.alerts) {
-            this.serverAlerts = serverData.alerts.filter(alert =>
-                !this.clearedAlerts.has(this.getAlertKey('server', alert))
-            ).map(alert => {
-                // Auto-detect alert type for proper styling
-                if (!alert.type) {
-                    if (alert.message.toLowerCase().includes('memory')) {
-                        alert.type = 'memory';
-                    } else if (alert.message.toLowerCase().includes('cpu')) {
-                        alert.type = 'cpu';
-                    } else if (alert.message.toLowerCase().includes('storage') || alert.message.toLowerCase().includes('disk')) {
-                        alert.type = 'storage';
-                    } else if (alert.message.toLowerCase().includes('offline')) {
-                        alert.type = 'offline';
-                    } else {
-                        alert.type = 'failed';
-                    }
-                }
-                return alert;
-            });
-        }
-
-        if (serverData.total_servers) {
-            this.totalServers = serverData.total_servers;
-        }
-
-        if (processData.data && processData.data.alerts) {
-            this.processAlerts = processData.data.alerts.filter(alert =>
-                !this.clearedAlerts.has(this.getAlertKey('process', alert))
-            ).map(alert => {
-                // Auto-detect alert type for proper styling
-                if (!alert.type) {
-                    if (alert.message.toLowerCase().includes('memory')) {
-                        alert.type = 'memory';
-                    } else if (alert.message.toLowerCase().includes('cpu')) {
-                        alert.type = 'cpu';
-                    } else if (alert.message.toLowerCase().includes('storage') || alert.message.toLowerCase().includes('disk')) {
-                        alert.type = 'storage';
-                    } else if (alert.message.toLowerCase().includes('failed')) {
-                        alert.type = 'failed';
-                    } else {
-                        alert.type = 'offline';
-                    }
-                }
-                return alert;
-            });
-            this.lastUpdated = processData.last_updated_time || '';
-        }
-
-        if (processData.data && processData.data.total_services) {
-            this.totalServices = processData.data.total_services;
-        }
-
-        const currentAlertKeys = new Set();
-        [...serverData.alerts || [], ...(processData.data?.alerts || [])].forEach(alert => {
-            const key = this.getAlertKey('server', alert) || this.getAlertKey('process', alert);
-            currentAlertKeys.add(key);
-        });
-
-        this.clearedAlerts = new Set(
-            [...this.clearedAlerts].filter(key => currentAlertKeys.has(key))
+    // Switch only MONITORING applications every 10 minutes (exclude sentinel & ridam)
+    setInterval(() => {
+        // Filter only monitoring apps
+        const monitoringApps = this.applications.filter(app => 
+            app.id !== 'monitoring_sentinel' && 
+            app.id !== 'ridam_registration'
         );
 
-    } catch (error) {
-        console.error('Error fetching alerts:', error);
-    }
-},
+        if (monitoringApps.length === 0) return;
+
+        if (this.currentPage !== 'home') {
+            // Find current app in monitoring apps only
+            let currentIndex = monitoringApps.findIndex(app => app.id === this.currentPage);
+            
+            // If current app is not in monitoring list, start from first monitoring app
+            if (currentIndex === -1) {
+                this.setActive(monitoringApps[0].id);
+            } else {
+                // Switch to next monitoring app
+                let nextIndex = (currentIndex + 1) % monitoringApps.length;
+                this.setActive(monitoringApps[nextIndex].id);
+            }
+        } else {
+            // If on home page, start with first monitoring app
+            this.setActive(monitoringApps[0].id);
+        }
+    }, 600000); // 10 minutes
+}
