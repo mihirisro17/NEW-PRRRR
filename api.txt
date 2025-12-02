@@ -1,0 +1,8 @@
+http://192.168.2.137:8080/monitoring_datasets//api/get_status_counts
+
+{
+  "alert": 32,
+  "offline": 0,
+  "ok": 4,
+  "warning": 12
+}
