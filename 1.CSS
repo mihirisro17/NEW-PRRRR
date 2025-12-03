@@ -1,48 +1,63 @@
-methods: {
-  // ... previous methods ...
-  
-  getBannerAlertClass() {
-    if (!this.serverUsage) return 'normal';
-    
-    const alertLevels = Object.values(this.serverUsage).map(usage => 
-      this.getServerAlertLevel(usage)
-    );
-    
-    if (alertLevels.includes('critical')) return 'critical';
-    if (alertLevels.includes('warning')) return 'warning';
-    if (alertLevels.includes('moderate')) return 'moderate';
-    return 'normal';
-  },
-  
-  getBannerIcon() {
-    const alertClass = this.getBannerAlertClass();
-    const icons = {
-      'normal': 'fas fa-check-circle',
-      'moderate': 'fas fa-info-circle',
-      'warning': 'fas fa-exclamation-triangle',
-      'critical': 'fas fa-exclamation-circle'
-    };
-    return icons[alertClass] || icons.normal;
-  },
-  
-  getBannerStatusText() {
-    const alertClass = this.getBannerAlertClass();
-    const texts = {
-      'normal': 'All Systems Normal',
-      'moderate': 'Moderate Usage',
-      'warning': 'High Usage Alert',
-      'critical': 'Critical Warning!'
-    };
-    return texts[alertClass] || texts.normal;
-  },
-  
-  getAlertText(level) {
-    const texts = {
-      'normal': '✓ OK',
-      'moderate': '⚠ Watch',
-      'warning': '⚠ Alert',
-      'critical': '🚨 Critical'
-    };
-    return texts[level] || texts.normal;
-  }
-}
+Loading MSI data from /home/sac/Documents/urban_model/amd/MSI.tif...
+MSI array shape: (4, 3425, 3936)
+MSI data range: [543, 27968]
+Number of channels: 4
+
+Resampling label to match MSI dimensions...
+Label shape: (3425, 3936)
+Class distribution: [11056216  2424584]
+
+--- Extracting Patches ---
+Total patches extracted: 3119
+Training patches: 2495
+Validation patches: 624
+
+--- Creating Datasets with Augmentation ---
+Augmentation: True, CutMix prob: 0.5, Alpha: 1.0
+Cutout ratio range: (0.1, 0.4)
+
+Using device: cpu
+
+ImprovedCNN(
+  (conv1): Conv2d(4, 16, kernel_size=(3, 3), stride=(1, 1), padding=same)
+  (bn1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (conv2): Conv2d(16, 32, kernel_size=(3, 3), stride=(1, 1), padding=same)
+  (bn2): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (conv3): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=same)
+  (bn3): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (conv4): Conv2d(64, 64, kernel_size=(5, 5), stride=(3, 3))
+  (bn4): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (conv5): Conv2d(64, 16, kernel_size=(1, 1), stride=(1, 1))
+  (bn5): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (conv6): Conv2d(16, 1, kernel_size=(1, 1), stride=(1, 1))
+  (relu): ReLU()
+  (dropout): Dropout2d(p=0.3, inplace=False)
+  (sigmoid): Sigmoid()
+)
+
+Total parameters: 127,633
+
+--- Training Model ---
+Using Focal Loss for class imbalance
+Traceback (most recent call last):
+  File "/home/sac/Documents/urban_model/amd/improved/MSI_cropped.py", line 596, in <module>
+    trained_model = train_model(
+        model, train_loader, val_loader,
+    ...<2 lines>...
+        early_stopping_patience=EARLY_STOPPING_PATIENCE
+    )
+  File "/home/sac/Documents/urban_model/amd/improved/MSI_cropped.py", line 436, in train_model
+    loss = criterion(outputs, masks)
+  File "/home/sac/miniconda3/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/sac/miniconda3/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/sac/Documents/urban_model/amd/improved/MSI_cropped.py", line 209, in forward
+    bce_loss = nn.functional.binary_cross_entropy(inputs, targets, reduction='none')
+  File "/home/sac/miniconda3/lib/python3.13/site-packages/torch/nn/functional.py", line 3560, in binary_cross_entropy
+    raise ValueError(
+    ...<2 lines>...
+    )
+ValueError: Using a target size (torch.Size([8, 1, 128, 128])) that is different to the input size (torch.Size([8, 1, 42, 42])) is deprecated. Please ensure they have the same size.
+
