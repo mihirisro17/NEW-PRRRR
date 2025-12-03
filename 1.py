@@ -11,7 +11,6 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 
 
-# ============= Raster I/O Functions =============
 def load_raster_tif(filename):
     """Load GeoTIFF file and return numpy array"""
     with rasterio.open(filename) as src:
@@ -66,7 +65,10 @@ def save_raster_tif(filename, array, bbox, projection='EPSG:4326'):
 
 
 def extract_patches(image, mask, patch_size=128, stride=64):
-    """Extract patches from image and mask with stride"""
+    """
+    Extract patches from image and mask with stride
+    Returns lists of image patches and mask patches
+    """
     _, H, W = image.shape
     h, w = patch_size, patch_size
     
@@ -78,7 +80,8 @@ def extract_patches(image, mask, patch_size=128, stride=64):
             img_patch = image[:, i:i+h, j:j+w]
             mask_patch = mask[i:i+h, j:j+w]
             
-            if np.sum(mask_patch) > 0 or np.random.rand() < 0.3:
+            # Only include patches with some positive samples (optional filter)
+            if np.sum(mask_patch) > 0 or np.random.rand() < 0.3:  # Keep 30% of negative patches
                 image_patches.append(img_patch)
                 mask_patches.append(mask_patch)
     
@@ -89,6 +92,12 @@ def extract_patches(image, mask, patch_size=128, stride=64):
 class EarlyStopping:
     """Early stopping to stop training when validation loss doesn't improve"""
     def __init__(self, patience=10, min_delta=0.001, restore_best_weights=True):
+        """
+        Args:
+            patience: Number of epochs to wait before stopping
+            min_delta: Minimum change in monitored value to qualify as improvement
+            restore_best_weights: Whether to restore model weights from best epoch
+        """
         self.patience = patience
         self.min_delta = min_delta
         self.restore_best_weights = restore_best_weights
@@ -100,12 +109,12 @@ class EarlyStopping:
     def __call__(self, val_loss, model, epoch):
         if self.best_loss is None:
             self.best_loss = val_loss
-            self.best_weights = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+            self.best_weights = model.state_dict().copy()
             self.best_epoch = epoch
         elif val_loss < self.best_loss - self.min_delta:
             self.best_loss = val_loss
             self.counter = 0
-            self.best_weights = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+            self.best_weights = model.state_dict().copy()
             self.best_epoch = epoch
         else:
             self.counter += 1
@@ -158,10 +167,11 @@ def compute_metrics(pred, target, threshold=0.5):
 
 # ============= Improved CNN Model =============
 class ImprovedCNN(nn.Module):
-    def __init__(self, in_channels=4, dropout_rate=0.3):
+    def __init__(self, dropout_rate=0.3):
         super(ImprovedCNN, self).__init__()
         
-        self.conv1 = nn.Conv2d(in_channels, 16, kernel_size=3, stride=1, padding='same')
+        # 3x3 convolutions with batch normalization
+        self.conv1 = nn.Conv2d(4, 16, kernel_size=3, stride=1, padding='same')
         self.bn1 = nn.BatchNorm2d(16)
         
         self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=1, padding='same')
@@ -170,6 +180,7 @@ class ImprovedCNN(nn.Module):
         self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding='same')
         self.bn3 = nn.BatchNorm2d(64)
 
+        # 1x1 convolutions
         self.conv4 = nn.Conv2d(64, 64, kernel_size=5, stride=3)
         self.bn4 = nn.BatchNorm2d(64)
         
@@ -212,198 +223,45 @@ class FocalLoss(nn.Module):
         return focal_loss.mean()
 
 
-# ============= Dataset with Full Augmentation (CutMix + Flips + Rotations) =============
+# ============= Custom Dataset with Augmentation =============
 class SegmentationDataset(Dataset):
-    """
-    Dataset with comprehensive augmentation for semantic segmentation.
-    Handles Sentinel MSI data (non-8bit, normalized by 10000).
-    
-    Augmentations:
-        - Horizontal flip
-        - Vertical flip
-        - Random 90° rotations
-        - CutMix (replace region with another image's region)
-        - Random cutout with replacement from same image (optional)
-    """
-    def __init__(self, images, masks, augment=False, cutmix_prob=0.5, 
-                 cutmix_alpha=1.0, cutout_ratio_range=(0.1, 0.4),
-                 use_intra_image_cutout=False):
-        """
-        Args:
-            images: List of image patches (C, H, W)
-            masks: List of mask patches (H, W)
-            augment: Whether to apply augmentation
-            cutmix_prob: Probability of applying CutMix (0.0 to 1.0)
-            cutmix_alpha: Beta distribution parameter for CutMix ratio
-            cutout_ratio_range: (min, max) ratio of patch size to cut
-            use_intra_image_cutout: If True, use cutout from same image instead of CutMix
-        """
+    def __init__(self, images, masks, augment=False):
         self.images = images
         self.masks = masks
         self.augment = augment
-        self.cutmix_prob = cutmix_prob
-        self.cutmix_alpha = cutmix_alpha
-        self.cutout_ratio_range = cutout_ratio_range
-        self.use_intra_image_cutout = use_intra_image_cutout
 
     def __len__(self):
         return len(self.images)
 
-    def _get_random_box(self, H, W, lam):
-        """Generate random bounding box for cutout/cutmix based on lambda value."""
-        cut_ratio = np.sqrt(1.0 - lam)
-        cut_h = int(H * cut_ratio)
-        cut_w = int(W * cut_ratio)
-        
-        # Ensure minimum cut size
-        cut_h = max(cut_h, 4)
-        cut_w = max(cut_w, 4)
-        
-        # Random center point
-        cx = np.random.randint(0, W)
-        cy = np.random.randint(0, H)
-        
-        # Bounding box with clipping to image boundaries
-        x1 = np.clip(cx - cut_w // 2, 0, W)
-        x2 = np.clip(cx + cut_w // 2, 0, W)
-        y1 = np.clip(cy - cut_h // 2, 0, H)
-        y2 = np.clip(cy + cut_h // 2, 0, H)
-        
-        return int(y1), int(y2), int(x1), int(x2)
-
-    def _apply_cutmix(self, image, mask):
-        """
-        Apply CutMix: Replace a random region with content from another image.
-        Both image and mask are modified consistently.
-        """
-        # Get a random donor image/mask pair
-        donor_idx = np.random.randint(0, len(self.images))
-        donor_image = self.images[donor_idx].copy()
-        donor_mask = self.masks[donor_idx].copy()
-        
-        # Sample lambda from Beta distribution
-        lam = np.random.beta(self.cutmix_alpha, self.cutmix_alpha)
-        
-        # Clamp lambda to ensure meaningful cut region size
-        min_ratio, max_ratio = self.cutout_ratio_range
-        lam = np.clip(lam, 1 - max_ratio**2, 1 - min_ratio**2)
-        
-        _, H, W = image.shape
-        y1, y2, x1, x2 = self._get_random_box(H, W, lam)
-        
-        # Apply cutmix to image (all channels)
-        image[:, y1:y2, x1:x2] = donor_image[:, y1:y2, x1:x2]
-        
-        # Apply same cutmix to mask
-        mask[y1:y2, x1:x2] = donor_mask[y1:y2, x1:x2]
-        
-        return image, mask
-
-    def _apply_intra_image_cutout(self, image, mask):
-        """
-        Apply random cutout with replacement from SAME image's different region.
-        Useful for shuffling spatial context within the same image.
-        """
-        _, H, W = image.shape
-        
-        # Determine cut size
-        min_ratio, max_ratio = self.cutout_ratio_range
-        cut_ratio = np.random.uniform(min_ratio, max_ratio)
-        cut_h = int(H * cut_ratio)
-        cut_w = int(W * cut_ratio)
-        
-        cut_h = max(cut_h, 4)
-        cut_w = max(cut_w, 4)
-        
-        # Source region (where we copy from)
-        src_y = np.random.randint(0, max(1, H - cut_h))
-        src_x = np.random.randint(0, max(1, W - cut_w))
-        
-        # Destination region (where we paste to)
-        dst_y = np.random.randint(0, max(1, H - cut_h))
-        dst_x = np.random.randint(0, max(1, W - cut_w))
-        
-        # Copy region from source to destination
-        image[:, dst_y:dst_y+cut_h, dst_x:dst_x+cut_w] = \
-            image[:, src_y:src_y+cut_h, src_x:src_x+cut_w].copy()
-        mask[dst_y:dst_y+cut_h, dst_x:dst_x+cut_w] = \
-            mask[src_y:src_y+cut_h, src_x:src_x+cut_w].copy()
-        
-        return image, mask
-
     def __getitem__(self, idx):
-        # Make copies to avoid modifying original data
-        image = self.images[idx].copy()
-        mask = self.masks[idx].copy()
+        image = self.images[idx] / 10000.0  # Normalize
+        mask = self.masks[idx]
 
+        # Data augmentation
         if self.augment:
-            # ===== 1. Horizontal Flip (50% probability) =====
+            # Random horizontal flip
             if np.random.rand() > 0.5:
-                image = np.flip(image, axis=2).copy()  # Flip along width
+                image = np.flip(image, axis=2).copy()
                 mask = np.flip(mask, axis=1).copy()
             
-            # ===== 2. Vertical Flip (50% probability) =====
+            # Random vertical flip
             if np.random.rand() > 0.5:
-                image = np.flip(image, axis=1).copy()  # Flip along height
+                image = np.flip(image, axis=1).copy()
                 mask = np.flip(mask, axis=0).copy()
             
-            # ===== 3. Random 90° Rotations =====
+            # Random 90 degree rotations
             k = np.random.randint(0, 4)
             if k > 0:
                 image = np.rot90(image, k=k, axes=(1, 2)).copy()
                 mask = np.rot90(mask, k=k, axes=(0, 1)).copy()
-            
-            # ===== 4. CutMix or Intra-Image Cutout =====
-            if np.random.rand() < self.cutmix_prob:
-                if self.use_intra_image_cutout:
-                    image, mask = self._apply_intra_image_cutout(image, mask)
-                else:
-                    image, mask = self._apply_cutmix(image, mask)
 
-        # Normalize for Sentinel MSI data
-        image = image / 10000.0
-        
         image_tensor = torch.from_numpy(image).float()
         mask_tensor = torch.from_numpy(mask).float().unsqueeze(0)
 
         return image_tensor, mask_tensor
 
 
-# ============= Batch-Level CutMix Collate Function (Alternative) =============
-def cutmix_collate_fn(batch, cutmix_prob=0.5, alpha=1.0):
-    """
-    Collate function that applies CutMix at batch level.
-    More efficient as it mixes samples within the same batch.
-    """
-    images, masks = zip(*batch)
-    images = torch.stack(images)
-    masks = torch.stack(masks)
-    
-    if np.random.rand() < cutmix_prob:
-        B, C, H, W = images.shape
-        
-        indices = torch.randperm(B)
-        lam = np.random.beta(alpha, alpha)
-        
-        cut_ratio = np.sqrt(1.0 - lam)
-        cut_h = int(H * cut_ratio)
-        cut_w = int(W * cut_ratio)
-        
-        cx = np.random.randint(0, W)
-        cy = np.random.randint(0, H)
-        
-        y1 = np.clip(cy - cut_h // 2, 0, H)
-        y2 = np.clip(cy + cut_h // 2, 0, H)
-        x1 = np.clip(cx - cut_w // 2, 0, W)
-        x2 = np.clip(cx + cut_w // 2, 0, W)
-        
-        images[:, :, y1:y2, x1:x2] = images[indices, :, y1:y2, x1:x2]
-        masks[:, :, y1:y2, x1:x2] = masks[indices, :, y1:y2, x1:x2]
-    
-    return images, masks
-
-
-# ============= Training Function =============
+# ============= Training Function with Metrics =============
 def train_model(model, train_loader, val_loader, epochs=100, lr=0.001, device='cuda', 
                 use_focal_loss=False, early_stopping_patience=15):
     
@@ -415,12 +273,13 @@ def train_model(model, train_loader, val_loader, epochs=100, lr=0.001, device='c
         print("Using Binary Cross-Entropy Loss")
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=5, verbose=True
-    )
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, 
+                                                      patience=5)
     
     early_stopping = EarlyStopping(patience=early_stopping_patience, min_delta=0.001)
+    
     model.to(device)
+    
     best_val_iou = 0
 
     for epoch in range(epochs):
@@ -460,6 +319,7 @@ def train_model(model, train_loader, val_loader, epochs=100, lr=0.001, device='c
                 loss = criterion(outputs, masks)
                 val_loss += loss.item()
                 
+                # Compute metrics
                 metrics = compute_metrics(outputs, masks)
                 for key in val_metrics:
                     val_metrics[key] += metrics[key]
@@ -468,8 +328,10 @@ def train_model(model, train_loader, val_loader, epochs=100, lr=0.001, device='c
         for key in val_metrics:
             val_metrics[key] /= len(val_loader)
         
+        # Learning rate scheduling
         scheduler.step(val_loss)
         
+        # Track best model
         if val_metrics['iou'] > best_val_iou:
             best_val_iou = val_metrics['iou']
             torch.save(model.state_dict(), 'best_model.pth')
@@ -477,9 +339,9 @@ def train_model(model, train_loader, val_loader, epochs=100, lr=0.001, device='c
         print(f"Epoch [{epoch+1}/{epochs}]")
         print(f"  Train - Loss: {train_loss:.4f}, IoU: {train_iou:.4f}")
         print(f"  Val   - Loss: {val_loss:.4f}, IoU: {val_metrics['iou']:.4f}, "
-              f"F1: {val_metrics['f1']:.4f}, Acc: {val_metrics['accuracy']:.4f}, "
-              f"Prec: {val_metrics['precision']:.4f}, Rec: {val_metrics['recall']:.4f}")
+              f"F1: {val_metrics['f1']:.4f}, Acc: {val_metrics['accuracy']:.4f}")
         
+        # Early stopping check
         if early_stopping(val_loss, model, epoch):
             break
 
@@ -489,38 +351,16 @@ def train_model(model, train_loader, val_loader, epochs=100, lr=0.001, device='c
 # ============= Main Execution =============
 if __name__ == '__main__':
 
-    # ===== Configuration =====
+    # File paths
     msi_file = '/home/sac/Documents/urban_model/amd/MSI.tif'
     label_file = '/home/sac/Documents/urban_model/amd/T6S1P10.tif'
     
-    # Patch parameters
-    PATCH_SIZE = 128
-    STRIDE = 64
-    
-    # Training parameters
-    BATCH_SIZE = 8
-    EPOCHS = 500
-    LEARNING_RATE = 0.001
-    EARLY_STOPPING_PATIENCE = 30
-    
-    # Augmentation parameters
-    AUGMENT = True
-    CUTMIX_PROB = 0.5
-    CUTMIX_ALPHA = 1.0
-    CUTOUT_RATIO_RANGE = (0.1, 0.4)
-    USE_INTRA_IMAGE_CUTOUT = False  # False = CutMix from other images
-    USE_BATCH_CUTMIX = False        # True = use batch-level collate function
-    
-    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
-    # ===== Load Data =====
     print(f"Loading MSI data from {msi_file}...")
     msi_arr, bbox, projection, transform = load_raster_tif(msi_file)
     print(f"MSI array shape: {msi_arr.shape}")
-    print(f"MSI data range: [{msi_arr.min()}, {msi_arr.max()}]")
     
-    num_channels, msi_height, msi_width = msi_arr.shape
-    print(f"Number of channels: {num_channels}")
+    # Get MSI dimensions
+    _, msi_height, msi_width = msi_arr.shape
     
     # Resample label to match MSI
     print(f"\nResampling label to match MSI dimensions...")
@@ -539,83 +379,67 @@ if __name__ == '__main__':
     print(f"Label shape: {label_arr_resampled.shape}")
     print(f"Class distribution: {np.bincount(label_arr_resampled.astype(int).flatten())}")
     
-    # ===== Extract Patches =====
+    # Extract patches
     print("\n--- Extracting Patches ---")
-    image_patches, mask_patches = extract_patches(
-        msi_arr, label_arr_resampled, 
-        patch_size=PATCH_SIZE, stride=STRIDE
-    )
+    patch_size = 128
+    stride = 64  # 50% overlap
+    
+    image_patches, mask_patches = extract_patches(msi_arr, label_arr_resampled, 
+                                                   patch_size=patch_size, stride=stride)
+    
     print(f"Total patches extracted: {len(image_patches)}")
     
-    # Split data
+    # Split into train and validation
     train_images, val_images, train_masks, val_masks = train_test_split(
         image_patches, mask_patches, test_size=0.2, random_state=42
     )
+    
     print(f"Training patches: {len(train_images)}")
     print(f"Validation patches: {len(val_images)}")
     
-    # ===== Create Datasets =====
-    print("\n--- Creating Datasets with Augmentation ---")
-    print(f"Augmentation: {AUGMENT}, CutMix prob: {CUTMIX_PROB}, Alpha: {CUTMIX_ALPHA}")
-    print(f"Cutout ratio range: {CUTOUT_RATIO_RANGE}")
-    
-    train_dataset = SegmentationDataset(
-        train_images, train_masks, 
-        augment=AUGMENT,
-        cutmix_prob=CUTMIX_PROB if not USE_BATCH_CUTMIX else 0.0,
-        cutmix_alpha=CUTMIX_ALPHA,
-        cutout_ratio_range=CUTOUT_RATIO_RANGE,
-        use_intra_image_cutout=USE_INTRA_IMAGE_CUTOUT
-    )
-    
+    # Create datasets with augmentation for training
+    train_dataset = SegmentationDataset(train_images, train_masks, augment=True)
     val_dataset = SegmentationDataset(val_images, val_masks, augment=False)
     
-    # Create DataLoaders
-    if USE_BATCH_CUTMIX:
-        print("Using batch-level CutMix")
-        train_loader = DataLoader(
-            train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2,
-            collate_fn=lambda b: cutmix_collate_fn(b, cutmix_prob=CUTMIX_PROB, alpha=CUTMIX_ALPHA)
-        )
-    else:
-        train_loader = DataLoader(
-            train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2
-        )
+    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=2)
+    val_loader = DataLoader(val_dataset, batch_size=8, shuffle=False, num_workers=2)
     
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
-    
-    # ===== Initialize Model =====
-    model = ImprovedCNN(in_channels=num_channels, dropout_rate=0.3)
-    print(f"\nUsing device: {DEVICE}")
+    # Initialize improved model
+    model = ImprovedCNN(dropout_rate=0.3)
+    device = 'cpu'
+    print(f"\nUsing device: {device}")
     print(f"\n{model}")
     
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"\nTotal parameters: {total_params:,}")
-    
-    # ===== Train Model =====
-    print("\n--- Training Model ---")
+    # Train model
+    print("\n--- Training Model with Early Stopping ---")
     trained_model = train_model(
         model, train_loader, val_loader, 
-        epochs=EPOCHS, lr=LEARNING_RATE, device=DEVICE,
-        use_focal_loss=True,
-        early_stopping_patience=EARLY_STOPPING_PATIENCE
+        epochs=500, 
+        lr=0.001, 
+        device=device,
+        use_focal_loss=True,  # Set to True if severe class imbalance
+        early_stopping_patience=30
     )
     
+    # Save final model
     torch.save(trained_model.state_dict(), 'final_model_weights.pth')
-    print('\nFinal model saved to final_model_weights.pth')
+    print('\nFinal model weights saved to final_model_weights.pth')
+    print('Best model saved to best_model.pth')
     
-    # ===== Full Image Inference =====
+    # ============= Full Image Inference =============
     print("\n--- Running Full Image Inference ---")
     trained_model.eval()
-    trained_model.load_state_dict(torch.load('best_model.pth', map_location=DEVICE))
-    trained_model.to(DEVICE)
+    
+    # Load best model
+    trained_model.load_state_dict(torch.load('best_model.pth'))
     
     with torch.no_grad():
-        input_tensor = torch.from_numpy(msi_arr / 10000.0).float().unsqueeze(0).to(DEVICE)
+        input_tensor = torch.from_numpy(msi_arr / 10000.0).float().unsqueeze(0).to(device)
         output = trained_model(input_tensor)
         
         binary_pred = (output > 0.5).cpu().numpy()[0, 0]
         
+        # Compute metrics on full image
         target_tensor = torch.from_numpy(label_arr_resampled).float().unsqueeze(0).unsqueeze(0)
         metrics = compute_metrics(output.cpu(), target_tensor)
         
@@ -625,12 +449,8 @@ if __name__ == '__main__':
         print(f"  Accuracy: {metrics['accuracy']:.4f}")
         print(f"  Precision: {metrics['precision']:.4f}")
         print(f"  Recall: {metrics['recall']:.4f}")
-        print(f"  Predicted positive: {100 * np.mean(binary_pred):.2f}%")
-        print(f"  Actual positive: {100 * np.mean(label_arr_resampled):.2f}%")
+        print(f"  Predicted positive pixels: {100 * np.mean(binary_pred):.2f}%")
         
+        # Save prediction
         save_raster_tif('prediction_best.tif', binary_pred.astype(np.uint8), bbox, str(projection))
         print("\nPrediction saved to prediction_best.tif")
-        
-        prob_map = output.cpu().numpy()[0, 0]
-        save_raster_tif('prediction_probability.tif', prob_map.astype(np.float32), bbox, str(projection))
-        print("Probability map saved to prediction_probability.tif")
