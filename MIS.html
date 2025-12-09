@@ -321,6 +321,118 @@
             opacity: 0;
         }
 
+        /* ✨ BREAK TIME NOTIFICATION MODAL */
+        .break-notification-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.98) 0%, rgba(139, 92, 246, 0.98) 50%, rgba(236, 72, 153, 0.98) 100%);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: modalFadeIn 0.5s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .break-notification-content {
+            text-align: center;
+            color: white;
+            padding: 60px;
+            position: relative;
+        }
+
+        .break-icon {
+            font-size: 180px;
+            margin-bottom: 40px;
+            animation: bounceIn 1s ease;
+            filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.3));
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.15);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .break-title {
+            font-size: 80px;
+            font-weight: 900;
+            margin-bottom: 30px;
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.8s ease 0.3s both;
+        }
+
+        .break-message {
+            font-size: 36px;
+            font-weight: 600;
+            margin-bottom: 50px;
+            opacity: 0.95;
+            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.8s ease 0.5s both;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .break-close-btn {
+            background: rgba(255, 255, 255, 0.3);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            color: white;
+            font-size: 24px;
+            font-weight: 900;
+            padding: 20px 50px;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.4s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            animation: slideUp 0.8s ease 0.7s both;
+        }
+
+        .break-close-btn:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .break-countdown {
+            font-size: 22px;
+            margin-top: 30px;
+            opacity: 0.8;
+            animation: slideUp 0.8s ease 0.9s both;
+        }
+
         .header {
             position: fixed;
             top: 0;
@@ -1416,6 +1528,23 @@
             backdrop-filter: blur(20px);
         }
 
+        /* ✨ API ERROR ALERT */
+        .alert-api-error {
+            background: rgba(168, 85, 247, 0.12) !important;
+            border-left: 6px solid #a855f7 !important;
+            animation: blinkPurple 3s ease-in-out infinite;
+            backdrop-filter: blur(20px);
+        }
+
+        @keyframes blinkPurple {
+            0%, 100% {
+                box-shadow: 0 4px 20px rgba(168, 85, 247, 0.2);
+            }
+            50% {
+                box-shadow: 0 8px 40px rgba(168, 85, 247, 0.4);
+            }
+        }
+
         .theme-vedas .alert-offline,
         .theme-vedas .alert-memory,
         .theme-vedas .alert-cpu,
@@ -1442,6 +1571,12 @@
             background: rgba(59, 130, 246, 0.08) !important;
             border-left: 6px solid #3b82f6 !important;
             box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15) !important;
+        }
+
+        .theme-vedas .alert-api-error {
+            background: rgba(168, 85, 247, 0.08) !important;
+            border-left: 6px solid #a855f7 !important;
+            box-shadow: 0 4px 20px rgba(168, 85, 247, 0.15) !important;
         }
 
         @keyframes blinkRed {
@@ -1502,6 +1637,11 @@
 
         .alert-info .alert-type {
             color: #3b82f6 !important;
+            font-weight: 900;
+        }
+
+        .alert-api-error .alert-type {
+            color: #a855f7 !important;
             font-weight: 900;
         }
 
@@ -1803,6 +1943,23 @@
 
 <body>
     <div id="app">
+        <!-- ✨ BREAK NOTIFICATION MODAL -->
+        <transition name="fade">
+            <div v-if="showBreakNotification" class="break-notification-modal">
+                <div class="break-notification-content">
+                    <div class="break-icon">{{ breakNotification.icon }}</div>
+                    <h1 class="break-title">{{ breakNotification.title }}</h1>
+                    <p class="break-message">{{ breakNotification.message }}</p>
+                    <button class="break-close-btn" @click="closeBreakNotification">
+                        Got It! 👍
+                    </button>
+                    <div class="break-countdown" v-if="breakAutoCloseSeconds > 0">
+                        Auto-closing in {{ breakAutoCloseSeconds }} seconds...
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <transition name="fade">
             <div v-if="isLoading" class="loading-overlay">
                 <div class="loading-spinner"></div>
@@ -2054,7 +2211,7 @@
                                 <div class="alert-content">
                                     <div class="alert-type">{{ alert.type }}</div>
                                     <div class="alert-message">{{ alert.message }}</div>
-                                    <div class="alert-server">{{ alert.server }} | Fill Date: {{ alert.prediction }}</div>
+                                    <div class="alert-server">{{ alert.server }} | {{ alert.lastScanTime }}</div>
                                 </div>
                                 <button class="alert-delete-btn" @click="removeAlert('storage', index)">×</button>
                             </div>
@@ -2126,12 +2283,19 @@
                     storageAlerts: [],
                     clearedAlerts: new Set(),
                     lastUpdated: '',
+                    storageLastModified: null,
                     totalServers: 20,
                     totalServices: 41,
                     isLoading: false,
                     isRefreshing: false,
                     showHistory: false,
                     alertHistory: [],
+                    // ✨ BREAK TIME NOTIFICATIONS
+                    showBreakNotification: false,
+                    breakNotification: {},
+                    breakAutoCloseSeconds: 30,
+                    breakAutoCloseInterval: null,
+                    shownBreakTimes: new Set(),
                     monitoringApps: [
                         {
                             id: 'monitoring_server',
@@ -2287,6 +2451,102 @@
                     this.alertPanelCollapsedUp = false;
                     this.alertPanelCollapsedLeft = false;
                 },
+                
+                // ✨ TIME HELPER FUNCTION
+                getTimeAgo(lastModifiedStr) {
+                    try {
+                        const lastModified = new Date(lastModifiedStr);
+                        const now = new Date();
+                        const diffMs = now - lastModified;
+                        const diffMins = Math.floor(diffMs / 60000);
+                        const diffHours = Math.floor(diffMins / 60);
+                        const diffDays = Math.floor(diffHours / 24);
+
+                        if (diffDays > 0) {
+                            return `${diffDays}d ago`;
+                        } else if (diffHours > 0) {
+                            return `${diffHours}h ago`;
+                        } else if (diffMins > 0) {
+                            return `${diffMins}m ago`;
+                        } else {
+                            return 'Just now';
+                        }
+                    } catch (error) {
+                        return 'Unknown';
+                    }
+                },
+
+                // ✨ BREAK TIME NOTIFICATION
+                checkBreakTime() {
+                    const now = new Date();
+                    const hour = now.getHours();
+                    const minute = now.getMinutes();
+                    const timeKey = `${hour}:${minute}`;
+
+                    // Don't show if already shown today
+                    if (this.shownBreakTimes.has(timeKey)) {
+                        return;
+                    }
+
+                    let breakInfo = null;
+
+                    // 10:30 AM - Morning Tea
+                    if (hour === 10 && minute === 30) {
+                        breakInfo = {
+                            icon: '☕',
+                            title: 'Morning Tea Break!',
+                            message: 'Time to refresh! Grab a cup of tea and enjoy a short break 🍵'
+                        };
+                    }
+                    // 12:30 PM - Lunch Break
+                    else if (hour === 12 && minute === 30) {
+                        breakInfo = {
+                            icon: '🍽️',
+                            title: 'Lunch Time!',
+                            message: 'Take a break and enjoy your delicious lunch! 🍛'
+                        };
+                    }
+                    // 3:00 PM - Afternoon Tea
+                    else if (hour === 15 && minute === 0) {
+                        breakInfo = {
+                            icon: '☕',
+                            title: 'Afternoon Tea Break!',
+                            message: 'Time for some energy! Enjoy your tea and snacks 🍪'
+                        };
+                    }
+                    // 5:30 PM - Office Time Over
+                    else if (hour === 17 && minute === 30) {
+                        breakInfo = {
+                            icon: '🏠',
+                            title: 'Office Time is Over!',
+                            message: 'Great work today! Time to head home and relax 🎉'
+                        };
+                    }
+
+                    if (breakInfo) {
+                        this.breakNotification = breakInfo;
+                        this.showBreakNotification = true;
+                        this.shownBreakTimes.add(timeKey);
+                        this.breakAutoCloseSeconds = 30;
+                        
+                        // Auto-close countdown
+                        this.breakAutoCloseInterval = setInterval(() => {
+                            this.breakAutoCloseSeconds--;
+                            if (this.breakAutoCloseSeconds <= 0) {
+                                this.closeBreakNotification();
+                            }
+                        }, 1000);
+                    }
+                },
+
+                closeBreakNotification() {
+                    this.showBreakNotification = false;
+                    if (this.breakAutoCloseInterval) {
+                        clearInterval(this.breakAutoCloseInterval);
+                        this.breakAutoCloseInterval = null;
+                    }
+                },
+
                 updateTime() {
                     const now = new Date();
                     const options = {
@@ -2302,6 +2562,11 @@
                     if (this.autoThemeEnabled) {
                         this.applyAutoTheme();
                     }
+
+                    // ✨ Check break time every minute
+                    if (now.getSeconds() === 0) {
+                        this.checkBreakTime();
+                    }
                 },
                 async manualRefresh() {
                     this.isRefreshing = true;
@@ -2312,55 +2577,112 @@
                 },
                 async fetchAlerts() {
                     try {
+                        // ✨ Fetch Scanner Stats for Storage
+                        let scannerStats = null;
+                        try {
+                            const scannerResponse = await fetch('http://192.168.2.137:8080/storage_monitoring_api/scanner_stats');
+                            scannerStats = await scannerResponse.json();
+                            if (scannerStats && scannerStats.last_modified) {
+                                this.storageLastModified = scannerStats.last_modified;
+                            }
+                        } catch (error) {
+                            console.warn('Scanner stats API not reachable:', error);
+                        }
+
                         // Fetch Dataset Alerts
-                        const datasetResponse = await fetch('http://192.168.2.137:8080/monitoring_datasets//api/get_status_counts');
-                        const datasetData = await datasetResponse.json();
+                        let datasetData = null;
+                        try {
+                            const datasetResponse = await fetch('http://192.168.2.137:8080/monitoring_datasets//api/get_status_counts');
+                            datasetData = await datasetResponse.json();
+                        } catch (error) {
+                            console.error('Dataset API error:', error);
+                            this.datasetAlerts = [{
+                                type: 'API-ERROR',
+                                message: 'Dataset Monitoring API is not reachable',
+                                server: 'Dataset Monitoring System'
+                            }];
+                        }
 
                         // Fetch Server Alerts
-                        const serverResponse = await fetch('http://192.168.2.137:8080/monitoring_server/api/alerts');
-                        const serverData = await serverResponse.json();
+                        let serverData = { alerts: [] };
+                        try {
+                            const serverResponse = await fetch('http://192.168.2.137:8080/monitoring_server/api/alerts');
+                            serverData = await serverResponse.json();
+                        } catch (error) {
+                            console.error('Server API error:', error);
+                            this.serverAlerts = [{
+                                type: 'API-ERROR',
+                                message: 'Server Monitoring API is not reachable',
+                                server: 'Server Monitoring System'
+                            }];
+                        }
 
                         // Fetch Process Alerts
-                        const processResponse = await fetch('http://192.168.2.137:8080/process_monitoring/get-alerts');
-                        const processData = await processResponse.json();
+                        let processData = { data: { alerts: [] } };
+                        try {
+                            const processResponse = await fetch('http://192.168.2.137:8080/process_monitoring/get-alerts');
+                            processData = await processResponse.json();
+                        } catch (error) {
+                            console.error('Process API error:', error);
+                            this.processAlerts = [{
+                                type: 'API-ERROR',
+                                message: 'Process Monitoring API is not reachable',
+                                server: 'Process Monitoring System'
+                            }];
+                        }
 
                         // Fetch Storage Pool Alerts
-                        const storageResponse = await fetch('http://192.168.2.137:8080/storage_monitoring_api/summary?summary_type=pools_only');
-                        const storageData = await storageResponse.json();
+                        let storageData = { pools: {} };
+                        try {
+                            const storageResponse = await fetch('http://192.168.2.137:8080/storage_monitoring_api/summary?summary_type=pools_only');
+                            storageData = await storageResponse.json();
+                        } catch (error) {
+                            console.error('Storage API error:', error);
+                            this.storageAlerts = [{
+                                type: 'API-ERROR',
+                                message: 'Storage Pool Monitoring API is not reachable',
+                                server: 'Storage Monitoring System',
+                                lastScanTime: 'Unknown'
+                            }];
+                        }
 
                         // Process Dataset Alerts
-                        const tempDatasetAlerts = [];
-                        
-                        if (datasetData.alert > 0) {
-                            tempDatasetAlerts.push({
-                                type: 'alert',
-                                message: `${datasetData.alert} dataset(s) in critical alert state`,
-                                server: 'Dataset Monitoring System'
-                            });
-                        }
-                        
-                        if (datasetData.warning > 0) {
-                            tempDatasetAlerts.push({
-                                type: 'warning',
-                                message: `${datasetData.warning} dataset(s) showing warnings`,
-                                server: 'Dataset Monitoring System'
-                            });
-                        }
-                        
-                        if (datasetData.offline > 0) {
-                            tempDatasetAlerts.push({
-                                type: 'offline',
-                                message: `${datasetData.offline} dataset(s) are offline`,
-                                server: 'Dataset Monitoring System'
-                            });
-                        }
+                        if (datasetData && !datasetData.error) {
+                            const tempDatasetAlerts = [];
+                            
+                            if (datasetData.alert > 0) {
+                                tempDatasetAlerts.push({
+                                    type: 'alert',
+                                    message: `${datasetData.alert} dataset(s) in critical alert state`,
+                                    server: 'Dataset Monitoring System'
+                                });
+                            }
+                            
+                            if (datasetData.warning > 0) {
+                                tempDatasetAlerts.push({
+                                    type: 'warning',
+                                    message: `${datasetData.warning} dataset(s) showing warnings`,
+                                    server: 'Dataset Monitoring System'
+                                });
+                            }
+                            
+                            if (datasetData.offline > 0) {
+                                tempDatasetAlerts.push({
+                                    type: 'offline',
+                                    message: `${datasetData.offline} dataset(s) are offline`,
+                                    server: 'Dataset Monitoring System'
+                                });
+                            }
 
-                        this.datasetAlerts = tempDatasetAlerts.filter(alert =>
-                            !this.clearedAlerts.has(this.getAlertKey('dataset', alert))
-                        );
+                            this.datasetAlerts = tempDatasetAlerts.filter(alert =>
+                                !this.clearedAlerts.has(this.get
+                            this.datasetAlerts = tempDatasetAlerts.filter(alert =>
+                                !this.clearedAlerts.has(this.getAlertKey('dataset', alert))
+                            );
+                        }
 
                         // Process Server Alerts
-                        if (serverData.alerts) {
+                        if (serverData.alerts && !serverData.error) {
                             this.serverAlerts = serverData.alerts.filter(alert =>
                                 !this.clearedAlerts.has(this.getAlertKey('server', alert))
                             ).map(alert => {
@@ -2386,7 +2708,7 @@
                         }
 
                         // Process Process Alerts
-                        if (processData.data && processData.data.alerts) {
+                        if (processData.data && processData.data.alerts && !processData.error) {
                             this.processAlerts = processData.data.alerts.filter(alert =>
                                 !this.clearedAlerts.has(this.getAlertKey('process', alert))
                             ).map(alert => {
@@ -2413,9 +2735,9 @@
                         }
 
                         // Process Storage Pool Alerts
-                        const tempStorageAlerts = [];
-                        
-                        if (storageData.pools) {
+                        if (storageData.pools && !storageData.error) {
+                            const tempStorageAlerts = [];
+                            
                             Object.keys(storageData.pools).forEach(poolName => {
                                 const pool = storageData.pools[poolName];
                                 
@@ -2426,6 +2748,11 @@
                                     const totalSize = stats.total_size;
                                     const usagePercent = (usedSize / totalSize) * 100;
                                     const remainingSize = totalSize - usedSize;
+                                    
+                                    // ✨ Get time ago from scanner stats
+                                    const lastScanTime = this.storageLastModified ? 
+                                        `Last scan: ${this.getTimeAgo(this.storageLastModified)}` : 
+                                        'Scan time unknown';
                                     
                                     let alertType = '';
                                     let alertMessage = '';
@@ -2441,7 +2768,8 @@
                                             server: `Storage Pool - ${poolName.toUpperCase()}`,
                                             usage: usagePercent.toFixed(1),
                                             remaining: remainingSize.toFixed(2),
-                                            prediction: stats.prediction.predicted_fill_date
+                                            prediction: stats.prediction.predicted_fill_date,
+                                            lastScanTime: lastScanTime
                                         });
                                     }
                                     // Warning: >= 75% and < 90%
@@ -2455,7 +2783,8 @@
                                             server: `Storage Pool - ${poolName.toUpperCase()}`,
                                             usage: usagePercent.toFixed(1),
                                             remaining: remainingSize.toFixed(2),
-                                            prediction: stats.prediction.predicted_fill_date
+                                            prediction: stats.prediction.predicted_fill_date,
+                                            lastScanTime: lastScanTime
                                         });
                                     }
                                     // Info: >= 60% (optional - to show pools approaching limits)
@@ -2469,22 +2798,39 @@
                                             server: `Storage Pool - ${poolName.toUpperCase()}`,
                                             usage: usagePercent.toFixed(1),
                                             remaining: remainingSize.toFixed(2),
-                                            prediction: stats.prediction.predicted_fill_date
+                                            prediction: stats.prediction.predicted_fill_date,
+                                            lastScanTime: lastScanTime
                                         });
                                     }
                                 }
                             });
-                        }
 
-                        this.storageAlerts = tempStorageAlerts.filter(alert =>
-                            !this.clearedAlerts.has(this.getAlertKey('storage', alert))
-                        );
+                            this.storageAlerts = tempStorageAlerts.filter(alert =>
+                                !this.clearedAlerts.has(this.getAlertKey('storage', alert))
+                            );
+
+                            // Sort storage alerts: alert first, then warning, then info
+                            this.storageAlerts.sort((a, b) => {
+                                const order = { 'alert': 1, 'warning': 2, 'info': 3 };
+                                return (order[a.type] || 999) - (order[b.type] || 999);
+                            });
+                        }
 
                         // Clean up cleared alerts
                         const currentAlertKeys = new Set();
-                        [...tempDatasetAlerts, ...serverData.alerts || [], ...(processData.data?.alerts || []), ...tempStorageAlerts].forEach(alert => {
-                            const key = this.getAlertKey('dataset', alert) || this.getAlertKey('server', alert) || this.getAlertKey('process', alert) || this.getAlertKey('storage', alert);
-                            currentAlertKeys.add(key);
+                        const allCurrentAlerts = [
+                            ...this.datasetAlerts,
+                            ...this.serverAlerts,
+                            ...this.processAlerts,
+                            ...this.storageAlerts
+                        ];
+                        
+                        allCurrentAlerts.forEach(alert => {
+                            const key = this.getAlertKey('dataset', alert) || 
+                                       this.getAlertKey('server', alert) || 
+                                       this.getAlertKey('process', alert) || 
+                                       this.getAlertKey('storage', alert);
+                            if (key) currentAlertKeys.add(key);
                         });
 
                         this.clearedAlerts = new Set(
@@ -2583,11 +2929,27 @@
             mounted() {
                 document.body.className = 'theme-vedas';
 
+                // Reset shown break times daily at midnight
+                const now = new Date();
+                const midnight = new Date(now);
+                midnight.setHours(24, 0, 0, 0);
+                const msUntilMidnight = midnight - now;
+                
+                setTimeout(() => {
+                    this.shownBreakTimes.clear();
+                    // Set up daily reset
+                    setInterval(() => {
+                        this.shownBreakTimes.clear();
+                    }, 24 * 60 * 60 * 1000);
+                }, msUntilMidnight);
+
                 this.updateTime();
                 setInterval(this.updateTime, 1000);
+                
                 this.fetchAlerts();
                 setInterval(this.fetchAlerts, 60000);
 
+                // Auto-rotate monitoring apps every 10 minutes
                 setInterval(() => {
                     const monitoringApps = this.monitoringApps.filter(app =>
                         app.id !== 'monitoring_sentinel'
