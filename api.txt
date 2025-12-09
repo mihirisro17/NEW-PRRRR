@@ -1,8 +1,10 @@
-http://192.168.2.137:8080/monitoring_datasets//api/get_status_counts
+ ProxyPass "/monitoring_server/api" "http://127.0.0.1:5011/monitoring_server/api"
+        ProxyPassReverse "/monitoring_server/api" "http://127.0.0.1:5011/monitoring_server/api"
 
-{
-  "alert": 32,
-  "offline": 0,
-  "ok": 4,
-  "warning": 12
-}
+
+        ProxyPass "/monitoring_sentinel/static" "http://127.0.0.1:1113/static"
+        ProxyPassReverse "/monitoring_sentinel/api/static" "http://127.0.0.1:1113/static"
+
+
+        ProxyPass "/monitoring_sentinel/" "http://127.0.0.1:1113/monitoring_sentinel/"
+        ProxyPassReverse "/monitoring_sentinel/" "http://127.0.0.1:1113/monitoring_sentinel/"
