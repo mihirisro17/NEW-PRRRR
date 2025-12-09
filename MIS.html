@@ -519,7 +519,7 @@
             position: fixed;
             left: 0;
             top: 80px;
-            width: 300px;
+            width: 320px;
             height: calc(100vh - 80px);
             background: var(--sidebar-bg);
             color: var(--sidebar-text);
@@ -541,7 +541,7 @@
         }
 
         .sidebar.collapsed {
-            transform: translateX(-300px);
+            transform: translateX(-320px);
         }
 
         .sidebar-title {
@@ -554,16 +554,32 @@
             opacity: 0.6;
         }
 
+        /* ✨ ENHANCED APP CATEGORIES */
+        .app-category {
+            margin-bottom: 30px;
+        }
+
+        .category-title {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.5;
+            margin-bottom: 12px;
+            padding-left: 18px;
+        }
+
+        /* ✨ BEAUTIFUL NAV BUTTONS WITH ENHANCED ICONS */
         .nav-button {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 16px;
             width: 100%;
-            padding: 14px 18px;
-            margin-bottom: 10px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
             background: rgba(255, 255, 255, 0.08);
             border: 2px solid rgba(255, 255, 255, 0.05);
-            border-radius: 14px;
+            border-radius: 16px;
             color: var(--sidebar-text);
             cursor: pointer;
             font-size: 14px;
@@ -594,8 +610,8 @@
 
         .nav-button:hover {
             background: rgba(255, 255, 255, 0.2);
-            transform: translateX(6px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            transform: translateX(8px) scale(1.02);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
             border-color: rgba(255, 255, 255, 0.15);
         }
 
@@ -606,15 +622,89 @@
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         }
 
+        /* 🎨 STUNNING ICON CONTAINER */
+        .nav-icon-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.4s;
+        }
+
+        .nav-button:hover .nav-icon-wrapper {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(-10deg) scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .nav-button.active .nav-icon-wrapper {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
         .nav-icon {
-            font-size: 20px;
+            font-size: 22px;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+            transition: all 0.4s;
+        }
+
+        .nav-button:hover .nav-icon {
+            transform: scale(1.15);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        }
+
+        /* 🏷️ APP BADGE INDICATOR */
+        .app-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            font-size: 9px;
+            font-weight: 900;
+            padding: 2px 5px;
+            border-radius: 8px;
+            border: 2px solid var(--sidebar-bg);
+            animation: pulse-badge 2s infinite;
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+            }
+        }
+
+        .nav-text {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-name {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .nav-description {
+            font-size: 11px;
+            opacity: 0.7;
+            font-weight: 500;
         }
 
         .main-content {
-            margin-left: 300px;
+            margin-left: 320px;
             margin-top: 80px;
-            width: calc(100% - 300px);
+            width: calc(100% - 320px);
             height: calc(100vh - 80px);
             padding: 45px;
             padding-bottom: 80px;
@@ -1085,7 +1175,6 @@
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        /* 🔥 FULLY TRANSPARENT ALERT PANEL */
         .alert-panel {
             position: fixed;
             right: 40px;
@@ -1233,7 +1322,6 @@
             transform: rotate(-90deg);
         }
 
-        /* 🚀 AUTO-SCROLLING FIXED */
         .alert-section-content {
             max-height: 1000px;
             overflow: hidden;
@@ -1300,7 +1388,6 @@
             }
         }
 
-        /* 🎨 TRANSPARENT ALERT ITEMS */
         .alert-offline,
         .alert-memory,
         .alert-cpu {
@@ -1715,7 +1802,7 @@
                 <div class="live-time">{{ currentTime }}</div>
                 <select class="theme-selector" v-model="currentTheme" @change="handleThemeChange">
                     <option value="">🌟 Light</option>
-                    <option value="theme-vedas">VEDAS</option>
+                    <option value="theme-vedas">🇮🇳 VEDAS</option>
                     <option value="theme-dark">🌙 Dark</option>
                     <option value="theme-ocean">🌊 Ocean</option>
                     <option value="theme-forest">🌲 Forest</option>
@@ -1727,16 +1814,66 @@
 
         <div class="sidebar" :class="{ collapsed: sidebarCollapsed }">
             <div class="sidebar-title">MY APPLICATIONS</div>
+            
+            <!-- HOME -->
             <a href="javascript:void(0)" class="nav-button" :class="{ active: currentPage === 'home' }"
                 @click="navigateTo('home')">
-                <span class="nav-icon">🏠</span>
-                <span>Home Dashboard</span>
+                <div class="nav-icon-wrapper">
+                    <span class="nav-icon">🏠</span>
+                </div>
+                <div class="nav-text">
+                    <div class="nav-name">Home Dashboard</div>
+                    <div class="nav-description">Overview & Stats</div>
+                </div>
             </a>
-            <a v-for="app in applications" :key="app.id" :href="app.url" target="app-frame" class="nav-button"
-                @click="setActive(app.id)">
-                <span class="nav-icon">{{ app.icon }}</span>
-                <span>{{ app.name }}</span>
-            </a>
+
+            <!-- MONITORING APPS -->
+            <div class="app-category">
+                <div class="category-title">🔍 Monitoring</div>
+                <a v-for="app in monitoringApps" :key="app.id" :href="app.url" target="app-frame" class="nav-button"
+                    :class="{ active: currentPage === app.id }" @click="setActive(app.id)">
+                    <div class="nav-icon-wrapper">
+                        <span class="nav-icon">{{ app.icon }}</span>
+                        <span v-if="app.badge" class="app-badge">{{ app.badge }}</span>
+                    </div>
+                    <div class="nav-text">
+                        <div class="nav-name">{{ app.name }}</div>
+                        <div class="nav-description">{{ app.description }}</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- DATA MANAGEMENT -->
+            <div class="app-category">
+                <div class="category-title">📊 Data Management</div>
+                <a v-for="app in dataApps" :key="app.id" :href="app.url" target="app-frame" class="nav-button"
+                    :class="{ active: currentPage === app.id }" @click="setActive(app.id)">
+                    <div class="nav-icon-wrapper">
+                        <span class="nav-icon">{{ app.icon }}</span>
+                        <span v-if="app.badge" class="app-badge">{{ app.badge }}</span>
+                    </div>
+                    <div class="nav-text">
+                        <div class="nav-name">{{ app.name }}</div>
+                        <div class="nav-description">{{ app.description }}</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- ANALYTICS & TOOLS -->
+            <div class="app-category">
+                <div class="category-title">🛠️ Analytics & Tools</div>
+                <a v-for="app in toolsApps" :key="app.id" :href="app.url" target="app-frame" class="nav-button"
+                    :class="{ active: currentPage === app.id }" @click="setActive(app.id)">
+                    <div class="nav-icon-wrapper">
+                        <span class="nav-icon">{{ app.icon }}</span>
+                        <span v-if="app.badge" class="app-badge">{{ app.badge }}</span>
+                    </div>
+                    <div class="nav-text">
+                        <div class="nav-name">{{ app.name }}</div>
+                        <div class="nav-description">{{ app.description }}</div>
+                    </div>
+                </a>
+            </div>
         </div>
 
         <div class="main-content" :class="{ expanded: sidebarCollapsed }">
@@ -1785,7 +1922,7 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">📊</div>
-                            <div class="stat-value">{{ applications.length }}</div>
+                            <div class="stat-value">{{ allApplications.length }}</div>
                             <div class="stat-label">Applications</div>
                         </div>
                     </div>
@@ -1820,8 +1957,7 @@
                 <div v-if="totalAlerts === 0" class="no-alerts">
                     ✅ No alerts<br>All systems operational
                 </div>
-                <div v-else>
-                    <!-- 📊 DATASETS ALERTS - ORDER 1 -->
+                <div v-else">
                     <div class="alert-section" v-if="datasetAlerts.length > 0">
                         <div class="alert-section-header" @click="toggleDatasetSection">
                             <div class="alert-section-title">
@@ -1842,7 +1978,6 @@
                         </div>
                     </div>
 
-                    <!-- 🖥️ SERVER ALERTS - ORDER 2 -->
                     <div class="alert-section" v-if="serverAlerts.length > 0">
                         <div class="alert-section-header" @click="toggleServerSection">
                             <div class="alert-section-title">
@@ -1863,7 +1998,6 @@
                         </div>
                     </div>
 
-                    <!-- ⚙️ PROCESS ALERTS - ORDER 3 -->
                     <div class="alert-section" v-if="processAlerts.length > 0">
                         <div class="alert-section-header" @click="toggleProcessSection">
                             <div class="alert-section-title">
@@ -1920,8 +2054,8 @@
     </div>
 
     <footer class="footer">
-        <div >
-             <span>©</span> 2025 VEDAS, SAC, ISRO, Government of India | All Rights Reserved
+        <div class="footer-content">
+            <span>©</span> 2025 VEDAS, SAC, ISRO, Government of India | All Rights Reserved
         </div>
     </footer>
 
@@ -1953,53 +2087,68 @@
                     isRefreshing: false,
                     showHistory: false,
                     alertHistory: [],
-                    applications: [
+                    // ✨ ENHANCED APP CATEGORIES WITH BETTER ICONS
+                    monitoringApps: [
                         {
                             id: 'monitoring_server',
-                            name: 'Monitoring Server',
+                            name: 'Server Monitor',
+                            description: 'Infrastructure Health',
                             icon: '🖥️',
                             url: 'http://192.168.2.137:8080/monitoring_server/home'
                         },
                         {
                             id: 'monitoring_datasets',
-                            name: 'Internal Datasets Monitoring',
+                            name: 'Dataset Monitor',
+                            description: 'Data Pipeline Status',
                             icon: '📊',
                             url: 'http://192.168.2.137:8080/monitoring_datasets/'
                         },
                         {
                             id: 'process_monitoring',
-                            name: 'Process Monitoring',
+                            name: 'Process Monitor',
+                            description: 'Service Health Check',
                             icon: '⚙️',
                             url: 'http://192.168.2.137:8080/process_monitoring/'
                         },
                         {
+                            id: 'monitoring_sentinel',
+                            name: 'Sentinel Monitor',
+                            description: 'Satellite Tracking',
+                            icon: '🛰️',
+                            url: 'http://192.168.2.137:8080/monitoring_sentinel/'
+                        }
+                    ],
+                    dataApps: [
+                        {
                             id: 'ridam_registration',
-                            name: 'RIDAM Registration',
+                            name: 'RIDAM Registry',
+                            description: 'Data Registration',
                             icon: '📝',
                             url: 'http://192.168.2.137:8080/ridam_registration/'
                         },
                         {
-                            id: 'monitoring_sentinel',
-                            name: 'Monitoring Sentinel',
-                            icon: '🛰️',
-                            url: 'http://192.168.2.137:8080/monitoring_sentinel/'
-                        },
+                            id: 'ridam_dataset_publisher',
+                            name: 'Dataset Explorer',
+                            description: 'Browse & Search Data',
+                            icon: '🗂️',
+                            url: 'http://192.168.2.137:8080/ridam_dataset_publisher/'
+                        }
+                    ],
+                    toolsApps: [
                         {
                             id: 'team_analytics',
                             name: 'Team Analytics',
+                            description: 'Performance Metrics',
                             icon: '👥',
                             url: 'http://192.168.2.137:8080/taskboard/dashboard/'
-                        },
-                        {
-                            id: 'ridam_datset_publisher',
-                            name: 'Ridam Dataset Explorer',
-                            icon: '📊',
-                            url: 'http://192.168.2.137:8080/ridam_dataset_publisher/'
                         }
                     ]
                 };
             },
             computed: {
+                allApplications() {
+                    return [...this.monitoringApps, ...this.dataApps, ...this.toolsApps];
+                },
                 totalAlerts() {
                     return this.datasetAlerts.length + this.serverAlerts.length + this.processAlerts.length;
                 },
@@ -2023,7 +2172,7 @@
                 setActive(appId) {
                     this.isLoading = true;
                     this.currentPage = appId;
-                    const app = this.applications.find(a => a.id === appId);
+                    const app = this.allApplications.find(a => a.id === appId);
                     if (app) {
                         this.currentAppUrl = app.url;
                     }
@@ -2107,19 +2256,15 @@
                 },
                 async fetchAlerts() {
                     try {
-                        // Fetch Dataset Alerts
                         const datasetResponse = await fetch('http://192.168.2.137:8080/monitoring_datasets//api/get_status_counts');
                         const datasetData = await datasetResponse.json();
 
-                        // Fetch Server Alerts
                         const serverResponse = await fetch('http://192.168.2.137:8080/monitoring_server/api/alerts');
                         const serverData = await serverResponse.json();
 
-                        // Fetch Process Alerts
                         const processResponse = await fetch('http://192.168.2.137:8080/process_monitoring/get-alerts');
                         const processData = await processResponse.json();
 
-                        // Process Dataset Alerts
                         const tempDatasetAlerts = [];
                         
                         if (datasetData.alert > 0) {
@@ -2150,7 +2295,6 @@
                             !this.clearedAlerts.has(this.getAlertKey('dataset', alert))
                         );
 
-                        // Process Server Alerts
                         if (serverData.alerts) {
                             this.serverAlerts = serverData.alerts.filter(alert =>
                                 !this.clearedAlerts.has(this.getAlertKey('server', alert))
@@ -2176,7 +2320,6 @@
                             this.totalServers = serverData.total_servers;
                         }
 
-                        // Process Process Alerts
                         if (processData.data && processData.data.alerts) {
                             this.processAlerts = processData.data.alerts.filter(alert =>
                                 !this.clearedAlerts.has(this.getAlertKey('process', alert))
@@ -2203,7 +2346,6 @@
                             this.totalServices = processData.data.total_services;
                         }
 
-                        // Clean up cleared alerts
                         const currentAlertKeys = new Set();
                         [...tempDatasetAlerts, ...serverData.alerts || [], ...(processData.data?.alerts || [])].forEach(alert => {
                             const key = this.getAlertKey('dataset', alert) || this.getAlertKey('server', alert) || this.getAlertKey('process', alert);
@@ -2320,9 +2462,8 @@
                 setInterval(this.fetchAlerts, 60000);
 
                 setInterval(() => {
-                    const monitoringApps = this.applications.filter(app =>
-                        app.id !== 'monitoring_sentinel' &&
-                        app.id !== 'ridam_registration'
+                    const monitoringApps = this.monitoringApps.filter(app =>
+                        app.id !== 'monitoring_sentinel'
                     );
 
                     if (monitoringApps.length === 0) return;
