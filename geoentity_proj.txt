@@ -1,29 +1,168 @@
-Starting daily filter check at 2025-12-09 17:17:50.424569
-Daily check thread started
-============================================================
-GeoEntity Monitoring Server Starting...
-============================================================
-Server: http://127.0.0.1:1115/geoentity_monitoring/
-Daily auto-check: Enabled
-Last daily check: Never (will run soon)
-============================================================
- * Debugger is active!
- * Debugger PIN: 137-365-284
-Checking source 15 (1/39)
-Checking source 22 (2/39)
-Checking source 23 (3/39)
-Checking source 13 (4/39)
-127.0.0.1 - - [09/Dec/2025 17:21:33] "GET /geoentity_monitoring/ HTTP/1.1" 200 -
-127.0.0.1 - - [09/Dec/2025 17:21:33] "GET /geoentity_monitoring/static/css/style.css HTTP/1.1" 200 -
-127.0.0.1 - - [09/Dec/2025 17:21:33] "GET /geoentity_monitoring/static/js/dashboard.js HTTP/1.1" 200 -
-127.0.0.1 - - [09/Dec/2025 17:21:46] "GET /geoentity_monitoring/api/check HTTP/1.1" 200 -
-127.0.0.1 - - [09/Dec/2025 17:21:55] "GET /geoentity_monitoring/api/filter-check/all-results HTTP/1.1" 200 -
-127.0.0.1 - - [09/Dec/2025 17:22:32] "GET /geoentity_monitoring/api/filter-check/all-results HTTP/1.1" 200 -
-127.0.0.1 - - [09/Dec/2025 17:30:02] "GET /geoentity_monitoring/api/filter-check/all-results HTTP/1.1" 200 -
+def run_single_filter_check(self, source_id):
+    """Run filter check for a single source"""
+    source_key = f"source_{source_id}"
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Starting filter check for source {source_id}")
+    
+    self.filter_check_results[source_key] = {
+        'source_id': source_id,
+        'started_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'status': 'running',
+        'checks': []
+    }
+    
+    try:
+        # Special handling for IDs 15, 26, 28 - use bbox
+        if source_id in [15, 26, 28]:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Using bbox check")
+            self.filter_check_status['current_source'] = f"Source {source_id} (bbox check)"
+            result = self.check_geoentity_with_bbox(source_id)
+            self.filter_check_results[source_key]['checks'].append(result)
+            self.filter_check_results[source_key]['type'] = 'bbox'
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Bbox check completed")
+        else:
+            # Get all geoentities first
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Fetching geoentities list...")
+            url = f"{BASE_URL}/geoentity-sources/{source_id}/geoentities"
+            response = requests.get(url, timeout=30)  # Increased timeout
+            
+            if response.status_code == 200:
+                data = response.json()
+                geoentities = data.get('data', [])
+                total = len(geoentities)
+                
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Found {total} geoentities")
+                
+                self.filter_check_status['total'] = total
+                self.filter_check_results[source_key]['type'] = 'prefix'
+                self.filter_check_results[source_key]['total_entities'] = total
+                
+                # Check each geoentity with prefix
+                for idx, entity in enumerate(geoentities):
+                    geoentity_id = entity.get('geoentity_id')
+                    self.filter_check_status['current_entity'] = geoentity_id
+                    self.filter_check_status['progress'] = idx + 1
+                    
+                    # Print progress every 50 entities
+                    if (idx + 1) % 50 == 0 or idx == 0:
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Progress {idx+1}/{total}")
+                    
+                    result = self.check_geoentity_with_prefix(source_id, geoentity_id)
+                    result['entity_name'] = entity.get('name', 'N/A')
+                    result['parent_name'] = entity.get('parent_name', 'N/A')
+                    
+                    self.filter_check_results[source_key]['checks'].append(result)
+                    time.sleep(0.05)  # Small delay
+                
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Completed all {total} checks")
+            else:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: ERROR - Got status code {response.status_code}")
+                self.filter_check_results[source_key]['status'] = 'error'
+                self.filter_check_results[source_key]['error'] = f"Failed to fetch geoentities: {response.status_code}"
+        
+        self.filter_check_results[source_key]['status'] = 'completed'
+        self.filter_check_results[source_key]['completed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: COMPLETED")
+        
+    except Exception as e:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: EXCEPTION - {str(e)}")
+        self.filter_check_results[source_key]['status'] = 'error'
+        self.filter_check_results[source_key]['error'] = str(e)
+    
+    # Save results after each source
+    self.save_results()
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Results saved to file")
 
-it done for Checking source 15 (1/39)
-Checking source 22 (2/39)
-Checking source 23 (3/39)
-Checking source 13 (4/39)
 
-after this its running or not?
+
+
+
+@app.route('/geoentity_monitoring/api/filter-check/live-status', methods=['GET'])
+def get_live_status():
+    """Get detailed live status"""
+    results_summary = {}
+    for key, result in monitor.filter_check_results.items():
+        results_summary[key] = {
+            'source_id': result.get('source_id'),
+            'status': result.get('status'),
+            'type': result.get('type'),
+            'total_checks': len(result.get('checks', [])),
+            'started_at': result.get('started_at'),
+            'completed_at': result.get('completed_at')
+        }
+    
+    return jsonify({
+        'is_running': monitor.filter_check_status['running'],
+        'current_source': monitor.filter_check_status.get('current_source'),
+        'completed_sources': monitor.filter_check_status.get('completed_sources', 0),
+        'total_sources': monitor.filter_check_status.get('total_sources', 0),
+        'current_entity': monitor.filter_check_status.get('current_entity'),
+        'progress': monitor.filter_check_status.get('progress', 0),
+        'total': monitor.filter_check_status.get('total', 0),
+        'last_daily_check': monitor.last_daily_check.strftime('%Y-%m-%d %H:%M:%S') if monitor.last_daily_check else 'Never',
+        'completed_results': results_summary
+    })
+
+
+
+
+
+def run_all_filter_checks(self):
+    """Run filter checks for all sources"""
+    if self.filter_check_status['running']:
+        return {'error': 'A filter check is already running'}
+    
+    self.filter_check_status['running'] = True
+    self.filter_check_status['progress'] = 0
+    
+    try:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Starting run_all_filter_checks")
+        
+        # Get all sources
+        sources_result = self.check_sources_api()
+        
+        if sources_result['status'] == 'success' and sources_result['data']:
+            sources = sources_result['data'].get('data', [])
+            total_sources = len(sources)
+            
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Found {total_sources} sources to check")
+            
+            self.filter_check_status['total_sources'] = total_sources
+            self.filter_check_status['completed_sources'] = 0
+            
+            # Run check for each source
+            for idx, source in enumerate(sources):
+                source_id = source['id']
+                source_name = source.get('name', 'Unknown')
+                
+                self.filter_check_status['current_source'] = f"Source {source_id}: {source_name}"
+                self.filter_check_status['completed_sources'] = idx
+                
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] === Checking source {source_id} ({idx+1}/{total_sources}) - {source_name} ===")
+                
+                try:
+                    self.run_single_filter_check(source_id)
+                except Exception as e:
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ERROR checking source {source_id}: {e}")
+                    # Continue to next source even if this one fails
+                    continue
+            
+            self.filter_check_status['completed_sources'] = total_sources
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] === All filter checks completed! ===")
+            
+        else:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ERROR: Failed to get sources list")
+            
+    except Exception as e:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] CRITICAL ERROR in run_all_filter_checks: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    finally:
+        self.filter_check_status['running'] = False
+        self.filter_check_status['progress'] = 0
+        self.filter_check_status['current_source'] = None
+        self.filter_check_status['current_entity'] = None
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Filter check process ended")
+
+
+
