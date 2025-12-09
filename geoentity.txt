@@ -1,66 +1,445 @@
-https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/
+✔ ~/Mihir/geoentity_monitoring $ python app.py 
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:1115
+ * Running on http://192.168.2.137:1115
+Press CTRL+C to quit
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 137-365-284
+127.0.0.1 - - [09/Dec/2025 15:55:17] "GET /geoentity_monitoring/ HTTP/1.1" 404 -
+127.0.0.1 - - [09/Dec/2025 15:55:23] "GET /geoentity_monitoring/ HTTP/1.1" 404 -
+127.0.0.1 - - [09/Dec/2025 15:55:24] "GET /geoentity_monitoring/ HTTP/1.1" 404 -
+127.0.0.1 - - [09/Dec/2025 15:55:25] "GET /geoentity_monitoring/ HTTP/1.1" 404 -
+127.0.0.1 - - [09/Dec/2025 15:55:25] "GET /geoentity_monitoring/ HTTP/1.1" 404 -
+127.0.0.1 - - [09/Dec/2025 15:55:26] "GET /geoentity_monitoring/ HTTP/1.1" 404 -
 
-this gives like
-{
-  "count": 39,
-  "data": [
-    {
-      "category": "LULC",
-      "id": 15,
-      "name": "SISDP LULC 10K 2016-19",
-      "parent_id": null,
-      "project": "SISDP LULC10K",
-      "theme": null
-    },
-    {
-      "category": "Hydrology",
-      "id": 22,
-      "name": "LAMA Hydro Gauge Station",
-      "parent_id": null,
-      "project": "LAMA",
-      "theme": null
-    },
-    {
-      "category": "Village",
-      "id": 23,
-      "name": "Gujarat Village Boundary 2025",
-      "parent_id": null,
-      "project": "Encroachment Monitoring",
-      "theme": null
-    },
 
-if this works and get 200then show green dot after that 
 
-add id from above in 
+from flask import Flask, render_template, jsonify
+import requests
+from datetime import datetime
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/{id}/geoentities
-one by one so its give sdat alike
-{
-  "count": 820,
-  "data": [
-    {
-      "geoentity_id": "C91S23D601",
-      "geoentity_timestamp": "Mon, 17 Mar 2025 18:30:00 GMT",
-      "name": "ADILABAD",
-      "parent_name": "TELANGANA"
-    },
-    {
-      "geoentity_id": "C91S19D338",
-      "geoentity_timestamp": "Mon, 17 Mar 2025 18:30:00 GMT",
-      "name": "AGAR MALWA",
-      "parent_name": "MADHYA PRADESH"
-    },
-    {
-      "geoentity_id": "C91S25D715",
-      "geoentity_timestamp": "Mon, 17 Mar 2025 18:30:00 GMT",
-      "name": "AGRA",
-      "parent_name": "UTTAR PRADESH"
-    },
-    {
-      "geoentity_id": "C91S12D180",
-      "geoentity_timestamp": "Mon, 17 Mar 2025 18:30:00 GMT",
-      "name": "AHMADABAD",
-      "parent_name": "GUJARAT"
-    },
+app = Flask(__name__)
 
-if all works and get 200 for all then show green dot also give for which its not working like that 
+# Configuration for reverse proxy
+app.config['APPLICATION_ROOT'] = '/geoentity_monitoring'
+
+
+BASE_URL = "https://vedas.sac.gov.in/geoentity-services/api"
+
+class APIMonitor:
+    def __init__(self):
+        self.results = {
+            'sources': {},
+            'geoentities': {},
+            'last_check': None
+        }
+    
+    def check_sources_api(self):
+        """Check the geoentity sources API"""
+        url = f"{BASE_URL}/geoentity-sources/"
+        start_time = time.time()
+        
+        try:
+            response = requests.get(url, timeout=10)
+            response_time = round((time.time() - start_time) * 1000, 2)
+            
+            return {
+                'status': 'success' if response.status_code == 200 else 'error',
+                'status_code': response.status_code,
+                'response_time': response_time,
+                'data': response.json() if response.status_code == 200 else None,
+                'error': None,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+        except Exception as e:
+            return {
+                'status': 'error',
+                'status_code': None,
+                'response_time': round((time.time() - start_time) * 1000, 2),
+                'data': None,
+                'error': str(e),
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+    
+    def check_geoentity_api(self, source_id, source_name, category, project):
+        """Check individual geoentity API"""
+        url = f"{BASE_URL}/geoentity-sources/{source_id}/geoentities"
+        start_time = time.time()
+        
+        try:
+            response = requests.get(url, timeout=10)
+            response_time = round((time.time() - start_time) * 1000, 2)
+            
+            return {
+                'id': source_id,
+                'name': source_name,
+                'category': category,
+                'project': project,
+                'status': 'success' if response.status_code == 200 else 'error',
+                'status_code': response.status_code,
+                'response_time': response_time,
+                'count': response.json().get('count', 0) if response.status_code == 200 else 0,
+                'error': None,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+        except Exception as e:
+            return {
+                'id': source_id,
+                'name': source_name,
+                'category': category,
+                'project': project,
+                'status': 'error',
+                'status_code': None,
+                'response_time': round((time.time() - start_time) * 1000, 2),
+                'count': 0,
+                'error': str(e),
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+    
+    def run_full_check(self):
+        """Run complete monitoring check"""
+        sources_result = self.check_sources_api()
+        self.results['sources'] = sources_result
+        
+        if sources_result['status'] == 'success' and sources_result['data']:
+            sources = sources_result['data'].get('data', [])
+            
+            geoentity_results = []
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures = {
+                    executor.submit(
+                        self.check_geoentity_api, 
+                        source['id'], 
+                        source['name'],
+                        source.get('category', 'N/A'),
+                        source.get('project', 'N/A')
+                    ): source for source in sources
+                }
+                
+                for future in as_completed(futures):
+                    try:
+                        result = future.result()
+                        geoentity_results.append(result)
+                    except Exception as e:
+                        source = futures[future]
+                        geoentity_results.append({
+                            'id': source['id'],
+                            'name': source['name'],
+                            'category': source.get('category', 'N/A'),
+                            'project': source.get('project', 'N/A'),
+                            'status': 'error',
+                            'error': str(e)
+                        })
+            
+            self.results['geoentities'] = sorted(geoentity_results, key=lambda x: x['id'])
+        
+        self.results['last_check'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        return self.results
+
+monitor = APIMonitor()
+
+@app.route('/geoentity_monitoring/')
+def index():
+    return render_template('dashboard.html')
+
+@app.route('/geoentity_monitoring/api/check', methods=['GET'])
+def check_apis():
+    results = monitor.run_full_check()
+    return jsonify(results)
+
+@app.route('/geoentity_monitoring/api/stats', methods=['GET'])
+def get_stats():
+    if not monitor.results.get('geoentities'):
+        return jsonify({'error': 'No data available'})
+    
+    geoentities = monitor.results['geoentities']
+    total = len(geoentities)
+    success = sum(1 for g in geoentities if g['status'] == 'success')
+    failed = total - success
+    avg_response = sum(g['response_time'] for g in geoentities) / total if total > 0 else 0
+    
+    return jsonify({
+        'total_endpoints': total,
+        'success': success,
+        'failed': failed,
+        'success_rate': round((success / total * 100), 2) if total > 0 else 0,
+        'avg_response_time': round(avg_response, 2)
+    })
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=1115)
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoEntity Services Monitor - SAC VEDAS</title>
+    <link rel="stylesheet" href="/geoentity_monitoring/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛰️ GeoEntity Services Monitor</h1>
+            <p>Real-time monitoring of SAC VEDAS GeoEntity API endpoints</p>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="runCheck()">
+                    <span>🔄</span> Run Check Now
+                </button>
+                <div class="auto-refresh">
+                    <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+                    <label for="autoRefresh">Auto-refresh every</label>
+                    <select id="refreshInterval">
+                        <option value="30">30s</option>
+                        <option value="60" selected>1 min</option>
+                        <option value="300">5 min</option>
+                        <option value="600">10 min</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalEndpoints">-</div>
+                <div class="stat-label">Total Endpoints</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-value" id="successCount">-</div>
+                <div class="stat-label">✓ Success</div>
+            </div>
+            <div class="stat-card error">
+                <div class="stat-value" id="failedCount">-</div>
+                <div class="stat-label">✗ Failed</div>
+            </div>
+            <div class="stat-card rate">
+                <div class="stat-value" id="successRate">-</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgResponse">-</div>
+                <div class="stat-label">Avg Response (ms)</div>
+            </div>
+        </div>
+
+        <div class="main-status">
+            <h2>
+                <span class="status-indicator loading" id="mainStatus"></span>
+                Main API Endpoint Status
+            </h2>
+            <div id="mainApiStatus">
+                <p style="color: #718096;">Click "Run Check Now" to start monitoring</p>
+            </div>
+        </div>
+
+        <div class="main-status">
+            <h2>GeoEntity Endpoints</h2>
+            <div class="filter-controls">
+                <div class="search-box">
+                    <input type="text" id="searchBox" placeholder="🔍 Search by name, category, or project..." onkeyup="filterEndpoints()">
+                </div>
+                <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+                <button class="filter-btn" data-filter="success" onclick="setFilter('success')">Success Only</button>
+                <button class="filter-btn" data-filter="error" onclick="setFilter('error')">Failed Only</button>
+            </div>
+            <div class="endpoints-grid" id="endpointsGrid">
+                <p style="color: #718096;">Waiting for data...</p>
+            </div>
+        </div>
+
+        <div class="last-updated" id="lastUpdated"></div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="/geoentity_monitoring/static/js/dashboard.js"></script>
+</body>
+</html>
+
+let autoRefreshInterval = null;
+let currentFilter = 'all';
+let allEndpoints = [];
+
+async function runCheck() {
+    document.getElementById('loadingOverlay').classList.add('active');
+    
+    try {
+        const response = await fetch('/geoentity_monitoring/api/check');
+        const data = await response.json();
+        updateDashboard(data);
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to fetch data. Check console for details.');
+    } finally {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    }
+}
+
+function updateDashboard(data) {
+    // Update main API status
+    const mainStatus = data.sources;
+    const mainStatusDiv = document.getElementById('mainApiStatus');
+    const mainIndicator = document.getElementById('mainStatus');
+    
+    if (mainStatus.status === 'success') {
+        mainIndicator.className = 'status-indicator success';
+        mainStatusDiv.innerHTML = `
+            <div class="endpoint-stats">
+                <span>✓ Status: <strong>200 OK</strong></span>
+                <span>⏱️ Response Time: <strong>${mainStatus.response_time}ms</strong></span>
+                <span>📊 Total Sources: <strong>${mainStatus.data.count}</strong></span>
+                <span>🕐 ${mainStatus.timestamp}</span>
+            </div>
+        `;
+    } else {
+        mainIndicator.className = 'status-indicator error';
+        mainStatusDiv.innerHTML = `
+            <div class="endpoint-stats">
+                <span>✗ Status: <strong>Failed</strong></span>
+                <span>Error: ${mainStatus.error || 'Unknown error'}</span>
+            </div>
+        `;
+    }
+
+    // Store all endpoints for filtering
+    allEndpoints = data.geoentities || [];
+    
+    // Update stats
+    updateStats();
+    
+    // Display endpoints
+    displayEndpoints(allEndpoints);
+    
+    // Update last checked time
+    document.getElementById('lastUpdated').textContent = 
+        'Last updated: ' + data.last_check;
+}
+
+function updateStats() {
+    const total = allEndpoints.length;
+    const success = allEndpoints.filter(function(e) {
+        return e.status === 'success';
+    }).length;
+    const failed = total - success;
+    const successRate = total > 0 ? ((success / total) * 100).toFixed(1) : 0;
+    const avgResponse = total > 0 
+        ? (allEndpoints.reduce(function(sum, e) {
+            return sum + e.response_time;
+        }, 0) / total).toFixed(1)
+        : 0;
+
+    document.getElementById('totalEndpoints').textContent = total;
+    document.getElementById('successCount').textContent = success;
+    document.getElementById('failedCount').textContent = failed;
+    document.getElementById('successRate').textContent = successRate + '%';
+    document.getElementById('avgResponse').textContent = avgResponse;
+}
+
+function displayEndpoints(endpoints) {
+    const grid = document.getElementById('endpointsGrid');
+    
+    if (endpoints.length === 0) {
+        grid.innerHTML = '<p style="color: #718096;">No endpoints match the current filter.</p>';
+        return;
+    }
+
+    let html = '';
+    for (var i = 0; i < endpoints.length; i++) {
+        var endpoint = endpoints[i];
+        html += '<div class="endpoint-card">' +
+            '<div class="endpoint-header">' +
+                '<span class="status-indicator ' + endpoint.status + '"></span>' +
+                '<div class="endpoint-info">' +
+                    '<div class="endpoint-name">' + endpoint.name + '</div>' +
+                    '<div class="endpoint-meta">' +
+                        '<span class="badge">' + endpoint.category + '</span>' +
+                        '<span>📁 ' + endpoint.project + '</span>' +
+                        '<span>ID: ' + endpoint.id + '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="endpoint-stats">' +
+                '<span>⏱️ ' + endpoint.response_time + 'ms</span>' +
+                '<span>📊 ' + endpoint.count + ' entities</span>' +
+                '<span>🕐 ' + endpoint.timestamp + '</span>' +
+            '</div>';
+        
+        if (endpoint.error) {
+            html += '<div class="error-message">❌ ' + endpoint.error + '</div>';
+        }
+        
+        html += '</div>';
+    }
+    
+    grid.innerHTML = html;
+}
+
+function filterEndpoints() {
+    const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+    let filtered = allEndpoints.slice();
+
+    // Apply status filter
+    if (currentFilter !== 'all') {
+        filtered = filtered.filter(function(e) {
+            return e.status === currentFilter;
+        });
+    }
+
+    // Apply search filter
+    if (searchTerm) {
+        filtered = filtered.filter(function(e) {
+            return e.name.toLowerCase().indexOf(searchTerm) !== -1 ||
+                   e.category.toLowerCase().indexOf(searchTerm) !== -1 ||
+                   e.project.toLowerCase().indexOf(searchTerm) !== -1;
+        });
+    }
+
+    displayEndpoints(filtered);
+}
+
+function setFilter(filter) {
+    currentFilter = filter;
+    var buttons = document.querySelectorAll('.filter-btn');
+    for (var i = 0; i < buttons.length; i++) {
+        buttons[i].classList.remove('active');
+        if (buttons[i].getAttribute('data-filter') === filter) {
+            buttons[i].classList.add('active');
+        }
+    }
+    filterEndpoints();
+}
+
+function toggleAutoRefresh() {
+    const checkbox = document.getElementById('autoRefresh');
+    
+    if (checkbox.checked) {
+        const interval = parseInt(document.getElementById('refreshInterval').value) * 1000;
+        autoRefreshInterval = setInterval(runCheck, interval);
+        runCheck();
+    } else {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+    }
+}
+
+// Initial check on page load
+window.onload = function() {
+    runCheck();
+};
+
+        ProxyPass "/geoentity_monitoring/static" "http://127.0.0.1:1115/geoentity_monitoring/static"
+        ProxyPassReverse "/geoentity_monitoring/static" "http://127.0.0.1:1115/geoentity_monitoring/static"
+
+        ProxyPass "/geoentity_monitoring/" "http://127.0.0.1:1115/geoentity_monitoring/"
+        ProxyPassReverse "/geoentity_monitoring/" "http://127.0.0.1:1115/geoentity_monitoring/"
