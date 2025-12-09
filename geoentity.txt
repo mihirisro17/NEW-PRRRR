@@ -1,0 +1,66 @@
+https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/
+
+this gives like
+{
+  "count": 39,
+  "data": [
+    {
+      "category": "LULC",
+      "id": 15,
+      "name": "SISDP LULC 10K 2016-19",
+      "parent_id": null,
+      "project": "SISDP LULC10K",
+      "theme": null
+    },
+    {
+      "category": "Hydrology",
+      "id": 22,
+      "name": "LAMA Hydro Gauge Station",
+      "parent_id": null,
+      "project": "LAMA",
+      "theme": null
+    },
+    {
+      "category": "Village",
+      "id": 23,
+      "name": "Gujarat Village Boundary 2025",
+      "parent_id": null,
+      "project": "Encroachment Monitoring",
+      "theme": null
+    },
+
+if this works and get 200then show green dot after that 
+
+add id from above in 
+
+https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/{id}/geoentities
+one by one so its give sdat alike
+{
+  "count": 820,
+  "data": [
+    {
+      "geoentity_id": "C91S23D601",
+      "geoentity_timestamp": "Mon, 17 Mar 2025 18:30:00 GMT",
+      "name": "ADILABAD",
+      "parent_name": "TELANGANA"
+    },
+    {
+      "geoentity_id": "C91S19D338",
+      "geoentity_timestamp": "Mon, 17 Mar 2025 18:30:00 GMT",
+      "name": "AGAR MALWA",
+      "parent_name": "MADHYA PRADESH"
+    },
+    {
+      "geoentity_id": "C91S25D715",
+      "geoentity_timestamp": "Mon, 17 Mar 2025 18:30:00 GMT",
+      "name": "AGRA",
+      "parent_name": "UTTAR PRADESH"
+    },
+    {
+      "geoentity_id": "C91S12D180",
+      "geoentity_timestamp": "Mon, 17 Mar 2025 18:30:00 GMT",
+      "name": "AHMADABAD",
+      "parent_name": "GUJARAT"
+    },
+
+if all works and get 200 for all then show green dot also give for which its not working like that 
