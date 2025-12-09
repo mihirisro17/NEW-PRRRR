@@ -1,0 +1,111 @@
+http://192.168.2.137:8080/storage_monitoring_api/summary?summary_type=pools_only
+
+is gives data like
+{
+  "pools": {
+    "pool1": {
+      "backup": {
+        "stats": {
+          "growthrate": {
+            "avg_growth_rate_gb_per_day": 0.0,
+            "avg_growth_rate_gb_per_month": 0.0,
+            "avg_growth_rate_gb_per_year": 0.0
+          },
+          "is_active": false,
+          "prediction": {
+            "days_until_full": "Infinite",
+            "predicted_fill_date": "No Growth"
+          },
+          "size": 8231.42,
+          "total_size": 13000
+        }
+      },
+      "master": {
+        "stats": {
+          "growthrate": {
+            "avg_growth_rate_gb_per_day": 5.02,
+            "avg_growth_rate_gb_per_month": 152.81,
+            "avg_growth_rate_gb_per_year": 1832.3
+          },
+          "is_active": true,
+          "prediction": {
+            "days_until_full": 433,
+            "predicted_fill_date": "2027-02-07"
+          },
+          "size": 10822.7,
+          "total_size": 13000
+        }
+      }
+    },
+    "pool10": {
+      "backup": {
+        "stats": {
+          "growthrate": {
+            "avg_growth_rate_gb_per_day": 0,
+            "avg_growth_rate_gb_per_month": 0,
+            "avg_growth_rate_gb_per_year": 0
+          },
+          "is_active": false,
+          "prediction": {
+            "days_until_full": "Infinite",
+            "predicted_fill_date": "No Growth"
+          },
+          "size": 0.0,
+          "total_size": 13000
+        }
+      },
+      "master": {
+        "stats": {
+          "growthrate": {
+            "avg_growth_rate_gb_per_day": 3.4,
+            "avg_growth_rate_gb_per_month": 103.5,
+            "avg_growth_rate_gb_per_year": 1241.0
+          },
+          "is_active": true,
+          "prediction": {
+            "days_until_full": 2280,
+            "predicted_fill_date": "2032-02-28"
+          },
+          "size": 5245.16,
+          "total_size": 13000
+        }
+      }
+    },
+    "pool11": {
+      "backup": {
+        "stats": {
+          "growthrate": {
+            "avg_growth_rate_gb_per_day": 9.94,
+            "avg_growth_rate_gb_per_month": 302.57,
+            "avg_growth_rate_gb_per_year": 3628.1
+          },
+          "is_active": false,
+          "prediction": {
+            "days_until_full": 328,
+            "predicted_fill_date": "2025-03-25"
+          },
+          "size": 9731.02,
+          "total_size": 13000
+        }
+      },
+      "master": {
+        "stats": {
+          "growthrate": {
+            "avg_growth_rate_gb_per_day": 101.31,
+            "avg_growth_rate_gb_per_month": 3083.88,
+            "avg_growth_rate_gb_per_year": 36978.15
+          },
+          "is_active": true,
+          "prediction": {
+            "days_until_full": 0,
+            "predicted_fill_date": "2025-11-01"
+          },
+          "size": 12964.02,
+          "total_size": 13000
+        }
+      }
+    },
+
+
+in this i want 3 tyle of alert , alert, warning and and any name based on totatlsize and size
+and alert name will be storage pool TAKE ONLY MASTER
