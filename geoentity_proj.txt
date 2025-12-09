@@ -1,23 +1,14 @@
-mkdir -p geoentity_monitoring/{static/{css,js},templates} && \
-touch geoentity_monitoring/{app.py,requirements.txt,README.md} \
-      geoentity_monitoring/static/css/style.css \
-      geoentity_monitoring/static/js/dashboard.js \
-      geoentity_monitoring/templates/dashboard.html
-
-
-
-
-
 from flask import Flask, render_template, jsonify
 import requests
 from datetime import datetime
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-app = Flask(__name__)
-
-# Configuration for reverse proxy
-app.config['APPLICATION_ROOT'] = '/monitoring_sentinel'
+# IMPORTANT: Configure static_url_path for reverse proxy
+app = Flask(__name__, 
+            static_url_path='/geoentity_monitoring/static',
+            static_folder='static',
+            template_folder='templates')
 
 BASE_URL = "https://vedas.sac.gov.in/geoentity-services/api"
 
@@ -133,16 +124,16 @@ class APIMonitor:
 
 monitor = APIMonitor()
 
-@app.route('/monitoring_sentinel/')
+@app.route('/geoentity_monitoring/')
 def index():
     return render_template('dashboard.html')
 
-@app.route('/monitoring_sentinel/api/check', methods=['GET'])
+@app.route('/geoentity_monitoring/api/check', methods=['GET'])
 def check_apis():
     results = monitor.run_full_check()
     return jsonify(results)
 
-@app.route('/monitoring_sentinel/api/stats', methods=['GET'])
+@app.route('/geoentity_monitoring/api/stats', methods=['GET'])
 def get_stats():
     if not monitor.results.get('geoentities'):
         return jsonify({'error': 'No data available'})
@@ -162,7 +153,7 @@ def get_stats():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=1113)
+    app.run(debug=True, host='0.0.0.0', port=1115)
 
 
 
@@ -172,88 +163,144 @@ if __name__ == '__main__':
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GeoEntity Services Monitor - SAC VEDAS</title>
-    <link rel="stylesheet" href="/monitoring_sentinel/static/css/style.css">
+    <link rel="stylesheet" href="/geoentity_monitoring/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="background-animation">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+    </div>
+
     <div class="container">
         <div class="header">
-            <h1>🛰️ GeoEntity Services Monitor</h1>
-            <p>Real-time monitoring of SAC VEDAS GeoEntity API endpoints</p>
-            <div class="controls">
-                <button class="btn btn-primary" onclick="runCheck()">
-                    <span>🔄</span> Run Check Now
-                </button>
-                <div class="auto-refresh">
-                    <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
-                    <label for="autoRefresh">Auto-refresh every</label>
-                    <select id="refreshInterval">
-                        <option value="30">30s</option>
-                        <option value="60" selected>1 min</option>
-                        <option value="300">5 min</option>
-                        <option value="600">10 min</option>
-                    </select>
+            <div class="header-content">
+                <div class="title-section">
+                    <div class="logo">🛰️</div>
+                    <div>
+                        <h1>GeoEntity Services Monitor</h1>
+                        <p>Real-time monitoring of SAC VEDAS GeoEntity API endpoints</p>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="runCheck()">
+                        <span class="btn-icon">🔄</span>
+                        <span>Run Check Now</span>
+                    </button>
+                    <div class="auto-refresh">
+                        <label class="switch">
+                            <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="refresh-label">Auto-refresh</span>
+                        <select id="refreshInterval">
+                            <option value="30">30s</option>
+                            <option value="60" selected>1 min</option>
+                            <option value="300">5 min</option>
+                            <option value="600">10 min</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-value" id="totalEndpoints">-</div>
-                <div class="stat-label">Total Endpoints</div>
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="totalEndpoints">-</div>
+                    <div class="stat-label">Total Endpoints</div>
+                </div>
             </div>
-            <div class="stat-card success">
-                <div class="stat-value" id="successCount">-</div>
-                <div class="stat-label">✓ Success</div>
+            <div class="stat-card stat-success">
+                <div class="stat-icon">✓</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="successCount">-</div>
+                    <div class="stat-label">Success</div>
+                </div>
             </div>
-            <div class="stat-card error">
-                <div class="stat-value" id="failedCount">-</div>
-                <div class="stat-label">✗ Failed</div>
+            <div class="stat-card stat-error">
+                <div class="stat-icon">✗</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="failedCount">-</div>
+                    <div class="stat-label">Failed</div>
+                </div>
             </div>
-            <div class="stat-card rate">
-                <div class="stat-value" id="successRate">-</div>
-                <div class="stat-label">Success Rate</div>
+            <div class="stat-card stat-rate">
+                <div class="stat-icon">📈</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="successRate">-</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="avgResponse">-</div>
-                <div class="stat-label">Avg Response (ms)</div>
+                <div class="stat-icon">⚡</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="avgResponse">-</div>
+                    <div class="stat-label">Avg Response (ms)</div>
+                </div>
             </div>
         </div>
 
         <div class="main-status">
-            <h2>
-                <span class="status-indicator loading" id="mainStatus"></span>
-                Main API Endpoint Status
-            </h2>
-            <div id="mainApiStatus">
-                <p style="color: #718096;">Click "Run Check Now" to start monitoring</p>
+            <div class="section-header">
+                <h2>
+                    <span class="status-indicator loading" id="mainStatus"></span>
+                    Main API Endpoint Status
+                </h2>
+            </div>
+            <div id="mainApiStatus" class="api-status-content">
+                <p class="placeholder-text">Click "Run Check Now" to start monitoring</p>
             </div>
         </div>
 
         <div class="main-status">
-            <h2>GeoEntity Endpoints</h2>
+            <div class="section-header">
+                <h2>GeoEntity Endpoints</h2>
+            </div>
             <div class="filter-controls">
                 <div class="search-box">
-                    <input type="text" id="searchBox" placeholder="🔍 Search by name, category, or project..." onkeyup="filterEndpoints()">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchBox" placeholder="Search by name, category, or project..." onkeyup="filterEndpoints()">
                 </div>
-                <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
-                <button class="filter-btn" data-filter="success" onclick="setFilter('success')">Success Only</button>
-                <button class="filter-btn" data-filter="error" onclick="setFilter('error')">Failed Only</button>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">
+                        <span>All</span>
+                    </button>
+                    <button class="filter-btn" data-filter="success" onclick="setFilter('success')">
+                        <span>✓ Success</span>
+                    </button>
+                    <button class="filter-btn" data-filter="error" onclick="setFilter('error')">
+                        <span>✗ Failed</span>
+                    </button>
+                </div>
             </div>
             <div class="endpoints-grid" id="endpointsGrid">
-                <p style="color: #718096;">Waiting for data...</p>
+                <p class="placeholder-text">Waiting for data...</p>
             </div>
         </div>
 
-        <div class="last-updated" id="lastUpdated"></div>
+        <div class="last-updated" id="lastUpdated">
+            <span class="update-icon">🕐</span>
+            <span id="lastUpdateText">Not checked yet</span>
+        </div>
     </div>
 
     <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Checking endpoints...</p>
+        </div>
     </div>
 
-    <script src="/monitoring_sentinel/static/js/dashboard.js"></script>
+    <script src="/geoentity_monitoring/static/js/dashboard.js"></script>
 </body>
 </html>
+
+
 
 
 * {
@@ -263,178 +310,486 @@ if __name__ == '__main__':
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
     min-height: 100vh;
     padding: 20px;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Animated Background */
+.background-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.circle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: float 20s infinite ease-in-out;
+}
+
+.circle-1 {
+    width: 300px;
+    height: 300px;
+    top: 10%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.circle-2 {
+    width: 200px;
+    height: 200px;
+    top: 60%;
+    right: 15%;
+    animation-delay: 5s;
+}
+
+.circle-3 {
+    width: 400px;
+    height: 400px;
+    bottom: -100px;
+    left: 30%;
+    animation-delay: 10s;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.3;
+    }
+    50% {
+        transform: translateY(-50px) scale(1.1);
+        opacity: 0.5;
+    }
 }
 
 .container {
     max-width: 1400px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
 }
 
+/* Header Styles */
 .header {
-    background: white;
-    border-radius: 15px;
-    padding: 25px 30px;
-    margin-bottom: 25px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.title-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo {
+    font-size: 48px;
+    animation: rotate 10s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .header h1 {
-    color: #2d3748;
-    font-size: 28px;
+    color: #1a202c;
+    font-size: 32px;
+    font-weight: 800;
     margin-bottom: 5px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .header p {
     color: #718096;
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 500;
 }
 
 .controls {
     display: flex;
-    gap: 15px;
+    gap: 20px;
     align-items: center;
-    margin-top: 15px;
     flex-wrap: wrap;
 }
 
+/* Button Styles */
 .btn {
-    padding: 12px 24px;
+    padding: 14px 28px;
     border: none;
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 12px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
 }
 
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
 }
 
-.btn-secondary {
-    background: #e2e8f0;
-    color: #2d3748;
+.btn-primary:active {
+    transform: translateY(-1px);
 }
 
+.btn-icon {
+    font-size: 18px;
+    animation: spin 2s linear infinite paused;
+}
+
+.btn-primary:hover .btn-icon {
+    animation-play-state: running;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Toggle Switch */
 .auto-refresh {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    background: white;
+    padding: 8px 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.auto-refresh input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
     cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 26px;
 }
 
-.auto-refresh select {
-    padding: 8px 12px;
-    border: 2px solid #e2e8f0;
-    border-radius: 6px;
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+input:checked + .slider:before {
+    transform: translateX(24px);
+}
+
+.refresh-label {
+    color: #4a5568;
+    font-weight: 600;
     font-size: 14px;
 }
 
+.auto-refresh select {
+    padding: 8px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+    color: #4a5568;
+    transition: border-color 0.3s;
+}
+
+.auto-refresh select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* Stats Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 20px;
-    margin-bottom: 25px;
+    margin-bottom: 30px;
 }
 
 .stat-card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    text-align: center;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transform: scaleX(0);
     transition: transform 0.3s ease;
 }
 
+.stat-card:hover::before {
+    transform: scaleX(1);
+}
+
 .stat-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon {
+    font-size: 40px;
+    opacity: 0.8;
+}
+
+.stat-content {
+    flex: 1;
 }
 
 .stat-value {
     font-size: 36px;
-    font-weight: bold;
+    font-weight: 800;
     color: #2d3748;
     margin-bottom: 5px;
+    line-height: 1;
 }
 
 .stat-label {
-    font-size: 14px;
+    font-size: 13px;
     color: #718096;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    font-weight: 600;
 }
 
-.stat-card.success .stat-value { 
-    color: #48bb78; 
+.stat-success .stat-value { 
+    color: #48bb78;
 }
 
-.stat-card.error .stat-value { 
-    color: #f56565; 
+.stat-error .stat-value { 
+    color: #f56565;
 }
 
-.stat-card.rate .stat-value { 
-    color: #4299e1; 
+.stat-rate .stat-value { 
+    color: #4299e1;
 }
 
+/* Main Status Section */
 .main-status {
-    background: white;
-    border-radius: 12px;
-    padding: 25px;
-    margin-bottom: 25px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.main-status h2 {
-    color: #2d3748;
-    margin-bottom: 15px;
+.section-header h2 {
+    color: #1a202c;
+    margin-bottom: 20px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 20px;
+    gap: 12px;
+    font-size: 22px;
+    font-weight: 700;
 }
 
+.api-status-content {
+    background: #f7fafc;
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+}
+
+.placeholder-text {
+    color: #a0aec0;
+    text-align: center;
+    padding: 20px;
+    font-size: 15px;
+}
+
+/* Filter Controls */
+.filter-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 300px;
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    opacity: 0.5;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 14px 16px 14px 46px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 15px;
+    transition: all 0.3s;
+    background: white;
+    font-weight: 500;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-btn {
+    padding: 14px 24px;
+    border: 2px solid #e2e8f0;
+    background: white;
+    border-radius: 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.filter-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+    transform: translateY(-2px);
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Endpoints Grid */
 .endpoints-grid {
     display: grid;
-    gap: 15px;
+    gap: 16px;
 }
 
 .endpoint-card {
-    background: #f7fafc;
+    background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
     border: 2px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 20px;
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.endpoint-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 4px;
+    background: #e2e8f0;
+    transition: all 0.3s;
 }
 
 .endpoint-card:hover {
     border-color: #cbd5e0;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    transform: translateX(5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    transform: translateX(4px);
+}
+
+.endpoint-card:hover::before {
+    background: linear-gradient(180deg, #667eea, #764ba2);
 }
 
 .endpoint-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
+    gap: 12px;
 }
 
 .endpoint-info {
@@ -442,37 +797,37 @@ body {
 }
 
 .endpoint-name {
-    font-size: 16px;
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 4px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 6px;
 }
 
 .endpoint-meta {
-    font-size: 12px;
+    font-size: 13px;
     color: #718096;
-}
-
-.endpoint-meta span {
-    margin-right: 15px;
-    display: inline-block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .endpoint-meta .badge {
-    background: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
+/* Status Indicators */
 .status-indicator {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     position: relative;
-    margin-right: 15px;
     flex-shrink: 0;
 }
 
@@ -490,7 +845,7 @@ body {
 
 .status-indicator.loading {
     background: #fbd38d;
-    animation: pulse 1s infinite;
+    animation: pulse-yellow 1.5s infinite;
 }
 
 @keyframes pulse-green {
@@ -498,7 +853,7 @@ body {
         box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.7);
     }
     70% {
-        box-shadow: 0 0 0 10px rgba(72, 187, 120, 0);
+        box-shadow: 0 0 0 15px rgba(72, 187, 120, 0);
     }
     100% {
         box-shadow: 0 0 0 0 rgba(72, 187, 120, 0);
@@ -510,53 +865,59 @@ body {
         box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7);
     }
     70% {
-        box-shadow: 0 0 0 10px rgba(245, 101, 101, 0);
+        box-shadow: 0 0 0 15px rgba(245, 101, 101, 0);
     }
     100% {
         box-shadow: 0 0 0 0 rgba(245, 101, 101, 0);
     }
 }
 
-@keyframes pulse {
+@keyframes pulse-yellow {
     0%, 100% { 
         opacity: 1; 
+        transform: scale(1);
     }
     50% { 
-        opacity: 0.5; 
+        opacity: 0.6;
+        transform: scale(1.1);
     }
 }
 
 .endpoint-stats {
     display: flex;
-    gap: 20px;
-    font-size: 13px;
+    gap: 24px;
+    font-size: 14px;
     color: #4a5568;
     flex-wrap: wrap;
+    font-weight: 600;
 }
 
 .endpoint-stats span {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
 }
 
 .error-message {
-    background: #fed7d7;
+    background: linear-gradient(135deg, #fed7d7 0%, #fcbdbd 100%);
     color: #c53030;
-    padding: 10px;
-    border-radius: 6px;
+    padding: 12px 16px;
+    border-radius: 8px;
     font-size: 13px;
-    margin-top: 10px;
+    margin-top: 12px;
     border-left: 4px solid #f56565;
+    font-weight: 600;
 }
 
+/* Loading Overlay */
 .loading-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
     display: none;
     justify-content: center;
     align-items: center;
@@ -567,111 +928,111 @@ body {
     display: flex;
 }
 
-.spinner {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #667eea;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
+.loading-content {
+    text-align: center;
 }
 
-@keyframes spin {
-    0% { 
-        transform: rotate(0deg); 
-    }
-    100% { 
-        transform: rotate(360deg); 
-    }
-}
-
-.filter-controls {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-}
-
-.filter-btn {
-    padding: 8px 16px;
-    border: 2px solid #e2e8f0;
-    background: white;
-    border-radius: 6px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-weight: 500;
-}
-
-.filter-btn:hover {
-    border-color: #667eea;
-    color: #667eea;
-}
-
-.filter-btn.active {
-    background: #667eea;
+.loading-content p {
     color: white;
-    border-color: #667eea;
+    margin-top: 20px;
+    font-size: 16px;
+    font-weight: 600;
 }
 
-.search-box {
-    flex: 1;
-    min-width: 250px;
+.spinner {
+    border: 5px solid rgba(255, 255, 255, 0.2);
+    border-top: 5px solid white;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin-loader 1s linear infinite;
+    margin: 0 auto;
 }
 
-.search-box input {
-    width: 100%;
-    padding: 10px 15px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: border-color 0.3s;
+@keyframes spin-loader {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-.search-box input:focus {
-    outline: none;
-    border-color: #667eea;
-}
-
+/* Last Updated */
 .last-updated {
     text-align: center;
     color: white;
-    font-size: 13px;
-    margin-top: 20px;
-    padding: 10px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 8px;
+    font-size: 14px;
+    margin-top: 30px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.update-icon {
+    font-size: 18px;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
     .header h1 {
-        font-size: 22px;
+        font-size: 24px;
     }
     
-    .controls {
+    .header-content {
         flex-direction: column;
         align-items: flex-start;
     }
     
+    .title-section {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .controls {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+    
     .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
     
     .stat-value {
         font-size: 28px;
     }
     
+    .filter-controls {
+        flex-direction: column;
+    }
+    
+    .search-box {
+        min-width: 100%;
+    }
+    
+    .filter-buttons {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .filter-btn {
+        flex: 1;
+        padding: 12px;
+    }
+    
     .endpoint-header {
         flex-direction: column;
         align-items: flex-start;
     }
-    
-    .endpoint-stats {
-        flex-direction: column;
-        gap: 10px;
-    }
 }
+
 
 
 
@@ -683,15 +1044,20 @@ async function runCheck() {
     document.getElementById('loadingOverlay').classList.add('active');
     
     try {
-        const response = await fetch('/monitoring_sentinel/api/check');
+        const response = await fetch('/geoentity_monitoring/api/check');
         const data = await response.json();
         updateDashboard(data);
     } catch (error) {
         console.error('Error:', error);
-        alert('Failed to fetch data. Check console for details.');
+        showError('Failed to fetch data. Please check your connection.');
     } finally {
         document.getElementById('loadingOverlay').classList.remove('active');
     }
+}
+
+function showError(message) {
+    const mainStatusDiv = document.getElementById('mainApiStatus');
+    mainStatusDiv.innerHTML = '<div class="error-message">❌ ' + message + '</div>';
 }
 
 function updateDashboard(data) {
@@ -702,22 +1068,20 @@ function updateDashboard(data) {
     
     if (mainStatus.status === 'success') {
         mainIndicator.className = 'status-indicator success';
-        mainStatusDiv.innerHTML = `
-            <div class="endpoint-stats">
-                <span>✓ Status: <strong>200 OK</strong></span>
-                <span>⏱️ Response Time: <strong>${mainStatus.response_time}ms</strong></span>
-                <span>📊 Total Sources: <strong>${mainStatus.data.count}</strong></span>
-                <span>🕐 ${mainStatus.timestamp}</span>
-            </div>
-        `;
+        mainStatusDiv.innerHTML = 
+            '<div class="endpoint-stats">' +
+                '<span><strong>Status:</strong> ✓ 200 OK</span>' +
+                '<span><strong>Response Time:</strong> ' + mainStatus.response_time + 'ms</span>' +
+                '<span><strong>Total Sources:</strong> ' + mainStatus.data.count + '</span>' +
+                '<span><strong>Timestamp:</strong> ' + mainStatus.timestamp + '</span>' +
+            '</div>';
     } else {
         mainIndicator.className = 'status-indicator error';
-        mainStatusDiv.innerHTML = `
-            <div class="endpoint-stats">
-                <span>✗ Status: <strong>Failed</strong></span>
-                <span>Error: ${mainStatus.error || 'Unknown error'}</span>
-            </div>
-        `;
+        mainStatusDiv.innerHTML = 
+            '<div class="error-message">' +
+                '❌ <strong>Status:</strong> Failed<br>' +
+                '<strong>Error:</strong> ' + (mainStatus.error || 'Unknown error') +
+            '</div>';
     }
 
     // Store all endpoints for filtering
@@ -730,8 +1094,7 @@ function updateDashboard(data) {
     displayEndpoints(allEndpoints);
     
     // Update last checked time
-    document.getElementById('lastUpdated').textContent = 
-        'Last updated: ' + data.last_check;
+    document.getElementById('lastUpdateText').textContent = 'Last updated: ' + data.last_check;
 }
 
 function updateStats() {
@@ -747,18 +1110,35 @@ function updateStats() {
         }, 0) / total).toFixed(1)
         : 0;
 
-    document.getElementById('totalEndpoints').textContent = total;
-    document.getElementById('successCount').textContent = success;
-    document.getElementById('failedCount').textContent = failed;
+    animateValue('totalEndpoints', parseInt(document.getElementById('totalEndpoints').textContent) || 0, total, 500);
+    animateValue('successCount', parseInt(document.getElementById('successCount').textContent) || 0, success, 500);
+    animateValue('failedCount', parseInt(document.getElementById('failedCount').textContent) || 0, failed, 500);
+    
     document.getElementById('successRate').textContent = successRate + '%';
     document.getElementById('avgResponse').textContent = avgResponse;
+}
+
+function animateValue(id, start, end, duration) {
+    const element = document.getElementById(id);
+    const range = end - start;
+    const increment = range / (duration / 16);
+    let current = start;
+    
+    const timer = setInterval(function() {
+        current += increment;
+        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+            current = end;
+            clearInterval(timer);
+        }
+        element.textContent = Math.round(current);
+    }, 16);
 }
 
 function displayEndpoints(endpoints) {
     const grid = document.getElementById('endpointsGrid');
     
     if (endpoints.length === 0) {
-        grid.innerHTML = '<p style="color: #718096;">No endpoints match the current filter.</p>';
+        grid.innerHTML = '<p class="placeholder-text">No endpoints match the current filter.</p>';
         return;
     }
 
@@ -773,18 +1153,18 @@ function displayEndpoints(endpoints) {
                     '<div class="endpoint-meta">' +
                         '<span class="badge">' + endpoint.category + '</span>' +
                         '<span>📁 ' + endpoint.project + '</span>' +
-                        '<span>ID: ' + endpoint.id + '</span>' +
+                        '<span>🔑 ID: ' + endpoint.id + '</span>' +
                     '</div>' +
                 '</div>' +
             '</div>' +
             '<div class="endpoint-stats">' +
-                '<span>⏱️ ' + endpoint.response_time + 'ms</span>' +
+                '<span>⚡ ' + endpoint.response_time + 'ms</span>' +
                 '<span>📊 ' + endpoint.count + ' entities</span>' +
                 '<span>🕐 ' + endpoint.timestamp + '</span>' +
             '</div>';
         
         if (endpoint.error) {
-            html += '<div class="error-message">❌ ' + endpoint.error + '</div>';
+            html += '<div class="error-message">❌ <strong>Error:</strong> ' + endpoint.error + '</div>';
         }
         
         html += '</div>';
@@ -845,14 +1225,8 @@ function toggleAutoRefresh() {
 
 // Initial check on page load
 window.onload = function() {
-    runCheck();
+    setTimeout(runCheck, 500);
 };
 
 
-
-ProxyPass "/monitoring_sentinel/static" "http://127.0.0.1:1113/monitoring_sentinel/static"
-ProxyPassReverse "/monitoring_sentinel/static" "http://127.0.0.1:1113/monitoring_sentinel/static"
-
-ProxyPass "/monitoring_sentinel/" "http://127.0.0.1:1113/monitoring_sentinel/"
-ProxyPassReverse "/monitoring_sentinel/" "http://127.0.0.1:1113/monitoring_sentinel/"
 
