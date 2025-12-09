@@ -1,36 +1,4 @@
-https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/id/geoentities
-in this we getting
-
-like
-{
-  "count": 820,
-  "data": [
-    {
-      "geoentity_id": "C91S23D601",
-      "geoentity_timestamp": "Mon, 17 Mar 2025 18:30:00 GMT",
-      "name": "ADILABAD",
-      "parent_name": "TELANGANA"
-    },
-    {
-      "geoentity_id": "C91S19D338",
-      "geoentity_timestamp": "Mon, 17 Mar 2025 18:30:00 GMT",
-      "name": "AGAR MALWA",
-      "parent_name": "MADHYA PRADESH"
-    },
-    {
-      "geoentity_id": "C91S25D715",
-      "geoentity_timestamp": "Mon, 17 Mar 2025 18:30:00 GMT",
-      "name": "AGRA",
-      "parent_name": "UTTAR PRADESH"
-    },
-
-now take 
-https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/{id}/geoentities?prefix={geoentity_id}
-
-take one by one all geoentity id
+http://192.168.2.137:8080/geoentity_monitoring/api/filter-check/all-results
 
 
-and for id 15,26 and 28 take
-https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/{id}/geoentities?bbox=72.450,22.880,72.700,23.125&parents=1
-
-for this create one different tab currelt wornkig name as filter checking by geoentity and id and the above process call filter by bbox and prefix and make live for 1 id completed then show in that tab 
+i got this empty
