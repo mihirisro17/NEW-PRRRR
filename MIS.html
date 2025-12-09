@@ -554,7 +554,6 @@
             opacity: 0.6;
         }
 
-        /* ✨ ENHANCED APP CATEGORIES */
         .app-category {
             margin-bottom: 30px;
         }
@@ -569,7 +568,6 @@
             padding-left: 18px;
         }
 
-        /* ✨ BEAUTIFUL NAV BUTTONS WITH ENHANCED ICONS */
         .nav-button {
             display: flex;
             align-items: center;
@@ -622,7 +620,6 @@
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         }
 
-        /* 🎨 STUNNING ICON CONTAINER */
         .nav-icon-wrapper {
             position: relative;
             display: flex;
@@ -657,7 +654,6 @@
             filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
         }
 
-        /* 🏷️ APP BADGE INDICATOR */
         .app-badge {
             position: absolute;
             top: -4px;
@@ -1413,6 +1409,13 @@
             animation: blinkRed 3s ease-in-out infinite;
         }
 
+        .alert-info {
+            background: rgba(59, 130, 246, 0.12) !important;
+            border-left: 6px solid #3b82f6 !important;
+            animation: blinkBlue 3s ease-in-out infinite;
+            backdrop-filter: blur(20px);
+        }
+
         .theme-vedas .alert-offline,
         .theme-vedas .alert-memory,
         .theme-vedas .alert-cpu,
@@ -1435,6 +1438,12 @@
             border-left: 6px solid #dc2626 !important;
         }
 
+        .theme-vedas .alert-info {
+            background: rgba(59, 130, 246, 0.08) !important;
+            border-left: 6px solid #3b82f6 !important;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15) !important;
+        }
+
         @keyframes blinkRed {
             0%, 100% {
                 box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
@@ -1450,6 +1459,15 @@
             }
             50% {
                 box-shadow: 0 8px 40px rgba(245, 158, 11, 0.4);
+            }
+        }
+
+        @keyframes blinkBlue {
+            0%, 100% {
+                box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+            }
+            50% {
+                box-shadow: 0 8px 40px rgba(59, 130, 246, 0.4);
             }
         }
 
@@ -1479,6 +1497,11 @@
         .alert-disk .alert-type,
         .alert-warning .alert-type {
             color: #f59e0b !important;
+            font-weight: 900;
+        }
+
+        .alert-info .alert-type {
+            color: #3b82f6 !important;
             font-weight: 900;
         }
 
@@ -1815,7 +1838,6 @@
         <div class="sidebar" :class="{ collapsed: sidebarCollapsed }">
             <div class="sidebar-title">MY APPLICATIONS</div>
             
-            <!-- HOME -->
             <a href="javascript:void(0)" class="nav-button" :class="{ active: currentPage === 'home' }"
                 @click="navigateTo('home')">
                 <div class="nav-icon-wrapper">
@@ -1827,11 +1849,10 @@
                 </div>
             </a>
 
-            <!-- MONITORING APPS -->
             <div class="app-category">
                 <div class="category-title">🔍 Monitoring</div>
                 <a v-for="app in monitoringApps" :key="app.id" :href="app.url" target="app-frame" class="nav-button"
-                    :class="{ active: currentPage === app.id }" @click="setActive(app.id)">
+                    :class="{ active: currentPage === app.id }" @click.prevent="setActive(app.id)">
                     <div class="nav-icon-wrapper">
                         <span class="nav-icon">{{ app.icon }}</span>
                         <span v-if="app.badge" class="app-badge">{{ app.badge }}</span>
@@ -1843,11 +1864,10 @@
                 </a>
             </div>
 
-            <!-- DATA MANAGEMENT -->
             <div class="app-category">
                 <div class="category-title">📊 Data Management</div>
                 <a v-for="app in dataApps" :key="app.id" :href="app.url" target="app-frame" class="nav-button"
-                    :class="{ active: currentPage === app.id }" @click="setActive(app.id)">
+                    :class="{ active: currentPage === app.id }" @click.prevent="setActive(app.id)">
                     <div class="nav-icon-wrapper">
                         <span class="nav-icon">{{ app.icon }}</span>
                         <span v-if="app.badge" class="app-badge">{{ app.badge }}</span>
@@ -1859,11 +1879,10 @@
                 </a>
             </div>
 
-            <!-- ANALYTICS & TOOLS -->
             <div class="app-category">
                 <div class="category-title">🛠️ Analytics & Tools</div>
                 <a v-for="app in toolsApps" :key="app.id" :href="app.url" target="app-frame" class="nav-button"
-                    :class="{ active: currentPage === app.id }" @click="setActive(app.id)">
+                    :class="{ active: currentPage === app.id }" @click.prevent="setActive(app.id)">
                     <div class="nav-icon-wrapper">
                         <span class="nav-icon">{{ app.icon }}</span>
                         <span v-if="app.badge" class="app-badge">{{ app.badge }}</span>
@@ -1957,7 +1976,8 @@
                 <div v-if="totalAlerts === 0" class="no-alerts">
                     ✅ No alerts<br>All systems operational
                 </div>
-                <div v-else">
+                <div v-else>
+                    <!-- DATASETS ALERTS -->
                     <div class="alert-section" v-if="datasetAlerts.length > 0">
                         <div class="alert-section-header" @click="toggleDatasetSection">
                             <div class="alert-section-title">
@@ -1978,6 +1998,7 @@
                         </div>
                     </div>
 
+                    <!-- SERVER ALERTS -->
                     <div class="alert-section" v-if="serverAlerts.length > 0">
                         <div class="alert-section-header" @click="toggleServerSection">
                             <div class="alert-section-title">
@@ -1998,6 +2019,7 @@
                         </div>
                     </div>
 
+                    <!-- PROCESS ALERTS -->
                     <div class="alert-section" v-if="processAlerts.length > 0">
                         <div class="alert-section-header" @click="toggleProcessSection">
                             <div class="alert-section-title">
@@ -2014,6 +2036,27 @@
                                     <div class="alert-server">{{ alert.server }}</div>
                                 </div>
                                 <button class="alert-delete-btn" @click="removeAlert('process', index)">×</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STORAGE POOL ALERTS -->
+                    <div class="alert-section" v-if="storageAlerts.length > 0">
+                        <div class="alert-section-header" @click="toggleStorageSection">
+                            <div class="alert-section-title">
+                                💾 Storage Pools ({{ storageAlerts.length }})
+                            </div>
+                            <span class="collapse-icon" :class="{ collapsed: storageSectionCollapsed }">▼</span>
+                        </div>
+                        <div class="alert-section-content" :class="{ collapsed: storageSectionCollapsed, 'limit-height': !storageSectionCollapsed && storageAlerts.length > 2 }">
+                            <div v-for="(alert, index) in storageAlerts" :key="'storage-' + index" class="alert-item"
+                                :class="'alert-' + alert.type.toLowerCase()">
+                                <div class="alert-content">
+                                    <div class="alert-type">{{ alert.type }}</div>
+                                    <div class="alert-message">{{ alert.message }}</div>
+                                    <div class="alert-server">{{ alert.server }} | Fill Date: {{ alert.prediction }}</div>
+                                </div>
+                                <button class="alert-delete-btn" @click="removeAlert('storage', index)">×</button>
                             </div>
                         </div>
                     </div>
@@ -2076,9 +2119,11 @@
                     datasetSectionCollapsed: false,
                     serverSectionCollapsed: false,
                     processSectionCollapsed: false,
+                    storageSectionCollapsed: false,
                     datasetAlerts: [],
                     serverAlerts: [],
                     processAlerts: [],
+                    storageAlerts: [],
                     clearedAlerts: new Set(),
                     lastUpdated: '',
                     totalServers: 20,
@@ -2087,7 +2132,6 @@
                     isRefreshing: false,
                     showHistory: false,
                     alertHistory: [],
-                    // ✨ ENHANCED APP CATEGORIES WITH BETTER ICONS
                     monitoringApps: [
                         {
                             id: 'monitoring_server',
@@ -2150,13 +2194,13 @@
                     return [...this.monitoringApps, ...this.dataApps, ...this.toolsApps];
                 },
                 totalAlerts() {
-                    return this.datasetAlerts.length + this.serverAlerts.length + this.processAlerts.length;
+                    return this.datasetAlerts.length + this.serverAlerts.length + this.processAlerts.length + this.storageAlerts.length;
                 },
                 isPanelCollapsed() {
                     return this.alertPanelCollapsedUp || this.alertPanelCollapsedLeft;
                 },
                 allSectionsCollapsed() {
-                    return this.datasetSectionCollapsed && this.serverSectionCollapsed && this.processSectionCollapsed;
+                    return this.datasetSectionCollapsed && this.serverSectionCollapsed && this.processSectionCollapsed && this.storageSectionCollapsed;
                 }
             },
             methods: {
@@ -2216,15 +2260,20 @@
                 toggleProcessSection() {
                     this.processSectionCollapsed = !this.processSectionCollapsed;
                 },
+                toggleStorageSection() {
+                    this.storageSectionCollapsed = !this.storageSectionCollapsed;
+                },
                 collapseAllSections() {
                     if (this.allSectionsCollapsed) {
                         this.datasetSectionCollapsed = false;
                         this.serverSectionCollapsed = false;
                         this.processSectionCollapsed = false;
+                        this.storageSectionCollapsed = false;
                     } else {
                         this.datasetSectionCollapsed = true;
                         this.serverSectionCollapsed = true;
                         this.processSectionCollapsed = true;
+                        this.storageSectionCollapsed = true;
                     }
                 },
                 expandAlertPanel() {
@@ -2256,15 +2305,23 @@
                 },
                 async fetchAlerts() {
                     try {
+                        // Fetch Dataset Alerts
                         const datasetResponse = await fetch('http://192.168.2.137:8080/monitoring_datasets//api/get_status_counts');
                         const datasetData = await datasetResponse.json();
 
+                        // Fetch Server Alerts
                         const serverResponse = await fetch('http://192.168.2.137:8080/monitoring_server/api/alerts');
                         const serverData = await serverResponse.json();
 
+                        // Fetch Process Alerts
                         const processResponse = await fetch('http://192.168.2.137:8080/process_monitoring/get-alerts');
                         const processData = await processResponse.json();
 
+                        // Fetch Storage Pool Alerts
+                        const storageResponse = await fetch('http://192.168.2.137:8080/storage_monitoring_api/summary?summary_type=pools_only');
+                        const storageData = await storageResponse.json();
+
+                        // Process Dataset Alerts
                         const tempDatasetAlerts = [];
                         
                         if (datasetData.alert > 0) {
@@ -2295,6 +2352,7 @@
                             !this.clearedAlerts.has(this.getAlertKey('dataset', alert))
                         );
 
+                        // Process Server Alerts
                         if (serverData.alerts) {
                             this.serverAlerts = serverData.alerts.filter(alert =>
                                 !this.clearedAlerts.has(this.getAlertKey('server', alert))
@@ -2320,6 +2378,7 @@
                             this.totalServers = serverData.total_servers;
                         }
 
+                        // Process Process Alerts
                         if (processData.data && processData.data.alerts) {
                             this.processAlerts = processData.data.alerts.filter(alert =>
                                 !this.clearedAlerts.has(this.getAlertKey('process', alert))
@@ -2346,9 +2405,78 @@
                             this.totalServices = processData.data.total_services;
                         }
 
+                        // Process Storage Pool Alerts
+                        const tempStorageAlerts = [];
+                        
+                        if (storageData.pools) {
+                            Object.keys(storageData.pools).forEach(poolName => {
+                                const pool = storageData.pools[poolName];
+                                
+                                // Only monitor MASTER
+                                if (pool.master && pool.master.stats) {
+                                    const stats = pool.master.stats;
+                                    const usedSize = stats.size;
+                                    const totalSize = stats.total_size;
+                                    const usagePercent = (usedSize / totalSize) * 100;
+                                    const remainingSize = totalSize - usedSize;
+                                    
+                                    let alertType = '';
+                                    let alertMessage = '';
+                                    
+                                    // Critical Alert: >= 90% full
+                                    if (usagePercent >= 90) {
+                                        alertType = 'alert';
+                                        alertMessage = `${poolName} is ${usagePercent.toFixed(1)}% full (${usedSize.toFixed(2)} GB / ${totalSize} GB) - Critical!`;
+                                        
+                                        tempStorageAlerts.push({
+                                            type: alertType,
+                                            message: alertMessage,
+                                            server: `Storage Pool - ${poolName.toUpperCase()}`,
+                                            usage: usagePercent.toFixed(1),
+                                            remaining: remainingSize.toFixed(2),
+                                            prediction: stats.prediction.predicted_fill_date
+                                        });
+                                    }
+                                    // Warning: >= 75% and < 90%
+                                    else if (usagePercent >= 75) {
+                                        alertType = 'warning';
+                                        alertMessage = `${poolName} is ${usagePercent.toFixed(1)}% full (${usedSize.toFixed(2)} GB / ${totalSize} GB) - Warning!`;
+                                        
+                                        tempStorageAlerts.push({
+                                            type: alertType,
+                                            message: alertMessage,
+                                            server: `Storage Pool - ${poolName.toUpperCase()}`,
+                                            usage: usagePercent.toFixed(1),
+                                            remaining: remainingSize.toFixed(2),
+                                            prediction: stats.prediction.predicted_fill_date
+                                        });
+                                    }
+                                    // Info: >= 60% (optional - to show pools approaching limits)
+                                    else if (usagePercent >= 60) {
+                                        alertType = 'info';
+                                        alertMessage = `${poolName} is ${usagePercent.toFixed(1)}% full (${usedSize.toFixed(2)} GB / ${totalSize} GB) - Healthy`;
+                                        
+                                        tempStorageAlerts.push({
+                                            type: alertType,
+                                            message: alertMessage,
+                                            server: `Storage Pool - ${poolName.toUpperCase()}`,
+                                            usage: usagePercent.toFixed(1),
+                                            remaining: remainingSize.toFixed(2),
+                                            prediction: stats.prediction.predicted_fill_date
+                                        });
+                                    }
+                                }
+                            });
+                        }
+
+                        this.storageAlerts = tempStorageAlerts.filter(alert =>
+                            !this.clearedAlerts.has(this.getAlertKey('storage', alert))
+                        );
+
+                        // Clean up cleared alerts
                         const currentAlertKeys = new Set();
-                        [...tempDatasetAlerts, ...serverData.alerts || [], ...(processData.data?.alerts || [])].forEach(alert => {
-                            const key = this.getAlertKey('dataset', alert) || this.getAlertKey('server', alert) || this.getAlertKey('process', alert);
+                        [...tempDatasetAlerts, ...serverData.alerts || [], ...(processData.data?.alerts || []), ...tempStorageAlerts].forEach(alert => {
+                            const key = this.getAlertKey('dataset', alert) || this.getAlertKey('server', alert) || this.getAlertKey('process', alert) || this.getAlertKey('storage', alert);
                             currentAlertKeys.add(key);
                         });
 
@@ -2374,28 +2502,24 @@
 
                     if (type === 'dataset') {
                         const alert = this.datasetAlerts[index];
-                        this.alertHistory.unshift({
-                            ...alert,
-                            clearedAt: timeStr
-                        });
+                        this.alertHistory.unshift({ ...alert, clearedAt: timeStr });
                         this.clearedAlerts.add(this.getAlertKey('dataset', alert));
                         this.datasetAlerts.splice(index, 1);
                     } else if (type === 'server') {
                         const alert = this.serverAlerts[index];
-                        this.alertHistory.unshift({
-                            ...alert,
-                            clearedAt: timeStr
-                        });
+                        this.alertHistory.unshift({ ...alert, clearedAt: timeStr });
                         this.clearedAlerts.add(this.getAlertKey('server', alert));
                         this.serverAlerts.splice(index, 1);
-                    } else {
+                    } else if (type === 'process') {
                         const alert = this.processAlerts[index];
-                        this.alertHistory.unshift({
-                            ...alert,
-                            clearedAt: timeStr
-                        });
+                        this.alertHistory.unshift({ ...alert, clearedAt: timeStr });
                         this.clearedAlerts.add(this.getAlertKey('process', alert));
                         this.processAlerts.splice(index, 1);
+                    } else if (type === 'storage') {
+                        const alert = this.storageAlerts[index];
+                        this.alertHistory.unshift({ ...alert, clearedAt: timeStr });
+                        this.clearedAlerts.add(this.getAlertKey('storage', alert));
+                        this.storageAlerts.splice(index, 1);
                     }
 
                     if (this.alertHistory.length > 50) {
@@ -2412,30 +2536,26 @@
                     });
 
                     this.datasetAlerts.forEach(alert => {
-                        this.alertHistory.unshift({
-                            ...alert,
-                            clearedAt: timeStr
-                        });
+                        this.alertHistory.unshift({ ...alert, clearedAt: timeStr });
                         this.clearedAlerts.add(this.getAlertKey('dataset', alert));
                     });
                     this.serverAlerts.forEach(alert => {
-                        this.alertHistory.unshift({
-                            ...alert,
-                            clearedAt: timeStr
-                        });
+                        this.alertHistory.unshift({ ...alert, clearedAt: timeStr });
                         this.clearedAlerts.add(this.getAlertKey('server', alert));
                     });
                     this.processAlerts.forEach(alert => {
-                        this.alertHistory.unshift({
-                            ...alert,
-                            clearedAt: timeStr
-                        });
+                        this.alertHistory.unshift({ ...alert, clearedAt: timeStr });
                         this.clearedAlerts.add(this.getAlertKey('process', alert));
+                    });
+                    this.storageAlerts.forEach(alert => {
+                        this.alertHistory.unshift({ ...alert, clearedAt: timeStr });
+                        this.clearedAlerts.add(this.getAlertKey('storage', alert));
                     });
 
                     this.datasetAlerts = [];
                     this.serverAlerts = [];
                     this.processAlerts = [];
+                    this.storageAlerts = [];
 
                     if (this.alertHistory.length > 50) {
                         this.alertHistory = this.alertHistory.slice(0, 50);
