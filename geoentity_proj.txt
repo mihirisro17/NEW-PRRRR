@@ -1,0 +1,858 @@
+mkdir -p geoentity_monitoring/{static/{css,js},templates} && \
+touch geoentity_monitoring/{app.py,requirements.txt,README.md} \
+      geoentity_monitoring/static/css/style.css \
+      geoentity_monitoring/static/js/dashboard.js \
+      geoentity_monitoring/templates/dashboard.html
+
+
+
+
+
+from flask import Flask, render_template, jsonify
+import requests
+from datetime import datetime
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+app = Flask(__name__)
+
+# Configuration for reverse proxy
+app.config['APPLICATION_ROOT'] = '/monitoring_sentinel'
+
+BASE_URL = "https://vedas.sac.gov.in/geoentity-services/api"
+
+class APIMonitor:
+    def __init__(self):
+        self.results = {
+            'sources': {},
+            'geoentities': {},
+            'last_check': None
+        }
+    
+    def check_sources_api(self):
+        """Check the geoentity sources API"""
+        url = f"{BASE_URL}/geoentity-sources/"
+        start_time = time.time()
+        
+        try:
+            response = requests.get(url, timeout=10)
+            response_time = round((time.time() - start_time) * 1000, 2)
+            
+            return {
+                'status': 'success' if response.status_code == 200 else 'error',
+                'status_code': response.status_code,
+                'response_time': response_time,
+                'data': response.json() if response.status_code == 200 else None,
+                'error': None,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+        except Exception as e:
+            return {
+                'status': 'error',
+                'status_code': None,
+                'response_time': round((time.time() - start_time) * 1000, 2),
+                'data': None,
+                'error': str(e),
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+    
+    def check_geoentity_api(self, source_id, source_name, category, project):
+        """Check individual geoentity API"""
+        url = f"{BASE_URL}/geoentity-sources/{source_id}/geoentities"
+        start_time = time.time()
+        
+        try:
+            response = requests.get(url, timeout=10)
+            response_time = round((time.time() - start_time) * 1000, 2)
+            
+            return {
+                'id': source_id,
+                'name': source_name,
+                'category': category,
+                'project': project,
+                'status': 'success' if response.status_code == 200 else 'error',
+                'status_code': response.status_code,
+                'response_time': response_time,
+                'count': response.json().get('count', 0) if response.status_code == 200 else 0,
+                'error': None,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+        except Exception as e:
+            return {
+                'id': source_id,
+                'name': source_name,
+                'category': category,
+                'project': project,
+                'status': 'error',
+                'status_code': None,
+                'response_time': round((time.time() - start_time) * 1000, 2),
+                'count': 0,
+                'error': str(e),
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+    
+    def run_full_check(self):
+        """Run complete monitoring check"""
+        sources_result = self.check_sources_api()
+        self.results['sources'] = sources_result
+        
+        if sources_result['status'] == 'success' and sources_result['data']:
+            sources = sources_result['data'].get('data', [])
+            
+            geoentity_results = []
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures = {
+                    executor.submit(
+                        self.check_geoentity_api, 
+                        source['id'], 
+                        source['name'],
+                        source.get('category', 'N/A'),
+                        source.get('project', 'N/A')
+                    ): source for source in sources
+                }
+                
+                for future in as_completed(futures):
+                    try:
+                        result = future.result()
+                        geoentity_results.append(result)
+                    except Exception as e:
+                        source = futures[future]
+                        geoentity_results.append({
+                            'id': source['id'],
+                            'name': source['name'],
+                            'category': source.get('category', 'N/A'),
+                            'project': source.get('project', 'N/A'),
+                            'status': 'error',
+                            'error': str(e)
+                        })
+            
+            self.results['geoentities'] = sorted(geoentity_results, key=lambda x: x['id'])
+        
+        self.results['last_check'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        return self.results
+
+monitor = APIMonitor()
+
+@app.route('/monitoring_sentinel/')
+def index():
+    return render_template('dashboard.html')
+
+@app.route('/monitoring_sentinel/api/check', methods=['GET'])
+def check_apis():
+    results = monitor.run_full_check()
+    return jsonify(results)
+
+@app.route('/monitoring_sentinel/api/stats', methods=['GET'])
+def get_stats():
+    if not monitor.results.get('geoentities'):
+        return jsonify({'error': 'No data available'})
+    
+    geoentities = monitor.results['geoentities']
+    total = len(geoentities)
+    success = sum(1 for g in geoentities if g['status'] == 'success')
+    failed = total - success
+    avg_response = sum(g['response_time'] for g in geoentities) / total if total > 0 else 0
+    
+    return jsonify({
+        'total_endpoints': total,
+        'success': success,
+        'failed': failed,
+        'success_rate': round((success / total * 100), 2) if total > 0 else 0,
+        'avg_response_time': round(avg_response, 2)
+    })
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=1113)
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoEntity Services Monitor - SAC VEDAS</title>
+    <link rel="stylesheet" href="/monitoring_sentinel/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛰️ GeoEntity Services Monitor</h1>
+            <p>Real-time monitoring of SAC VEDAS GeoEntity API endpoints</p>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="runCheck()">
+                    <span>🔄</span> Run Check Now
+                </button>
+                <div class="auto-refresh">
+                    <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+                    <label for="autoRefresh">Auto-refresh every</label>
+                    <select id="refreshInterval">
+                        <option value="30">30s</option>
+                        <option value="60" selected>1 min</option>
+                        <option value="300">5 min</option>
+                        <option value="600">10 min</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalEndpoints">-</div>
+                <div class="stat-label">Total Endpoints</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-value" id="successCount">-</div>
+                <div class="stat-label">✓ Success</div>
+            </div>
+            <div class="stat-card error">
+                <div class="stat-value" id="failedCount">-</div>
+                <div class="stat-label">✗ Failed</div>
+            </div>
+            <div class="stat-card rate">
+                <div class="stat-value" id="successRate">-</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgResponse">-</div>
+                <div class="stat-label">Avg Response (ms)</div>
+            </div>
+        </div>
+
+        <div class="main-status">
+            <h2>
+                <span class="status-indicator loading" id="mainStatus"></span>
+                Main API Endpoint Status
+            </h2>
+            <div id="mainApiStatus">
+                <p style="color: #718096;">Click "Run Check Now" to start monitoring</p>
+            </div>
+        </div>
+
+        <div class="main-status">
+            <h2>GeoEntity Endpoints</h2>
+            <div class="filter-controls">
+                <div class="search-box">
+                    <input type="text" id="searchBox" placeholder="🔍 Search by name, category, or project..." onkeyup="filterEndpoints()">
+                </div>
+                <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+                <button class="filter-btn" data-filter="success" onclick="setFilter('success')">Success Only</button>
+                <button class="filter-btn" data-filter="error" onclick="setFilter('error')">Failed Only</button>
+            </div>
+            <div class="endpoints-grid" id="endpointsGrid">
+                <p style="color: #718096;">Waiting for data...</p>
+            </div>
+        </div>
+
+        <div class="last-updated" id="lastUpdated"></div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="/monitoring_sentinel/static/js/dashboard.js"></script>
+</body>
+</html>
+
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    background: white;
+    border-radius: 15px;
+    padding: 25px 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.header h1 {
+    color: #2d3748;
+    font-size: 28px;
+    margin-bottom: 5px;
+}
+
+.header p {
+    color: #718096;
+    font-size: 14px;
+}
+
+.controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #2d3748;
+}
+
+.auto-refresh {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.auto-refresh input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.auto-refresh select {
+    padding: 8px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-value {
+    font-size: 36px;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-card.success .stat-value { 
+    color: #48bb78; 
+}
+
+.stat-card.error .stat-value { 
+    color: #f56565; 
+}
+
+.stat-card.rate .stat-value { 
+    color: #4299e1; 
+}
+
+.main-status {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.main-status h2 {
+    color: #2d3748;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+}
+
+.endpoints-grid {
+    display: grid;
+    gap: 15px;
+}
+
+.endpoint-card {
+    background: #f7fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.endpoint-card:hover {
+    border-color: #cbd5e0;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    transform: translateX(5px);
+}
+
+.endpoint-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.endpoint-info {
+    flex: 1;
+}
+
+.endpoint-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 4px;
+}
+
+.endpoint-meta {
+    font-size: 12px;
+    color: #718096;
+}
+
+.endpoint-meta span {
+    margin-right: 15px;
+    display: inline-block;
+}
+
+.endpoint-meta .badge {
+    background: #667eea;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.status-indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    position: relative;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.status-indicator.success {
+    background: #48bb78;
+    box-shadow: 0 0 0 0 rgba(72, 187, 120, 1);
+    animation: pulse-green 2s infinite;
+}
+
+.status-indicator.error {
+    background: #f56565;
+    box-shadow: 0 0 0 0 rgba(245, 101, 101, 1);
+    animation: pulse-red 2s infinite;
+}
+
+.status-indicator.loading {
+    background: #fbd38d;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(72, 187, 120, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(72, 187, 120, 0);
+    }
+}
+
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(245, 101, 101, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 101, 101, 0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        opacity: 1; 
+    }
+    50% { 
+        opacity: 0.5; 
+    }
+}
+
+.endpoint-stats {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+    color: #4a5568;
+    flex-wrap: wrap;
+}
+
+.endpoint-stats span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.error-message {
+    background: #fed7d7;
+    color: #c53030;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-top: 10px;
+    border-left: 4px solid #f56565;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-overlay.active {
+    display: flex;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { 
+        transform: rotate(0deg); 
+    }
+    100% { 
+        transform: rotate(360deg); 
+    }
+}
+
+.filter-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: 2px solid #e2e8f0;
+    background: white;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.filter-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.filter-btn.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 250px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.last-updated {
+    text-align: center;
+    color: white;
+    font-size: 13px;
+    margin-top: 20px;
+    padding: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 22px;
+    }
+    
+    .controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+    
+    .stat-value {
+        font-size: 28px;
+    }
+    
+    .endpoint-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .endpoint-stats {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+
+
+let autoRefreshInterval = null;
+let currentFilter = 'all';
+let allEndpoints = [];
+
+async function runCheck() {
+    document.getElementById('loadingOverlay').classList.add('active');
+    
+    try {
+        const response = await fetch('/monitoring_sentinel/api/check');
+        const data = await response.json();
+        updateDashboard(data);
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to fetch data. Check console for details.');
+    } finally {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    }
+}
+
+function updateDashboard(data) {
+    // Update main API status
+    const mainStatus = data.sources;
+    const mainStatusDiv = document.getElementById('mainApiStatus');
+    const mainIndicator = document.getElementById('mainStatus');
+    
+    if (mainStatus.status === 'success') {
+        mainIndicator.className = 'status-indicator success';
+        mainStatusDiv.innerHTML = `
+            <div class="endpoint-stats">
+                <span>✓ Status: <strong>200 OK</strong></span>
+                <span>⏱️ Response Time: <strong>${mainStatus.response_time}ms</strong></span>
+                <span>📊 Total Sources: <strong>${mainStatus.data.count}</strong></span>
+                <span>🕐 ${mainStatus.timestamp}</span>
+            </div>
+        `;
+    } else {
+        mainIndicator.className = 'status-indicator error';
+        mainStatusDiv.innerHTML = `
+            <div class="endpoint-stats">
+                <span>✗ Status: <strong>Failed</strong></span>
+                <span>Error: ${mainStatus.error || 'Unknown error'}</span>
+            </div>
+        `;
+    }
+
+    // Store all endpoints for filtering
+    allEndpoints = data.geoentities || [];
+    
+    // Update stats
+    updateStats();
+    
+    // Display endpoints
+    displayEndpoints(allEndpoints);
+    
+    // Update last checked time
+    document.getElementById('lastUpdated').textContent = 
+        'Last updated: ' + data.last_check;
+}
+
+function updateStats() {
+    const total = allEndpoints.length;
+    const success = allEndpoints.filter(function(e) {
+        return e.status === 'success';
+    }).length;
+    const failed = total - success;
+    const successRate = total > 0 ? ((success / total) * 100).toFixed(1) : 0;
+    const avgResponse = total > 0 
+        ? (allEndpoints.reduce(function(sum, e) {
+            return sum + e.response_time;
+        }, 0) / total).toFixed(1)
+        : 0;
+
+    document.getElementById('totalEndpoints').textContent = total;
+    document.getElementById('successCount').textContent = success;
+    document.getElementById('failedCount').textContent = failed;
+    document.getElementById('successRate').textContent = successRate + '%';
+    document.getElementById('avgResponse').textContent = avgResponse;
+}
+
+function displayEndpoints(endpoints) {
+    const grid = document.getElementById('endpointsGrid');
+    
+    if (endpoints.length === 0) {
+        grid.innerHTML = '<p style="color: #718096;">No endpoints match the current filter.</p>';
+        return;
+    }
+
+    let html = '';
+    for (var i = 0; i < endpoints.length; i++) {
+        var endpoint = endpoints[i];
+        html += '<div class="endpoint-card">' +
+            '<div class="endpoint-header">' +
+                '<span class="status-indicator ' + endpoint.status + '"></span>' +
+                '<div class="endpoint-info">' +
+                    '<div class="endpoint-name">' + endpoint.name + '</div>' +
+                    '<div class="endpoint-meta">' +
+                        '<span class="badge">' + endpoint.category + '</span>' +
+                        '<span>📁 ' + endpoint.project + '</span>' +
+                        '<span>ID: ' + endpoint.id + '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="endpoint-stats">' +
+                '<span>⏱️ ' + endpoint.response_time + 'ms</span>' +
+                '<span>📊 ' + endpoint.count + ' entities</span>' +
+                '<span>🕐 ' + endpoint.timestamp + '</span>' +
+            '</div>';
+        
+        if (endpoint.error) {
+            html += '<div class="error-message">❌ ' + endpoint.error + '</div>';
+        }
+        
+        html += '</div>';
+    }
+    
+    grid.innerHTML = html;
+}
+
+function filterEndpoints() {
+    const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+    let filtered = allEndpoints.slice();
+
+    // Apply status filter
+    if (currentFilter !== 'all') {
+        filtered = filtered.filter(function(e) {
+            return e.status === currentFilter;
+        });
+    }
+
+    // Apply search filter
+    if (searchTerm) {
+        filtered = filtered.filter(function(e) {
+            return e.name.toLowerCase().indexOf(searchTerm) !== -1 ||
+                   e.category.toLowerCase().indexOf(searchTerm) !== -1 ||
+                   e.project.toLowerCase().indexOf(searchTerm) !== -1;
+        });
+    }
+
+    displayEndpoints(filtered);
+}
+
+function setFilter(filter) {
+    currentFilter = filter;
+    var buttons = document.querySelectorAll('.filter-btn');
+    for (var i = 0; i < buttons.length; i++) {
+        buttons[i].classList.remove('active');
+        if (buttons[i].getAttribute('data-filter') === filter) {
+            buttons[i].classList.add('active');
+        }
+    }
+    filterEndpoints();
+}
+
+function toggleAutoRefresh() {
+    const checkbox = document.getElementById('autoRefresh');
+    
+    if (checkbox.checked) {
+        const interval = parseInt(document.getElementById('refreshInterval').value) * 1000;
+        autoRefreshInterval = setInterval(runCheck, interval);
+        runCheck();
+    } else {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+    }
+}
+
+// Initial check on page load
+window.onload = function() {
+    runCheck();
+};
+
+
+
+ProxyPass "/monitoring_sentinel/static" "http://127.0.0.1:1113/monitoring_sentinel/static"
+ProxyPassReverse "/monitoring_sentinel/static" "http://127.0.0.1:1113/monitoring_sentinel/static"
+
+ProxyPass "/monitoring_sentinel/" "http://127.0.0.1:1113/monitoring_sentinel/"
+ProxyPassReverse "/monitoring_sentinel/" "http://127.0.0.1:1113/monitoring_sentinel/"
+
