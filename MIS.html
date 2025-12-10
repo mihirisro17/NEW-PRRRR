@@ -1,260 +1,260 @@
+                // ✨ KEEP THIS HELPER METHOD
+                fetchWithTimeout(url, timeout = 30000) {
+                    return Promise.race([
+                        fetch(url),
+                        new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error('Request timeout')), timeout)
+                        )
+                    ]);
+                },
+
                 async fetchAlerts() {
                     try {
-                        // ✨ PARALLEL API CALLS - All fetch simultaneously
-                        const apiCalls = {
-                            scanner: this.fetchWithTimeout('http://192.168.2.137:8080/storage_monitoring_api/scanner_stats', 30000)
+                        // ✨ ALL API CALLS START SIMULTANEOUSLY
+                        const [scannerResult, datasetResult, serverResult, processResult, storageResult] = await Promise.allSettled([
+                            // Scanner Stats
+                            this.fetchWithTimeout('http://192.168.2.137:8080/storage_monitoring_api/scanner_stats', 30000)
                                 .then(res => res.json())
                                 .catch(error => ({ error: true, message: error.message })),
                             
-                            dataset: this.fetchWithTimeout('http://192.168.2.137:8080/monitoring_datasets//api/get_status_counts', 30000)
+                            // Dataset Alerts
+                            this.fetchWithTimeout('http://192.168.2.137:8080/monitoring_datasets//api/get_status_counts', 30000)
                                 .then(res => res.json())
                                 .catch(error => ({ error: true, message: error.message })),
                             
-                            server: this.fetchWithTimeout('http://192.168.2.137:8080/monitoring_server/api/alerts', 30000)
+                            // Server Alerts
+                            this.fetchWithTimeout('http://192.168.2.137:8080/monitoring_server/api/alerts', 30000)
                                 .then(res => res.json())
                                 .catch(error => ({ error: true, message: error.message })),
                             
-                            process: this.fetchWithTimeout('http://192.168.2.137:8080/process_monitoring/get-alerts', 30000)
+                            // Process Alerts
+                            this.fetchWithTimeout('http://192.168.2.137:8080/process_monitoring/get-alerts', 30000)
                                 .then(res => res.json())
                                 .catch(error => ({ error: true, message: error.message })),
                             
-                            storage: this.fetchWithTimeout('http://192.168.2.137:8080/storage_monitoring_api/summary?summary_type=pools_only', 30000)
+                            // Storage Pool Alerts
+                            this.fetchWithTimeout('http://192.168.2.137:8080/storage_monitoring_api/summary?summary_type=pools_only', 30000)
                                 .then(res => res.json())
                                 .catch(error => ({ error: true, message: error.message }))
-                        };
-
-                        // ✨ Process each API response as soon as it arrives
-                        // Scanner Stats
-                        apiCalls.scanner.then(scannerStats => {
-                            if (scannerStats && !scannerStats.error && scannerStats.last_modified) {
-                                this.storageLastModified = scannerStats.last_modified;
-                            } else {
-                                console.warn('Scanner stats API not reachable or timeout');
-                            }
-                        });
-
-                        // Dataset Alerts
-                        apiCalls.dataset.then(datasetData => {
-                            if (datasetData && datasetData.error) {
-                                console.error('Dataset API error or timeout:', datasetData.message);
-                                this.datasetAlerts = [{
-                                    type: 'API-ERROR',
-                                    message: datasetData.message === 'Request timeout' ? 
-                                        'Dataset Monitoring API timeout (>30s)' : 
-                                        'Dataset Monitoring API is not reachable',
-                                    server: 'Dataset Monitoring System'
-                                }];
-                            } else if (datasetData) {
-                                const tempDatasetAlerts = [];
-                                
-                                if (datasetData.alert > 0) {
-                                    tempDatasetAlerts.push({
-                                        type: 'alert',
-                                        message: `${datasetData.alert} dataset(s) in critical alert state`,
-                                        server: 'Dataset Monitoring System'
-                                    });
-                                }
-                                
-                                if (datasetData.warning > 0) {
-                                    tempDatasetAlerts.push({
-                                        type: 'warning',
-                                        message: `${datasetData.warning} dataset(s) showing warnings`,
-                                        server: 'Dataset Monitoring System'
-                                    });
-                                }
-                                
-                                if (datasetData.offline > 0) {
-                                    tempDatasetAlerts.push({
-                                        type: 'offline',
-                                        message: `${datasetData.offline} dataset(s) are offline`,
-                                        server: 'Dataset Monitoring System'
-                                    });
-                                }
-
-                                this.datasetAlerts = tempDatasetAlerts.filter(alert =>
-                                    !this.clearedAlerts.has(this.getAlertKey('dataset', alert))
-                                );
-                            }
-                        });
-
-                        // Server Alerts
-                        apiCalls.server.then(serverData => {
-                            if (serverData && serverData.error) {
-                                console.error('Server API error or timeout:', serverData.message);
-                                this.serverAlerts = [{
-                                    type: 'API-ERROR',
-                                    message: serverData.message === 'Request timeout' ? 
-                                        'Server Monitoring API timeout (>30s)' : 
-                                        'Server Monitoring API is not reachable',
-                                    server: 'Server Monitoring System'
-                                }];
-                            } else if (serverData && serverData.alerts) {
-                                this.serverAlerts = serverData.alerts.filter(alert =>
-                                    !this.clearedAlerts.has(this.getAlertKey('server', alert))
-                                ).map(alert => {
-                                    if (!alert.type) {
-                                        if (alert.message.toLowerCase().includes('memory')) {
-                                            alert.type = 'memory';
-                                        } else if (alert.message.toLowerCase().includes('cpu')) {
-                                            alert.type = 'cpu';
-                                        } else if (alert.message.toLowerCase().includes('storage') || alert.message.toLowerCase().includes('disk')) {
-                                            alert.type = 'storage';
-                                        } else if (alert.message.toLowerCase().includes('offline')) {
-                                            alert.type = 'offline';
-                                        } else {
-                                            alert.type = 'failed';
-                                        }
-                                    }
-                                    return alert;
-                                });
-
-                                if (serverData.total_servers) {
-                                    this.totalServers = serverData.total_servers;
-                                }
-                            }
-                        });
-
-                        // Process Alerts
-                        apiCalls.process.then(processData => {
-                            if (processData && processData.error) {
-                                console.error('Process API error or timeout:', processData.message);
-                                this.processAlerts = [{
-                                    type: 'API-ERROR',
-                                    message: processData.message === 'Request timeout' ? 
-                                        'Process Monitoring API timeout (>30s)' : 
-                                        'Process Monitoring API is not reachable',
-                                    server: 'Process Monitoring System'
-                                }];
-                            } else if (processData && processData.data && processData.data.alerts) {
-                                this.processAlerts = processData.data.alerts.filter(alert =>
-                                    !this.clearedAlerts.has(this.getAlertKey('process', alert))
-                                ).map(alert => {
-                                    if (!alert.type) {
-                                        if (alert.message.toLowerCase().includes('memory')) {
-                                            alert.type = 'memory';
-                                        } else if (alert.message.toLowerCase().includes('cpu')) {
-                                            alert.type = 'cpu';
-                                        } else if (alert.message.toLowerCase().includes('storage') || alert.message.toLowerCase().includes('disk')) {
-                                            alert.type = 'storage';
-                                        } else if (alert.message.toLowerCase().includes('failed')) {
-                                            alert.type = 'failed';
-                                        } else {
-                                            alert.type = 'offline';
-                                        }
-                                    }
-                                    return alert;
-                                });
-
-                                this.lastUpdated = processData.last_updated_time || '';
-
-                                if (processData.data.total_services) {
-                                    this.totalServices = processData.data.total_services;
-                                }
-                            }
-                        });
-
-                        // Storage Pool Alerts (depends on scanner stats, but can still start)
-                        apiCalls.storage.then(storageData => {
-                            if (storageData && storageData.error) {
-                                console.error('Storage API error or timeout:', storageData.message);
-                                this.storageAlerts = [{
-                                    type: 'API-ERROR',
-                                    message: storageData.message === 'Request timeout' ? 
-                                        'Storage Pool Monitoring API timeout (>30s)' : 
-                                        'Storage Pool Monitoring API is not reachable',
-                                    server: 'Storage Monitoring System',
-                                    lastScanTime: 'Unknown'
-                                }];
-                            } else if (storageData && storageData.pools) {
-                                const tempStorageAlerts = [];
-                                
-                                Object.keys(storageData.pools).forEach(poolName => {
-                                    const pool = storageData.pools[poolName];
-                                    
-                                    // Only monitor MASTER
-                                    if (pool.master && pool.master.stats) {
-                                        const stats = pool.master.stats;
-                                        const usedSize = stats.size;
-                                        const totalSize = stats.total_size;
-                                        const usagePercent = (usedSize / totalSize) * 100;
-                                        const remainingSize = totalSize - usedSize;
-                                        
-                                        // ✨ Get time ago from scanner stats
-                                        const lastScanTime = this.storageLastModified ? 
-                                            `Last scan: ${this.getTimeAgo(this.storageLastModified)}` : 
-                                            'Scan time unknown';
-                                        
-                                        let alertType = '';
-                                        let alertMessage = '';
-                                        
-                                        // Critical Alert: >= 90% full
-                                        if (usagePercent >= 90) {
-                                            alertType = 'alert';
-                                            alertMessage = `${poolName} is ${usagePercent.toFixed(1)}% full (${usedSize.toFixed(2)} GB / ${totalSize} GB) - Critical!`;
-                                            
-                                            tempStorageAlerts.push({
-                                                type: alertType,
-                                                message: alertMessage,
-                                                server: `Storage Pool - ${poolName.toUpperCase()}`,
-                                                usage: usagePercent.toFixed(1),
-                                                remaining: remainingSize.toFixed(2),
-                                                prediction: stats.prediction.predicted_fill_date,
-                                                lastScanTime: lastScanTime
-                                            });
-                                        }
-                                        // Warning: >= 75% and < 90%
-                                        else if (usagePercent >= 75) {
-                                            alertType = 'warning';
-                                            alertMessage = `${poolName} is ${usagePercent.toFixed(1)}% full (${usedSize.toFixed(2)} GB / ${totalSize} GB) - Warning!`;
-                                            
-                                            tempStorageAlerts.push({
-                                                type: alertType,
-                                                message: alertMessage,
-                                                server: `Storage Pool - ${poolName.toUpperCase()}`,
-                                                usage: usagePercent.toFixed(1),
-                                                remaining: remainingSize.toFixed(2),
-                                                prediction: stats.prediction.predicted_fill_date,
-                                                lastScanTime: lastScanTime
-                                            });
-                                        }
-                                        // Info: >= 60% (optional - to show pools approaching limits)
-                                        else if (usagePercent >= 60) {
-                                            alertType = 'info';
-                                            alertMessage = `${poolName} is ${usagePercent.toFixed(1)}% full (${usedSize.toFixed(2)} GB / ${totalSize} GB) - Healthy`;
-                                            
-                                            tempStorageAlerts.push({
-                                                type: alertType,
-                                                message: alertMessage,
-                                                server: `Storage Pool - ${poolName.toUpperCase()}`,
-                                                usage: usagePercent.toFixed(1),
-                                                remaining: remainingSize.toFixed(2),
-                                                prediction: stats.prediction.predicted_fill_date,
-                                                lastScanTime: lastScanTime
-                                            });
-                                        }
-                                    }
-                                });
-
-                                this.storageAlerts = tempStorageAlerts.filter(alert =>
-                                    !this.clearedAlerts.has(this.getAlertKey('storage', alert))
-                                );
-
-                                // Sort storage alerts: alert first, then warning, then info
-                                this.storageAlerts.sort((a, b) => {
-                                    const order = { 'alert': 1, 'warning': 2, 'info': 3 };
-                                    return (order[a.type] || 999) - (order[b.type] || 999);
-                                });
-                            }
-                        });
-
-                        // ✨ Wait for all APIs to complete (or timeout) before cleanup
-                        await Promise.allSettled([
-                            apiCalls.scanner,
-                            apiCalls.dataset,
-                            apiCalls.server,
-                            apiCalls.process,
-                            apiCalls.storage
                         ]);
+
+                        // ✨ PROCESS SCANNER STATS
+                        const scannerStats = scannerResult.status === 'fulfilled' ? scannerResult.value : null;
+                        if (scannerStats && !scannerStats.error && scannerStats.last_modified) {
+                            this.storageLastModified = scannerStats.last_modified;
+                        } else {
+                            console.warn('Scanner stats API not reachable or timeout');
+                        }
+
+                        // ✨ PROCESS DATASET ALERTS
+                        const datasetData = datasetResult.status === 'fulfilled' ? datasetResult.value : null;
+                        if (datasetData && datasetData.error) {
+                            console.error('Dataset API error or timeout:', datasetData.message);
+                            this.datasetAlerts = [{
+                                type: 'API-ERROR',
+                                message: datasetData.message === 'Request timeout' ? 
+                                    'Dataset Monitoring API timeout (>30s)' : 
+                                    'Dataset Monitoring API is not reachable',
+                                server: 'Dataset Monitoring System'
+                            }];
+                        } else if (datasetData) {
+                            const tempDatasetAlerts = [];
+                            
+                            if (datasetData.alert > 0) {
+                                tempDatasetAlerts.push({
+                                    type: 'alert',
+                                    message: `${datasetData.alert} dataset(s) in critical alert state`,
+                                    server: 'Dataset Monitoring System'
+                                });
+                            }
+                            
+                            if (datasetData.warning > 0) {
+                                tempDatasetAlerts.push({
+                                    type: 'warning',
+                                    message: `${datasetData.warning} dataset(s) showing warnings`,
+                                    server: 'Dataset Monitoring System'
+                                });
+                            }
+                            
+                            if (datasetData.offline > 0) {
+                                tempDatasetAlerts.push({
+                                    type: 'offline',
+                                    message: `${datasetData.offline} dataset(s) are offline`,
+                                    server: 'Dataset Monitoring System'
+                                });
+                            }
+
+                            this.datasetAlerts = tempDatasetAlerts.filter(alert =>
+                                !this.clearedAlerts.has(this.getAlertKey('dataset', alert))
+                            );
+                        }
+
+                        // ✨ PROCESS SERVER ALERTS
+                        const serverData = serverResult.status === 'fulfilled' ? serverResult.value : null;
+                        if (serverData && serverData.error) {
+                            console.error('Server API error or timeout:', serverData.message);
+                            this.serverAlerts = [{
+                                type: 'API-ERROR',
+                                message: serverData.message === 'Request timeout' ? 
+                                    'Server Monitoring API timeout (>30s)' : 
+                                    'Server Monitoring API is not reachable',
+                                server: 'Server Monitoring System'
+                            }];
+                        } else if (serverData && serverData.alerts) {
+                            this.serverAlerts = serverData.alerts.filter(alert =>
+                                !this.clearedAlerts.has(this.getAlertKey('server', alert))
+                            ).map(alert => {
+                                if (!alert.type) {
+                                    if (alert.message.toLowerCase().includes('memory')) {
+                                        alert.type = 'memory';
+                                    } else if (alert.message.toLowerCase().includes('cpu')) {
+                                        alert.type = 'cpu';
+                                    } else if (alert.message.toLowerCase().includes('storage') || alert.message.toLowerCase().includes('disk')) {
+                                        alert.type = 'storage';
+                                    } else if (alert.message.toLowerCase().includes('offline')) {
+                                        alert.type = 'offline';
+                                    } else {
+                                        alert.type = 'failed';
+                                    }
+                                }
+                                return alert;
+                            });
+
+                            if (serverData.total_servers) {
+                                this.totalServers = serverData.total_servers;
+                            }
+                        }
+
+                        // ✨ PROCESS PROCESS ALERTS
+                        const processData = processResult.status === 'fulfilled' ? processResult.value : null;
+                        if (processData && processData.error) {
+                            console.error('Process API error or timeout:', processData.message);
+                            this.processAlerts = [{
+                                type: 'API-ERROR',
+                                message: processData.message === 'Request timeout' ? 
+                                    'Process Monitoring API timeout (>30s)' : 
+                                    'Process Monitoring API is not reachable',
+                                server: 'Process Monitoring System'
+                            }];
+                        } else if (processData && processData.data && processData.data.alerts) {
+                            this.processAlerts = processData.data.alerts.filter(alert =>
+                                !this.clearedAlerts.has(this.getAlertKey('process', alert))
+                            ).map(alert => {
+                                if (!alert.type) {
+                                    if (alert.message.toLowerCase().includes('memory')) {
+                                        alert.type = 'memory';
+                                    } else if (alert.message.toLowerCase().includes('cpu')) {
+                                        alert.type = 'cpu';
+                                    } else if (alert.message.toLowerCase().includes('storage') || alert.message.toLowerCase().includes('disk')) {
+                                        alert.type = 'storage';
+                                    } else if (alert.message.toLowerCase().includes('failed')) {
+                                        alert.type = 'failed';
+                                    } else {
+                                        alert.type = 'offline';
+                                    }
+                                }
+                                return alert;
+                            });
+
+                            this.lastUpdated = processData.last_updated_time || '';
+
+                            if (processData.data.total_services) {
+                                this.totalServices = processData.data.total_services;
+                            }
+                        }
+
+                        // ✨ PROCESS STORAGE POOL ALERTS
+                        const storageData = storageResult.status === 'fulfilled' ? storageResult.value : null;
+                        if (storageData && storageData.error) {
+                            console.error('Storage API error or timeout:', storageData.message);
+                            this.storageAlerts = [{
+                                type: 'API-ERROR',
+                                message: storageData.message === 'Request timeout' ? 
+                                    'Storage Pool Monitoring API timeout (>30s)' : 
+                                    'Storage Pool Monitoring API is not reachable',
+                                server: 'Storage Monitoring System',
+                                lastScanTime: 'Unknown'
+                            }];
+                        } else if (storageData && storageData.pools) {
+                            const tempStorageAlerts = [];
+                            
+                            Object.keys(storageData.pools).forEach(poolName => {
+                                const pool = storageData.pools[poolName];
+                                
+                                // Only monitor MASTER
+                                if (pool.master && pool.master.stats) {
+                                    const stats = pool.master.stats;
+                                    const usedSize = stats.size;
+                                    const totalSize = stats.total_size;
+                                    const usagePercent = (usedSize / totalSize) * 100;
+                                    const remainingSize = totalSize - usedSize;
+                                    
+                                    // ✨ Get time ago from scanner stats
+                                    const lastScanTime = this.storageLastModified ? 
+                                        `Last scan: ${this.getTimeAgo(this.storageLastModified)}` : 
+                                        'Scan time unknown';
+                                    
+                                    let alertType = '';
+                                    let alertMessage = '';
+                                    
+                                    // Critical Alert: >= 90% full
+                                    if (usagePercent >= 90) {
+                                        alertType = 'alert';
+                                        alertMessage = `${poolName} is ${usagePercent.toFixed(1)}% full (${usedSize.toFixed(2)} GB / ${totalSize} GB) - Critical!`;
+                                        
+                                        tempStorageAlerts.push({
+                                            type: alertType,
+                                            message: alertMessage,
+                                            server: `Storage Pool - ${poolName.toUpperCase()}`,
+                                            usage: usagePercent.toFixed(1),
+                                            remaining: remainingSize.toFixed(2),
+                                            prediction: stats.prediction.predicted_fill_date,
+                                            lastScanTime: lastScanTime
+                                        });
+                                    }
+                                    // Warning: >= 75% and < 90%
+                                    else if (usagePercent >= 75) {
+                                        alertType = 'warning';
+                                        alertMessage = `${poolName} is ${usagePercent.toFixed(1)}% full (${usedSize.toFixed(2)} GB / ${totalSize} GB) - Warning!`;
+                                        
+                                        tempStorageAlerts.push({
+                                            type: alertType,
+                                            message: alertMessage,
+                                            server: `Storage Pool - ${poolName.toUpperCase()}`,
+                                            usage: usagePercent.toFixed(1),
+                                            remaining: remainingSize.toFixed(2),
+                                            prediction: stats.prediction.predicted_fill_date,
+                                            lastScanTime: lastScanTime
+                                        });
+                                    }
+                                    // Info: >= 60% (optional - to show pools approaching limits)
+                                    else if (usagePercent >= 60) {
+                                        alertType = 'info';
+                                        alertMessage = `${poolName} is ${usagePercent.toFixed(1)}% full (${usedSize.toFixed(2)} GB / ${totalSize} GB) - Healthy`;
+                                        
+                                        tempStorageAlerts.push({
+                                            type: alertType,
+                                            message: alertMessage,
+                                            server: `Storage Pool - ${poolName.toUpperCase()}`,
+                                            usage: usagePercent.toFixed(1),
+                                            remaining: remainingSize.toFixed(2),
+                                            prediction: stats.prediction.predicted_fill_date,
+                                            lastScanTime: lastScanTime
+                                        });
+                                    }
+                                }
+                            });
+
+                            this.storageAlerts = tempStorageAlerts.filter(alert =>
+                                !this.clearedAlerts.has(this.getAlertKey('storage', alert))
+                            );
+
+                            // Sort storage alerts: alert first, then warning, then info
+                            this.storageAlerts.sort((a, b) => {
+                                const order = { 'alert': 1, 'warning': 2, 'info': 3 };
+                                return (order[a.type] || 999) - (order[b.type] || 999);
+                            });
+                        }
 
                         // Clean up cleared alerts
                         const currentAlertKeys = new Set();
