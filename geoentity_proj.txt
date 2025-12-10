@@ -1,511 +1,540 @@
-let autoRefreshInterval = null;
-let filterCheckInterval = null;
-let currentFilter = 'all';
-let allEndpoints = [];
-let currentTab = 'basic';
-let currentDetailPage = 1;
-let currentDetailSourceId = null;
+from flask import Flask, render_template, jsonify, request
+import requests
+from datetime import datetime, timedelta
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+import json
+import os
 
-// Tab switching
-function switchTab(tabName) {
-    currentTab = tabName;
-    
-    var tabButtons = document.querySelectorAll('.tab-btn');
-    for (var i = 0; i < tabButtons.length; i++) {
-        tabButtons[i].classList.remove('active');
-    }
-    event.target.closest('.tab-btn').classList.add('active');
-    
-    document.getElementById('basicTab').classList.remove('active');
-    document.getElementById('filterTab').classList.remove('active');
-    
-    if (tabName === 'basic') {
-        document.getElementById('basicTab').classList.add('active');
-    } else {
-        document.getElementById('filterTab').classList.add('active');
-        loadAllFilterResults();
-    }
-}
+app = Flask(__name__, 
+            static_url_path='/geoentity_monitoring/static',
+            static_folder='static',
+            template_folder='templates')
 
-// Basic monitoring functions
-async function runCheck() {
-    document.getElementById('loadingOverlay').classList.add('active');
-    
-    try {
-        const response = await fetch('/geoentity_monitoring/api/check');
-        const data = await response.json();
-        updateDashboard(data);
-    } catch (error) {
-        console.error('Error:', error);
-        showError('Failed to fetch data. Please check your connection.');
-    } finally {
-        document.getElementById('loadingOverlay').classList.remove('active');
-    }
-}
+BASE_URL = "https://vedas.sac.gov.in/geoentity-services/api"
+RESULTS_FILE = "filter_check_results.json"
 
-function showError(message) {
-    const mainStatusDiv = document.getElementById('mainApiStatus');
-    mainStatusDiv.innerHTML = '<div class="error-message">❌ ' + message + '</div>';
-}
-
-function updateDashboard(data) {
-    const mainStatus = data.sources;
-    const mainStatusDiv = document.getElementById('mainApiStatus');
-    const mainIndicator = document.getElementById('mainStatus');
-    
-    if (mainStatus.status === 'success') {
-        mainIndicator.className = 'status-indicator success';
-        mainStatusDiv.innerHTML = 
-            '<div class="endpoint-stats">' +
-                '<span><strong>Status:</strong> ✓ 200 OK</span>' +
-                '<span><strong>Response Time:</strong> ' + mainStatus.response_time + 'ms</span>' +
-                '<span><strong>Total Sources:</strong> ' + mainStatus.data.count + '</span>' +
-                '<span><strong>Timestamp:</strong> ' + mainStatus.timestamp + '</span>' +
-            '</div>';
-    } else {
-        mainIndicator.className = 'status-indicator error';
-        mainStatusDiv.innerHTML = 
-            '<div class="error-message">' +
-                '❌ <strong>Status:</strong> Failed<br>' +
-                '<strong>Error:</strong> ' + (mainStatus.error || 'Unknown error') +
-            '</div>';
-    }
-
-    allEndpoints = data.geoentities || [];
-    updateStats();
-    displayEndpoints(allEndpoints);
-    document.getElementById('lastUpdateText').textContent = 'Last updated: ' + data.last_check;
-}
-
-function updateStats() {
-    const total = allEndpoints.length;
-    const success = allEndpoints.filter(function(e) {
-        return e.status === 'success';
-    }).length;
-    const failed = total - success;
-    const successRate = total > 0 ? ((success / total) * 100).toFixed(1) : 0;
-    const avgResponse = total > 0 
-        ? (allEndpoints.reduce(function(sum, e) {
-            return sum + e.response_time;
-        }, 0) / total).toFixed(1)
-        : 0;
-
-    animateValue('totalEndpoints', parseInt(document.getElementById('totalEndpoints').textContent) || 0, total, 500);
-    animateValue('successCount', parseInt(document.getElementById('successCount').textContent) || 0, success, 500);
-    animateValue('failedCount', parseInt(document.getElementById('failedCount').textContent) || 0, failed, 500);
-    
-    document.getElementById('successRate').textContent = successRate + '%';
-    document.getElementById('avgResponse').textContent = avgResponse;
-}
-
-function animateValue(id, start, end, duration) {
-    const element = document.getElementById(id);
-    const range = end - start;
-    const increment = range / (duration / 16);
-    let current = start;
-    
-    const timer = setInterval(function() {
-        current += increment;
-        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
-            current = end;
-            clearInterval(timer);
+class APIMonitor:
+    def __init__(self):
+        self.results = {
+            'sources': {},
+            'geoentities': {},
+            'last_check': None
         }
-        element.textContent = Math.round(current);
-    }, 16);
-}
-
-function displayEndpoints(endpoints) {
-    const grid = document.getElementById('endpointsGrid');
+        self.filter_check_results = self.load_results()
+        self.filter_check_status = {
+            'running': False,
+            'progress': 0,
+            'total': 0,
+            'current_source': None,
+            'current_entity': None,
+            'completed_sources': 0,
+            'total_sources': 0
+        }
+        self.last_daily_check = self.get_last_daily_check()
+        self.start_daily_check_thread()
     
-    if (endpoints.length === 0) {
-        grid.innerHTML = '<p class="placeholder-text">No endpoints match the current filter.</p>';
-        return;
-    }
-
-    let html = '';
-    for (var i = 0; i < endpoints.length; i++) {
-        var endpoint = endpoints[i];
-        var apiUrl = endpoint.url || '';
-        
-        html += '<div class="endpoint-card">' +
-            '<div class="endpoint-header">' +
-                '<span class="status-indicator ' + endpoint.status + '"></span>' +
-                '<div class="endpoint-info">' +
-                    '<div class="endpoint-name">' + endpoint.name + '</div>' +
-                    '<div class="endpoint-meta">' +
-                        '<span class="badge">' + endpoint.category + '</span>' +
-                        '<span>📁 ' + endpoint.project + '</span>' +
-                        '<span>🔑 ID: ' + endpoint.id + '</span>' +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-            '<div class="endpoint-stats">' +
-                '<span>⚡ ' + endpoint.response_time + 'ms</span>' +
-                '<span>📊 ' + endpoint.count + ' entities</span>' +
-                '<span>🕐 ' + endpoint.timestamp + '</span>' +
-            '</div>' +
-            '<div class="endpoint-actions">' +
-                '<a href="' + apiUrl + '" target="_blank" class="btn-small">🔗 Open API</a>' +
-                '<button class="btn-small btn-primary-small" onclick="startFilterCheck(' + endpoint.id + ')">' +
-                    '🔍 Run Filter Check' +
-                '</button>' +
-            '</div>';
-        
-        if (endpoint.error) {
-            html += '<div class="error-message">❌ <strong>Error:</strong> ' + endpoint.error + '</div>';
-        }
-        
-        html += '</div>';
-    }
+    def load_results(self):
+        """Load saved filter check results"""
+        if os.path.exists(RESULTS_FILE):
+            try:
+                with open(RESULTS_FILE, 'r') as f:
+                    return json.load(f)
+            except:
+                return {}
+        return {}
     
-    grid.innerHTML = html;
-}
-
-function filterEndpoints() {
-    const searchTerm = document.getElementById('searchBox').value.toLowerCase();
-    let filtered = allEndpoints.slice();
-
-    if (currentFilter !== 'all') {
-        filtered = filtered.filter(function(e) {
-            return e.status === currentFilter;
-        });
-    }
-
-    if (searchTerm) {
-        filtered = filtered.filter(function(e) {
-            return e.name.toLowerCase().indexOf(searchTerm) !== -1 ||
-                   e.category.toLowerCase().indexOf(searchTerm) !== -1 ||
-                   e.project.toLowerCase().indexOf(searchTerm) !== -1;
-        });
-    }
-
-    displayEndpoints(filtered);
-}
-
-function setFilter(filter) {
-    currentFilter = filter;
-    var buttons = document.querySelectorAll('.filter-btn');
-    for (var i = 0; i < buttons.length; i++) {
-        buttons[i].classList.remove('active');
-        if (buttons[i].getAttribute('data-filter') === filter) {
-            buttons[i].classList.add('active');
-        }
-    }
-    filterEndpoints();
-}
-
-function toggleAutoRefresh() {
-    const checkbox = document.getElementById('autoRefresh');
+    def save_results(self):
+        """Save filter check results to file"""
+        try:
+            with open(RESULTS_FILE, 'w') as f:
+                json.dump(self.filter_check_results, f, indent=2)
+        except Exception as e:
+            print(f"Error saving results: {e}")
     
-    if (checkbox.checked) {
-        const interval = parseInt(document.getElementById('refreshInterval').value) * 1000;
-        autoRefreshInterval = setInterval(runCheck, interval);
-        runCheck();
-    } else {
-        if (autoRefreshInterval) {
-            clearInterval(autoRefreshInterval);
-            autoRefreshInterval = null;
-        }
-    }
-}
-
-// Filter Check Functions
-async function startFilterCheck(sourceId) {
-    try {
-        document.getElementById('loadingOverlay').classList.add('active');
+    def get_last_daily_check(self):
+        """Get last daily check timestamp"""
+        if os.path.exists('last_daily_check.txt'):
+            try:
+                with open('last_daily_check.txt', 'r') as f:
+                    return datetime.fromisoformat(f.read().strip())
+            except:
+                return None
+        return None
+    
+    def save_last_daily_check(self):
+        """Save last daily check timestamp"""
+        try:
+            with open('last_daily_check.txt', 'w') as f:
+                f.write(datetime.now().isoformat())
+        except Exception as e:
+            print(f"Error saving timestamp: {e}")
+    
+    def start_daily_check_thread(self):
+        """Start background thread for daily checks"""
+        def daily_check_worker():
+            while True:
+                try:
+                    now = datetime.now()
+                    if self.last_daily_check is None or (now - self.last_daily_check) > timedelta(days=1):
+                        print(f"Starting daily filter check at {now}")
+                        self.run_all_filter_checks()
+                        self.last_daily_check = now
+                        self.save_last_daily_check()
+                        print(f"Daily filter check completed at {datetime.now()}")
+                    time.sleep(3600)
+                except Exception as e:
+                    print(f"Error in daily check: {e}")
+                    time.sleep(3600)
         
-        const response = await fetch('/geoentity_monitoring/api/filter-check/start/' + sourceId, {
-            method: 'POST'
-        });
+        thread = threading.Thread(target=daily_check_worker, daemon=True)
+        thread.start()
+        print("Daily check thread started")
+    
+    def check_sources_api(self):
+        """Check the geoentity sources API"""
+        url = f"{BASE_URL}/geoentity-sources/"
+        start_time = time.time()
         
-        const data = await response.json();
-        
-        if (data.status === 'started') {
-            document.querySelectorAll('.tab-btn')[1].click();
-            document.getElementById('filterCheckStatus').style.display = 'block';
-            document.getElementById('filterCheckBadge').style.display = 'inline';
-            startFilterCheckPolling(sourceId);
-        } else {
-            alert('Error: ' + data.error);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to start filter check');
-    } finally {
-        document.getElementById('loadingOverlay').classList.remove('active');
-    }
-}
-
-async function runAllFilterChecks() {
-    if (confirm('This will check all sources with their geoentities. This may take 10-30 minutes. Continue?')) {
-        try {
-            document.getElementById('loadingOverlay').classList.add('active');
-            document.getElementById('runAllBtn').disabled = true;
+        try:
+            response = requests.get(url, timeout=10)
+            response_time = round((time.time() - start_time) * 1000, 2)
             
-            const response = await fetch('/geoentity_monitoring/api/filter-check/start-all', {
-                method: 'POST'
-            });
-            
-            const data = await response.json();
-            
-            if (data.status === 'started') {
-                document.querySelectorAll('.tab-btn')[1].click();
-                document.getElementById('filterCheckStatus').style.display = 'block';
-                document.getElementById('filterCheckBadge').style.display = 'inline';
-                startFilterCheckPolling(null);
-            } else {
-                alert('Error: ' + data.error);
-                document.getElementById('runAllBtn').disabled = false;
+            return {
+                'status': 'success' if response.status_code == 200 else 'error',
+                'status_code': response.status_code,
+                'response_time': response_time,
+                'data': response.json() if response.status_code == 200 else None,
+                'error': None,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Failed to start filter check');
-            document.getElementById('runAllBtn').disabled = false;
-        } finally {
-            document.getElementById('loadingOverlay').classList.remove('active');
-        }
-    }
-}
-
-function startFilterCheckPolling(sourceId) {
-    if (filterCheckInterval) {
-        clearInterval(filterCheckInterval);
-    }
-    
-    filterCheckInterval = setInterval(function() {
-        updateFilterCheckStatus(sourceId);
-    }, 1000);
-}
-
-async function updateFilterCheckStatus(sourceId) {
-    try {
-        const response = await fetch('/geoentity_monitoring/api/filter-check/status');
-        const status = await response.json();
-        
-        if (status.last_daily_check) {
-            var elem = document.getElementById('lastDailyCheck');
-            if (elem) {
-                elem.textContent = 'Last auto-check: ' + status.last_daily_check;
+        except Exception as e:
+            return {
+                'status': 'error',
+                'status_code': None,
+                'response_time': round((time.time() - start_time) * 1000, 2),
+                'data': None,
+                'error': str(e),
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
-        }
+    
+    def check_geoentity_api(self, source_id, source_name, category, project):
+        """Check individual geoentity API"""
+        url = f"{BASE_URL}/geoentity-sources/{source_id}/geoentities"
+        start_time = time.time()
         
-        if (status.running) {
-            if (status.total_sources > 0) {
-                var progressPercent = status.total_sources > 0 ? 
-                    (status.completed_sources / status.total_sources * 100) : 0;
+        try:
+            response = requests.get(url, timeout=10)
+            response_time = round((time.time() - start_time) * 1000, 2)
+            
+            return {
+                'id': source_id,
+                'name': source_name,
+                'category': category,
+                'project': project,
+                'status': 'success' if response.status_code == 200 else 'error',
+                'status_code': response.status_code,
+                'response_time': response_time,
+                'count': response.json().get('count', 0) if response.status_code == 200 else 0,
+                'error': None,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'url': url
+            }
+        except Exception as e:
+            return {
+                'id': source_id,
+                'name': source_name,
+                'category': category,
+                'project': project,
+                'status': 'error',
+                'status_code': None,
+                'response_time': round((time.time() - start_time) * 1000, 2),
+                'count': 0,
+                'error': str(e),
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'url': url
+            }
+    
+    def run_full_check(self):
+        """Run complete monitoring check"""
+        sources_result = self.check_sources_api()
+        self.results['sources'] = sources_result
+        
+        if sources_result['status'] == 'success' and sources_result['data']:
+            sources = sources_result['data'].get('data', [])
+            
+            geoentity_results = []
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures = {
+                    executor.submit(
+                        self.check_geoentity_api, 
+                        source['id'], 
+                        source['name'],
+                        source.get('category', 'N/A'),
+                        source.get('project', 'N/A')
+                    ): source for source in sources
+                }
                 
-                document.getElementById('filterStatusText').textContent = 
-                    'Checking all sources: ' + (status.current_source || 'Initializing...');
-                document.getElementById('filterProgress').textContent = 
-                    status.completed_sources + '/' + status.total_sources + ' sources';
-                document.getElementById('filterProgressBar').style.width = progressPercent + '%';
-                document.getElementById('currentCheckInfo').textContent = 
-                    'Current entity: ' + (status.current_entity || 'Please wait...');
-            } else {
-                var progressPercent = status.total > 0 ? (status.progress / status.total * 100) : 0;
-                
-                document.getElementById('filterStatusText').textContent = 
-                    'Checking: ' + (status.current_source || 'Initializing...');
-                document.getElementById('filterProgress').textContent = 
-                    status.progress + '/' + status.total;
-                document.getElementById('filterProgressBar').style.width = progressPercent + '%';
-                document.getElementById('currentCheckInfo').textContent = 
-                    'Current: ' + (status.current_entity || 'Please wait...');
+                for future in as_completed(futures):
+                    try:
+                        result = future.result()
+                        geoentity_results.append(result)
+                    except Exception as e:
+                        source = futures[future]
+                        geoentity_results.append({
+                            'id': source['id'],
+                            'name': source['name'],
+                            'category': source.get('category', 'N/A'),
+                            'project': source.get('project', 'N/A'),
+                            'status': 'error',
+                            'error': str(e)
+                        })
+            
+            self.results['geoentities'] = sorted(geoentity_results, key=lambda x: x['id'])
+        
+        self.results['last_check'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        return self.results
+    
+    def check_geoentity_with_prefix(self, source_id, geoentity_id):
+        """Check geoentity with prefix parameter"""
+        url = f"{BASE_URL}/geoentity-sources/{source_id}/geoentities?prefix={geoentity_id}"
+        start_time = time.time()
+        
+        try:
+            response = requests.get(url, timeout=10)
+            response_time = round((time.time() - start_time) * 1000, 2)
+            
+            return {
+                'source_id': source_id,
+                'geoentity_id': geoentity_id,
+                'status': 'success' if response.status_code == 200 else 'error',
+                'status_code': response.status_code,
+                'response_time': response_time,
+                'count': response.json().get('count', 0) if response.status_code == 200 else 0,
+                'url': url,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
-        } else {
-            clearInterval(filterCheckInterval);
-            filterCheckInterval = null;
+        except Exception as e:
+            return {
+                'source_id': source_id,
+                'geoentity_id': geoentity_id,
+                'status': 'error',
+                'error': str(e),
+                'response_time': round((time.time() - start_time) * 1000, 2),
+                'url': url,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+    
+    def check_geoentity_with_bbox(self, source_id, bbox="72.450,22.880,72.700,23.125"):
+        """Check geoentity with bbox parameter"""
+        url = f"{BASE_URL}/geoentity-sources/{source_id}/geoentities?bbox={bbox}&parents=1"
+        start_time = time.time()
+        
+        try:
+            response = requests.get(url, timeout=10)
+            response_time = round((time.time() - start_time) * 1000, 2)
             
-            document.getElementById('filterCheckStatus').style.display = 'none';
-            document.getElementById('filterCheckBadge').style.display = 'none';
-            var runBtn = document.getElementById('runAllBtn');
-            if (runBtn) runBtn.disabled = false;
+            return {
+                'source_id': source_id,
+                'bbox': bbox,
+                'status': 'success' if response.status_code == 200 else 'error',
+                'status_code': response.status_code,
+                'response_time': response_time,
+                'count': response.json().get('count', 0) if response.status_code == 200 else 0,
+                'url': url,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+        except Exception as e:
+            return {
+                'source_id': source_id,
+                'bbox': bbox,
+                'status': 'error',
+                'error': str(e),
+                'response_time': round((time.time() - start_time) * 1000, 2),
+                'url': url,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+    
+    def run_single_filter_check(self, source_id):
+        """Run filter check for a single source"""
+        source_key = f"source_{source_id}"
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Starting filter check for source {source_id}")
+        
+        self.filter_check_results[source_key] = {
+            'source_id': source_id,
+            'started_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'status': 'running',
+            'checks': []
+        }
+        
+        try:
+            if source_id in [15, 26, 28]:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Using bbox check")
+                self.filter_check_status['current_source'] = f"Source {source_id} (bbox check)"
+                result = self.check_geoentity_with_bbox(source_id)
+                self.filter_check_results[source_key]['checks'].append(result)
+                self.filter_check_results[source_key]['type'] = 'bbox'
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Bbox check completed")
+            else:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Fetching geoentities list...")
+                url = f"{BASE_URL}/geoentity-sources/{source_id}/geoentities"
+                response = requests.get(url, timeout=30)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    geoentities = data.get('data', [])
+                    total = len(geoentities)
+                    
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Found {total} geoentities")
+                    
+                    self.filter_check_status['total'] = total
+                    self.filter_check_results[source_key]['type'] = 'prefix'
+                    self.filter_check_results[source_key]['total_entities'] = total
+                    
+                    for idx, entity in enumerate(geoentities):
+                        geoentity_id = entity.get('geoentity_id')
+                        self.filter_check_status['current_entity'] = geoentity_id
+                        self.filter_check_status['progress'] = idx + 1
+                        
+                        if (idx + 1) % 100 == 0 or idx == 0:
+                            print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Progress {idx+1}/{total}")
+                        
+                        result = self.check_geoentity_with_prefix(source_id, geoentity_id)
+                        result['entity_name'] = entity.get('name', 'N/A')
+                        result['parent_name'] = entity.get('parent_name', 'N/A')
+                        
+                        self.filter_check_results[source_key]['checks'].append(result)
+                        time.sleep(0.05)
+                    
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Completed all {total} checks")
+                else:
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: ERROR - Got status code {response.status_code}")
+                    self.filter_check_results[source_key]['status'] = 'error'
+                    self.filter_check_results[source_key]['error'] = f"Failed to fetch geoentities: {response.status_code}"
+                    self.save_results()
+                    return
             
-            loadAllFilterResults();
+            # Mark as completed - IMPORTANT FIX
+            self.filter_check_results[source_key]['status'] = 'completed'
+            self.filter_check_results[source_key]['completed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: COMPLETED")
+            
+        except Exception as e:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: EXCEPTION - {str(e)}")
+            self.filter_check_results[source_key]['status'] = 'error'
+            self.filter_check_results[source_key]['error'] = str(e)
+            self.filter_check_results[source_key]['completed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Save results after each source
+        self.save_results()
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Results saved to file")
+    
+    def run_all_filter_checks(self):
+        """Run filter checks for all sources"""
+        if self.filter_check_status['running']:
+            return {'error': 'A filter check is already running'}
+        
+        self.filter_check_status['running'] = True
+        self.filter_check_status['progress'] = 0
+        
+        try:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Starting run_all_filter_checks")
+            
+            sources_result = self.check_sources_api()
+            
+            if sources_result['status'] == 'success' and sources_result['data']:
+                sources = sources_result['data'].get('data', [])
+                total_sources = len(sources)
+                
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Found {total_sources} sources to check")
+                
+                self.filter_check_status['total_sources'] = total_sources
+                self.filter_check_status['completed_sources'] = 0
+                
+                for idx, source in enumerate(sources):
+                    source_id = source['id']
+                    source_name = source.get('name', 'Unknown')
+                    
+                    self.filter_check_status['current_source'] = f"Source {source_id}: {source_name}"
+                    self.filter_check_status['completed_sources'] = idx
+                    
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] === Checking source {source_id} ({idx+1}/{total_sources}) - {source_name} ===")
+                    
+                    try:
+                        self.run_single_filter_check(source_id)
+                    except Exception as e:
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ERROR checking source {source_id}: {e}")
+                        continue
+                
+                self.filter_check_status['completed_sources'] = total_sources
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] === All filter checks completed! ===")
+                
+            else:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ERROR: Failed to get sources list")
+                
+        except Exception as e:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] CRITICAL ERROR in run_all_filter_checks: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        finally:
+            self.filter_check_status['running'] = False
+            self.filter_check_status['progress'] = 0
+            self.filter_check_status['current_source'] = None
+            self.filter_check_status['current_entity'] = None
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Filter check process ended")
+
+monitor = APIMonitor()
+
+@app.route('/geoentity_monitoring/')
+def index():
+    return render_template('dashboard.html')
+
+@app.route('/geoentity_monitoring/api/check', methods=['GET'])
+def check_apis():
+    results = monitor.run_full_check()
+    return jsonify(results)
+
+@app.route('/geoentity_monitoring/api/stats', methods=['GET'])
+def get_stats():
+    if not monitor.results.get('geoentities'):
+        return jsonify({'error': 'No data available'})
+    
+    geoentities = monitor.results['geoentities']
+    total = len(geoentities)
+    success = sum(1 for g in geoentities if g['status'] == 'success')
+    failed = total - success
+    avg_response = sum(g['response_time'] for g in geoentities) / total if total > 0 else 0
+    
+    return jsonify({
+        'total_endpoints': total,
+        'success': success,
+        'failed': failed,
+        'success_rate': round((success / total * 100), 2) if total > 0 else 0,
+        'avg_response_time': round(avg_response, 2)
+    })
+
+@app.route('/geoentity_monitoring/api/filter-check/start/<int:source_id>', methods=['POST'])
+def start_filter_check(source_id):
+    """Start detailed filter check for a source"""
+    if monitor.filter_check_status['running']:
+        return jsonify({'error': 'A filter check is already running'}), 400
+    
+    def run_single():
+        monitor.filter_check_status['running'] = True
+        monitor.run_single_filter_check(source_id)
+        monitor.filter_check_status['running'] = False
+    
+    thread = threading.Thread(target=run_single, daemon=True)
+    thread.start()
+    
+    return jsonify({
+        'status': 'started',
+        'source_id': source_id,
+        'message': 'Filter check started in background'
+    })
+
+@app.route('/geoentity_monitoring/api/filter-check/start-all', methods=['POST'])
+def start_all_filter_checks():
+    """Start filter check for all sources"""
+    if monitor.filter_check_status['running']:
+        return jsonify({'error': 'A filter check is already running'}), 400
+    
+    thread = threading.Thread(target=monitor.run_all_filter_checks, daemon=True)
+    thread.start()
+    
+    return jsonify({
+        'status': 'started',
+        'message': 'Filter check started for all sources'
+    })
+
+@app.route('/geoentity_monitoring/api/filter-check/status', methods=['GET'])
+def get_filter_check_status():
+    """Get status of current filter check"""
+    status = monitor.filter_check_status.copy()
+    status['last_daily_check'] = monitor.last_daily_check.strftime('%Y-%m-%d %H:%M:%S') if monitor.last_daily_check else 'Never'
+    return jsonify(status)
+
+@app.route('/geoentity_monitoring/api/filter-check/summary', methods=['GET'])
+def get_filter_check_summary():
+    """Get summary of all filter check results (lightweight)"""
+    summary = {}
+    
+    for key, result in monitor.filter_check_results.items():
+        source_id = result.get('source_id')
+        checks = result.get('checks', [])
+        
+        success_count = sum(1 for c in checks if c.get('status') == 'success')
+        fail_count = len(checks) - success_count
+        
+        total_response_time = sum(c.get('response_time', 0) for c in checks)
+        avg_response_time = round(total_response_time / len(checks), 2) if checks else 0
+        
+        summary[key] = {
+            'source_id': source_id,
+            'type': result.get('type', 'unknown'),
+            'status': result.get('status'),
+            'started_at': result.get('started_at'),
+            'completed_at': result.get('completed_at'),
+            'total_checks': len(checks),
+            'success_count': success_count,
+            'fail_count': fail_count,
+            'avg_response_time': avg_response_time,
+            'total_entities': result.get('total_entities', 0)
         }
-    } catch (error) {
-        console.error('Error polling status:', error);
-    }
-}
+    
+    return jsonify(summary)
 
-async function loadAllFilterResults() {
-    try {
-        var summaryGrid = document.getElementById('filterSummaryGrid');
-        if (!summaryGrid) {
-            console.error('filterSummaryGrid element not found');
-            return;
+@app.route('/geoentity_monitoring/api/filter-check/result/<int:source_id>/paginated', methods=['GET'])
+def get_paginated_results(source_id):
+    """Get paginated results for a specific source"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    
+    source_key = f"source_{source_id}"
+    
+    if source_key not in monitor.filter_check_results:
+        return jsonify({'error': 'No results found'}), 404
+    
+    result = monitor.filter_check_results[source_key]
+    checks = result.get('checks', [])
+    
+    total = len(checks)
+    start = (page - 1) * per_page
+    end = start + per_page
+    
+    paginated_checks = checks[start:end]
+    
+    return jsonify({
+        'source_id': source_id,
+        'type': result.get('type'),
+        'status': result.get('status'),
+        'started_at': result.get('started_at'),
+        'completed_at': result.get('completed_at'),
+        'checks': paginated_checks,
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'total_pages': (total + per_page - 1) // per_page,
+            'has_next': end < total,
+            'has_prev': page > 1
         }
-        
-        summaryGrid.innerHTML = '<p class="placeholder-text">Loading summary...</p>';
-        
-        const response = await fetch('/geoentity_monitoring/api/filter-check/summary');
-        const summary = await response.json();
-        
-        displayFilterSummary(summary);
-    } catch (error) {
-        console.error('Error loading summary:', error);
-        var summaryGrid = document.getElementById('filterSummaryGrid');
-        if (summaryGrid) {
-            summaryGrid.innerHTML = '<p class="placeholder-text">Error loading results. Please try again.</p>';
-        }
-    }
-}
+    })
 
-function displayFilterSummary(summary) {
-    const grid = document.getElementById('filterSummaryGrid');
-    
-    if (!grid) {
-        console.error('filterSummaryGrid element not found');
-        return;
-    }
-    
-    if (Object.keys(summary).length === 0) {
-        grid.innerHTML = '<p class="placeholder-text">No filter checks completed yet. Run a filter check from the Basic Monitoring tab.</p>';
-        return;
-    }
-    
-    let html = '';
-    
-    for (let key in summary) {
-        const s = summary[key];
-        const successRate = s.total_checks > 0 ? ((s.success_count / s.total_checks) * 100).toFixed(1) : 0;
-        
-        html += '<div class="source-summary-card" onclick="openDetailModal(' + s.source_id + ')">' +
-            '<div class="source-summary-header">' +
-                '<div class="source-summary-id">Source ' + s.source_id + '</div>' +
-                '<div class="source-summary-type">' + (s.type || 'N/A') + '</div>' +
-            '</div>' +
-            '<div class="source-summary-stats">' +
-                '<div class="source-summary-stat">' +
-                    '<span class="source-summary-stat-label">Total Checks</span>' +
-                    '<span class="source-summary-stat-value">' + s.total_checks + '</span>' +
-                '</div>' +
-                '<div class="source-summary-stat">' +
-                    '<span class="source-summary-stat-label">Success Rate</span>' +
-                    '<span class="source-summary-stat-value success">' + successRate + '%</span>' +
-                '</div>' +
-                '<div class="source-summary-stat">' +
-                    '<span class="source-summary-stat-label">Success</span>' +
-                    '<span class="source-summary-stat-value success">' + s.success_count + '</span>' +
-                '</div>' +
-                '<div class="source-summary-stat">' +
-                    '<span class="source-summary-stat-label">Failed</span>' +
-                    '<span class="source-summary-stat-value error">' + s.fail_count + '</span>' +
-                '</div>' +
-                '<div class="source-summary-stat">' +
-                    '<span class="source-summary-stat-label">Avg Time</span>' +
-                    '<span class="source-summary-stat-value">' + s.avg_response_time + 'ms</span>' +
-                '</div>' +
-                '<div class="source-summary-stat">' +
-                    '<span class="source-summary-stat-label">Status</span>' +
-                    '<span class="source-summary-stat-value">' + (s.status || 'N/A') + '</span>' +
-                '</div>' +
-            '</div>' +
-        '</div>';
-    }
-    
-    grid.innerHTML = html;
-}
-
-async function openDetailModal(sourceId) {
-    currentDetailSourceId = sourceId;
-    currentDetailPage = 1;
-    
-    document.getElementById('detailModal').style.display = 'flex';
-    document.getElementById('modalTitle').textContent = 'Source ' + sourceId + ' - Loading...';
-    document.getElementById('modalBody').innerHTML = '<p class="placeholder-text">Loading details...</p>';
-    
-    await loadDetailPage(sourceId, 1);
-}
-
-function closeDetailModal() {
-    document.getElementById('detailModal').style.display = 'none';
-    currentDetailSourceId = null;
-    currentDetailPage = 1;
-}
-
-async function loadDetailPage(sourceId, page) {
-    try {
-        const response = await fetch('/geoentity_monitoring/api/filter-check/result/' + sourceId + '/paginated?page=' + page + '&per_page=50');
-        const data = await response.json();
-        
-        displayDetailPage(data);
-    } catch (error) {
-        console.error('Error loading details:', error);
-        document.getElementById('modalBody').innerHTML = '<p class="placeholder-text">Error loading details.</p>';
-    }
-}
-
-function displayDetailPage(data) {
-    document.getElementById('modalTitle').textContent = 
-        'Source ' + data.source_id + ' - Page ' + data.pagination.page + ' of ' + data.pagination.total_pages;
-    
-    let html = '<div class="filter-checks-grid">';
-    
-    for (let i = 0; i < data.checks.length; i++) {
-        const check = data.checks[i];
-        const statusClass = check.status === 'success' ? 'success' : 'error';
-        const statusIcon = check.status === 'success' ? '✓' : '✗';
-        
-        html += '<div class="filter-check-item ' + statusClass + '">' +
-            '<div class="filter-check-info">' +
-                '<div class="filter-check-name">' + statusIcon + ' ';
-        
-        if (check.entity_name) {
-            html += check.entity_name + ' (' + check.geoentity_id + ')';
-        } else if (check.bbox) {
-            html += 'BBox: ' + check.bbox;
-        } else {
-            html += check.geoentity_id || 'Check';
-        }
-        
-        html += '</div>' +
-            '<div class="filter-check-details">';
-        
-        if (check.parent_name) {
-            html += 'Parent: ' + check.parent_name + ' | ';
-        }
-        
-        html += '<a href="' + check.url + '" target="_blank" style="color: #667eea;">🔗 Open</a>' +
-            '</div>' +
-            '</div>' +
-            '<div class="filter-check-stats">' +
-                '<span>' + check.response_time + 'ms</span>' +
-                '<span>Count: ' + (check.count || 0) + '</span>' +
-            '</div>' +
-        '</div>';
-    }
-    
-    html += '</div>';
-    
-    document.getElementById('modalBody').innerHTML = html;
-    displayPagination(data.pagination);
-}
-
-function displayPagination(pagination) {
-    let html = '';
-    
-    html += '<button class="pagination-btn" onclick="changePage(' + (pagination.page - 1) + ')" ' + 
-        (pagination.has_prev ? '' : 'disabled') + '>← Previous</button>';
-    
-    html += '<span style="padding: 0 16px; font-weight: 600; color: #4a5568;">Page ' + 
-        pagination.page + ' of ' + pagination.total_pages + '</span>';
-    
-    html += '<button class="pagination-btn" onclick="changePage(' + (pagination.page + 1) + ')" ' + 
-        (pagination.has_next ? '' : 'disabled') + '>Next →</button>';
-    
-    document.getElementById('paginationControls').innerHTML = html;
-}
-
-function changePage(page) {
-    currentDetailPage = page;
-    loadDetailPage(currentDetailSourceId, page);
-}
-
-// Initial check on page load
-window.onload = function() {
-    setTimeout(runCheck, 500);
-};
+if __name__ == '__main__':
+    print("=" * 60)
+    print("GeoEntity Monitoring Server Starting...")
+    print("=" * 60)
+    print(f"Server: http://127.0.0.1:1115/geoentity_monitoring/")
+    print(f"Daily auto-check: Enabled")
+    if monitor.last_daily_check:
+        print(f"Last daily check: {monitor.last_daily_check.strftime('%Y-%m-%d %H:%M:%S')}")
+    else:
+        print(f"Last daily check: Never (will run soon)")
+    print("=" * 60)
+    app.run(debug=True, host='0.0.0.0', port=1115)
 
 
 
@@ -515,59 +544,214 @@ window.onload = function() {
 
 
 
-<!-- Filter Checking Tab -->
-<div id="filterTab" class="tab-content">
-    <div class="main-status">
-        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-            <div>
-                <h2>🔍 Detailed Filter Checking</h2>
-                <p style="color: #718096; font-size: 14px; margin-top: 8px;">
-                    Check each geoentity with prefix parameter or bbox for specific sources
-                </p>
-                <p style="color: #718096; font-size: 13px; margin-top: 4px;" id="lastDailyCheck">
-                    Last auto-check: Loading...
-                </p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoEntity Services Monitor - SAC VEDAS</title>
+    <link rel="stylesheet" href="/geoentity_monitoring/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-animation">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="title-section">
+                    <div class="logo">🛰️</div>
+                    <div>
+                        <h1>GeoEntity Services Monitor</h1>
+                        <p>Real-time monitoring of SAC VEDAS GeoEntity API endpoints</p>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="runCheck()">
+                        <span class="btn-icon">🔄</span>
+                        <span>Run Check Now</span>
+                    </button>
+                    <div class="auto-refresh">
+                        <label class="switch">
+                            <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="refresh-label">Auto-refresh</span>
+                        <select id="refreshInterval">
+                            <option value="30">30s</option>
+                            <option value="60" selected>1 min</option>
+                            <option value="300">5 min</option>
+                            <option value="600">10 min</option>
+                        </select>
+                    </div>
+                </div>
             </div>
-            <button class="btn btn-primary" onclick="runAllFilterChecks()" id="runAllBtn">
-                <span>🚀</span> Run All Sources
+        </div>
+
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('basic')">
+                <span>📊</span> Basic Monitoring
+            </button>
+            <button class="tab-btn" onclick="switchTab('filter')">
+                <span>🔍</span> Filter Checking
+                <span class="badge-small" id="filterCheckBadge" style="display:none;">Running</span>
             </button>
         </div>
 
-        <div id="filterCheckStatus" class="filter-status-box" style="display:none;">
-            <div class="progress-container">
-                <div class="progress-info">
-                    <span id="filterStatusText">Initializing...</span>
-                    <span id="filterProgress">0/0</span>
+        <div id="basicTab" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="totalEndpoints">-</div>
+                        <div class="stat-label">Total Endpoints</div>
+                    </div>
                 </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="filterProgressBar"></div>
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">✓</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="successCount">-</div>
+                        <div class="stat-label">Success</div>
+                    </div>
                 </div>
-                <div class="current-check" id="currentCheckInfo"></div>
+                <div class="stat-card stat-error">
+                    <div class="stat-icon">✗</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="failedCount">-</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-rate">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="successRate">-</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="avgResponse">-</div>
+                        <div class="stat-label">Avg Response (ms)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-status">
+                <div class="section-header">
+                    <h2>
+                        <span class="status-indicator loading" id="mainStatus"></span>
+                        Main API Endpoint Status
+                    </h2>
+                </div>
+                <div id="mainApiStatus" class="api-status-content">
+                    <p class="placeholder-text">Click "Run Check Now" to start monitoring</p>
+                </div>
+            </div>
+
+            <div class="main-status">
+                <div class="section-header">
+                    <h2>GeoEntity Endpoints</h2>
+                </div>
+                <div class="filter-controls">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchBox" placeholder="Search by name, category, or project..." onkeyup="filterEndpoints()">
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">
+                            <span>All</span>
+                        </button>
+                        <button class="filter-btn" data-filter="success" onclick="setFilter('success')">
+                            <span>✓ Success</span>
+                        </button>
+                        <button class="filter-btn" data-filter="error" onclick="setFilter('error')">
+                            <span>✗ Failed</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="endpoints-grid" id="endpointsGrid">
+                    <p class="placeholder-text">Waiting for data...</p>
+                </div>
             </div>
         </div>
 
-        <!-- Summary Cards Grid - THIS IS IMPORTANT -->
-        <div id="filterSummaryGrid" class="stats-grid" style="margin-top: 20px;">
-            <p class="placeholder-text">Loading summary...</p>
-        </div>
-    </div>
-</div>
+        <div id="filterTab" class="tab-content">
+            <div class="main-status">
+                <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <h2>🔍 Detailed Filter Checking</h2>
+                        <p style="color: #718096; font-size: 14px; margin-top: 8px;">
+                            Check each geoentity with prefix parameter or bbox for specific sources
+                        </p>
+                        <p style="color: #718096; font-size: 13px; margin-top: 4px;" id="lastDailyCheck">
+                            Last auto-check: Loading...
+                        </p>
+                    </div>
+                    <button class="btn btn-primary" onclick="runAllFilterChecks()" id="runAllBtn">
+                        <span>🚀</span> Run All Sources
+                    </button>
+                </div>
 
-<!-- Modal for Detailed View - ADD THIS BEFORE CLOSING </body> TAG -->
-<div id="detailModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="modalTitle">Source Details</h3>
-            <button class="btn-close" onclick="closeDetailModal()">✕</button>
+                <div id="filterCheckStatus" class="filter-status-box" style="display:none;">
+                    <div class="progress-container">
+                        <div class="progress-info">
+                            <span id="filterStatusText">Initializing...</span>
+                            <span id="filterProgress">0/0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="filterProgressBar"></div>
+                        </div>
+                        <div class="current-check" id="currentCheckInfo"></div>
+                    </div>
+                </div>
+
+                <div id="filterSummaryGrid" class="stats-grid" style="margin-top: 20px;">
+                    <p class="placeholder-text">Loading summary...</p>
+                </div>
+            </div>
         </div>
-        <div class="modal-body" id="modalBody">
-            Loading...
-        </div>
-        <div class="modal-footer">
-            <div id="paginationControls"></div>
-            <button class="btn btn-secondary" onclick="closeDetailModal()">Close</button>
+
+        <div class="last-updated" id="lastUpdated">
+            <span class="update-icon">🕐</span>
+            <span id="lastUpdateText">Not checked yet</span>
         </div>
     </div>
-</div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Checking endpoints...</p>
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Source Details</h3>
+                <button class="btn-close" onclick="closeDetailModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <div id="paginationControls"></div>
+                <button class="btn btn-secondary" onclick="closeDetailModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/geoentity_monitoring/static/js/dashboard.js"></script>
+</body>
+</html>
+
+
+
 
 
