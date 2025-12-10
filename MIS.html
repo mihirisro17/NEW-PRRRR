@@ -1,99 +1,177 @@
+<div class="stats-container">
+    <!-- Server Alerts Card -->
+    <div class="stat-card alert-card-server" :class="{ 'alert-pulse': serverAlerts.length > 0 }" @click="openAlertModal('server')">
+        <div class="stat-icon">🖥️</div>
+        <div class="stat-value">{{ serverAlerts.length }}</div>
+        <div class="stat-label">Server Alerts</div>
+        <div class="card-hint" v-if="serverAlerts.length > 0">Click to view details</div>
+    </div>
+
+    <!-- Dataset Alerts Card -->
+    <div class="stat-card alert-card-dataset" :class="{ 'dataset-pulse': datasetAlerts.length > 0 }" @click="openAlertModal('dataset')">
+        <div class="stat-icon">📊</div>
+        <div class="stat-value">{{ datasetAlerts.length }}</div>
+        <div class="stat-label">Dataset Alerts</div>
+        <div class="card-hint" v-if="datasetAlerts.length > 0">Click to view details</div>
+    </div>
+
+    <!-- Process Alerts Card -->
+    <div class="stat-card alert-card-process" :class="{ 'process-pulse': processAlerts.length > 0 }" @click="openAlertModal('process')">
+        <div class="stat-icon">⚙️</div>
+        <div class="stat-value">{{ processAlerts.length }}</div>
+        <div class="stat-label">Process Alerts</div>
+        <div class="card-hint" v-if="processAlerts.length > 0">Click to view details</div>
+    </div>
+
+    <!-- Storage Pool Alerts Card -->
+    <div class="stat-card alert-card-storage" :class="{ 'storage-pulse': storageAlerts.length > 0 }" @click="openAlertModal('storage')">
+        <div class="stat-icon">💾</div>
+        <div class="stat-value">{{ storageAlerts.length }}</div>
+        <div class="stat-label">Storage Pool Alerts</div>
+        <div class="card-hint" v-if="storageAlerts.length > 0">Click to view details</div>
+    </div>
+
+    <!-- Total Servers Card -->
+    <div class="stat-card">
+        <div class="stat-icon">🌐</div>
+        <div class="stat-value">{{ totalServers }}</div>
+        <div class="stat-label">Total Servers</div>
+    </div>
+
+    <!-- Active Services Card -->
+    <div class="stat-card">
+        <div class="stat-icon">🔧</div>
+        <div class="stat-value">{{ totalServices }}</div>
+        <div class="stat-label">Active Services</div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+<!-- ALERT DETAILS MODAL -->
+<transition name="fade">
+    <div v-if="showAlertModal" class="alert-detail-modal" @click.self="closeAlertModal">
+        <div class="alert-detail-content">
+            <div class="alert-detail-header" :class="'alert-header-' + currentAlertType">
+                <div class="alert-detail-title">
+                    <span class="alert-detail-icon">{{ alertModalIcon }}</span>
+                    <span>{{ alertModalTitle }}</span>
+                    <span class="alert-detail-badge">{{ filteredAlertsForModal.length }}</span>
+                </div>
+                <button class="alert-detail-close-btn" @click="closeAlertModal">✕</button>
+            </div>
+
+            <div class="alert-detail-body">
+                <div v-if="filteredAlertsForModal.length === 0" class="no-alerts-modal">
+                    <div class="no-alerts-icon">✅</div>
+                    <div class="no-alerts-text">No {{ alertModalTitle }}</div>
+                    <div class="no-alerts-subtext">All systems are running smoothly!</div>
+                </div>
+
+                <div v-else>
+                    <div v-for="(alert, index) in filteredAlertsForModal" :key="'modal-' + index" 
+                         class="alert-detail-item" :class="'alert-' + alert.type.toLowerCase()">
+                        <div class="alert-detail-item-header">
+                            <span class="alert-detail-type">{{ alert.type.toUpperCase() }}</span>
+                            <span class="alert-detail-severity" :class="'severity-' + getSeverity(alert.type)">
+                                {{ getSeverityLabel(alert.type) }}
+                            </span>
+                        </div>
+                        <div class="alert-detail-message">{{ alert.message }}</div>
+                        <div class="alert-detail-server">
+                            <span class="alert-detail-server-icon">🖥️</span>
+                            {{ alert.server }}
+                        </div>
+                        <div v-if="alert.lastScanTime" class="alert-detail-time">
+                            <span class="alert-detail-time-icon">🕐</span>
+                            {{ alert.lastScanTime }}
+                        </div>
+                        <div v-if="alert.prediction" class="alert-detail-prediction">
+                            <span class="alert-detail-prediction-icon">📈</span>
+                            <strong>Predicted Full:</strong> {{ alert.prediction }}
+                        </div>
+                        <div v-if="alert.usage" class="alert-detail-usage">
+                            <div class="usage-bar-container">
+                                <div class="usage-bar" :style="{ width: alert.usage + '%' }" :class="getUsageClass(alert.usage)"></div>
+                            </div>
+                            <div class="usage-text">
+                                <span><strong>Usage:</strong> {{ alert.usage }}%</span>
+                                <span v-if="alert.remaining"><strong>Remaining:</strong> {{ alert.remaining }} GB</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert-detail-footer">
+                <div class="alert-detail-footer-stats">
+                    <span class="footer-stat">
+                        <span class="footer-stat-icon">📊</span>
+                        Total: {{ filteredAlertsForModal.length }}
+                    </span>
+                    <span class="footer-stat">
+                        <span class="footer-stat-icon">🔴</span>
+                        Critical: {{ getCriticalCount() }}
+                    </span>
+                    <span class="footer-stat">
+                        <span class="footer-stat-icon">⚠️</span>
+                        Warnings: {{ getWarningCount() }}
+                    </span>
+                </div>
+                <button class="alert-detail-action-btn" @click="closeAlertModal">
+                    <span>✓</span> Got it
+                </button>
+            </div>
+        </div>
+    </div>
+</transition>
+
+
+
+
+
+
+
+
 computed: {
-    allApplications() {
-        return [...this.monitoringApps, ...this.dataApps, ...this.toolsApps];
-    },
-    totalAlerts() {
-        return this.datasetAlerts.length + this.serverAlerts.length + this.processAlerts.length + this.storageAlerts.length;
-    },
-    isPanelCollapsed() {
-        return this.alertPanelCollapsedUp || this.alertPanelCollapsedLeft;
-    },
-    allSectionsCollapsed() {
-        return this.datasetSectionCollapsed && this.serverSectionCollapsed && this.processSectionCollapsed && this.storageSectionCollapsed;
-    },
+    // ... existing computed properties ...
     
-    // ✨ CRITICAL ALERTS - ALL SOURCES COMBINED
-    criticalAlerts() {
-        return this.datasetAlerts.filter(a => a.type === 'alert' || a.type === 'offline').length +
-               this.serverAlerts.filter(a => a.type === 'offline' || a.type === 'failed').length +
-               this.processAlerts.filter(a => a.type === 'failed' || a.type === 'offline').length +
-               this.storageAlerts.filter(a => a.type === 'alert').length;
-    },
-    
-    // ✨ WARNING ALERTS - ALL SOURCES COMBINED
-    warningAlerts() {
-        return this.datasetAlerts.filter(a => a.type === 'warning').length +
-               this.serverAlerts.filter(a => a.type === 'memory' || a.type === 'cpu' || a.type === 'storage').length +
-               this.processAlerts.filter(a => a.type === 'memory' || a.type === 'cpu' || a.type === 'storage').length +
-               this.storageAlerts.filter(a => a.type === 'warning').length;
-    },
-    
-    // ✨ MODAL ICON
     alertModalIcon() {
         const icons = {
-            critical: '🔴',
-            warning: '⚠️',
+            server: '🖥️',
             dataset: '📊',
+            process: '⚙️',
             storage: '💾'
         };
         return icons[this.currentAlertType] || '🔔';
     },
     
-    // ✨ MODAL TITLE
     alertModalTitle() {
         const titles = {
-            critical: 'Critical Alerts - All Systems',
-            warning: 'Warning Alerts - All Systems',
+            server: 'Server Alerts',
             dataset: 'Dataset Alerts',
+            process: 'Process Alerts',
             storage: 'Storage Pool Alerts'
         };
         return titles[this.currentAlertType] || 'Alerts';
     },
     
-    // ✨ FILTERED ALERTS FOR MODAL - GROUPED BY SOURCE
     filteredAlertsForModal() {
-        let alerts = [];
-        
-        if (this.currentAlertType === 'critical') {
-            // Combine all critical alerts from all sources
-            alerts = [
-                ...this.datasetAlerts.filter(a => a.type === 'alert' || a.type === 'offline').map(a => ({...a, source: 'Dataset'})),
-                ...this.serverAlerts.filter(a => a.type === 'offline' || a.type === 'failed').map(a => ({...a, source: 'Server'})),
-                ...this.processAlerts.filter(a => a.type === 'failed' || a.type === 'offline').map(a => ({...a, source: 'Process'})),
-                ...this.storageAlerts.filter(a => a.type === 'alert').map(a => ({...a, source: 'Storage'}))
-            ];
-        } else if (this.currentAlertType === 'warning') {
-            // Combine all warning alerts from all sources
-            alerts = [
-                ...this.datasetAlerts.filter(a => a.type === 'warning').map(a => ({...a, source: 'Dataset'})),
-                ...this.serverAlerts.filter(a => a.type === 'memory' || a.type === 'cpu' || a.type === 'storage').map(a => ({...a, source: 'Server'})),
-                ...this.processAlerts.filter(a => a.type === 'memory' || a.type === 'cpu' || a.type === 'storage').map(a => ({...a, source: 'Process'})),
-                ...this.storageAlerts.filter(a => a.type === 'warning').map(a => ({...a, source: 'Storage'}))
-            ];
+        if (this.currentAlertType === 'server') {
+            return this.serverAlerts;
         } else if (this.currentAlertType === 'dataset') {
-            // Only dataset alerts
-            alerts = this.datasetAlerts.map(a => ({...a, source: 'Dataset'}));
+            return this.datasetAlerts;
+        } else if (this.currentAlertType === 'process') {
+            return this.processAlerts;
         } else if (this.currentAlertType === 'storage') {
-            // Only storage alerts
-            alerts = this.storageAlerts.map(a => ({...a, source: 'Storage'}));
+            return this.storageAlerts;
         }
-        
-        return alerts;
-    },
-    
-    // ✨ GROUP ALERTS BY SOURCE FOR MODAL DISPLAY
-    groupedAlertsForModal() {
-        const alerts = this.filteredAlertsForModal;
-        const grouped = {};
-        
-        alerts.forEach(alert => {
-            if (!grouped[alert.source]) {
-                grouped[alert.source] = [];
-            }
-            grouped[alert.source].push(alert);
-        });
-        
-        return grouped;
+        return [];
     }
 },
 
@@ -105,81 +183,8 @@ computed: {
 
 
 
-
-<div class="alert-detail-body">
-    <div v-if="filteredAlertsForModal.length === 0" class="no-alerts-modal">
-        <div class="no-alerts-icon">✅</div>
-        <div class="no-alerts-text">No {{ currentAlertType }} alerts</div>
-        <div class="no-alerts-subtext">All systems are running smoothly!</div>
-    </div>
-
-    <div v-else>
-        <!-- ✨ GROUP BY SOURCE FOR CRITICAL AND WARNING -->
-        <template v-if="currentAlertType === 'critical' || currentAlertType === 'warning'">
-            <div v-for="(alerts, source) in groupedAlertsForModal" :key="source" class="alert-source-group">
-                <div class="alert-source-header">
-                    <span class="alert-source-icon">{{ getSourceIcon(source) }}</span>
-                    <span class="alert-source-name">{{ source }} Monitoring</span>
-                    <span class="alert-source-count">{{ alerts.length }}</span>
-                </div>
-                
-                <div v-for="(alert, index) in alerts" :key="source + '-' + index" 
-                     class="alert-detail-item" :class="'alert-' + alert.type.toLowerCase()">
-                    <div class="alert-detail-item-header">
-                        <span class="alert-detail-type">{{ alert.type }}</span>
-                    </div>
-                    <div class="alert-detail-message">{{ alert.message }}</div>
-                    <div class="alert-detail-server">
-                        <span class="alert-detail-server-icon">🖥️</span>
-                        {{ alert.server }}
-                    </div>
-                    <div v-if="alert.lastScanTime" class="alert-detail-time">
-                        <span class="alert-detail-time-icon">🕐</span>
-                        {{ alert.lastScanTime }}
-                    </div>
-                </div>
-            </div>
-        </template>
-
-        <!-- ✨ SIMPLE LIST FOR DATASET AND STORAGE -->
-        <template v-else>
-            <div v-for="(alert, index) in filteredAlertsForModal" :key="'modal-' + index" 
-                 class="alert-detail-item" :class="'alert-' + alert.type.toLowerCase()">
-                <div class="alert-detail-item-header">
-                    <span class="alert-detail-type">{{ alert.type }}</span>
-                    <span class="alert-detail-source">{{ alert.source }}</span>
-                </div>
-                <div class="alert-detail-message">{{ alert.message }}</div>
-                <div class="alert-detail-server">
-                    <span class="alert-detail-server-icon">🖥️</span>
-                    {{ alert.server }}
-                </div>
-                <div v-if="alert.lastScanTime" class="alert-detail-time">
-                    <span class="alert-detail-time-icon">🕐</span>
-                    {{ alert.lastScanTime }}
-                </div>
-            </div>
-        </template>
-    </div>
-</div>
-
-
-
-
-
-
 methods: {
     // ... existing methods ...
-    
-    getSourceIcon(source) {
-        const icons = {
-            'Dataset': '📊',
-            'Server': '🖥️',
-            'Process': '⚙️',
-            'Storage': '💾'
-        };
-        return icons[source] || '🔔';
-    },
     
     openAlertModal(type) {
         this.currentAlertType = type;
@@ -191,100 +196,268 @@ methods: {
         this.currentAlertType = '';
     },
     
-    // ... rest of your methods
+    getSeverity(type) {
+        const typeStr = type.toLowerCase();
+        if (typeStr === 'offline' || typeStr === 'failed' || typeStr === 'alert') {
+            return 'critical';
+        } else if (typeStr === 'warning' || typeStr === 'memory' || typeStr === 'cpu' || typeStr === 'storage' || typeStr === 'disk') {
+            return 'warning';
+        } else if (typeStr === 'info') {
+            return 'info';
+        }
+        return 'warning';
+    },
+    
+    getSeverityLabel(type) {
+        const severity = this.getSeverity(type);
+        if (severity === 'critical') return '🔴 Critical';
+        if (severity === 'warning') return '⚠️ Warning';
+        if (severity === 'info') return 'ℹ️ Info';
+        return '⚠️ Warning';
+    },
+    
+    getUsageClass(usage) {
+        const usageNum = parseFloat(usage);
+        if (usageNum >= 90) return 'usage-critical';
+        if (usageNum >= 75) return 'usage-warning';
+        return 'usage-normal';
+    },
+    
+    getCriticalCount() {
+        return this.filteredAlertsForModal.filter(alert => {
+            const type = alert.type.toLowerCase();
+            return type === 'offline' || type === 'failed' || type === 'alert';
+        }).length;
+    },
+    
+    getWarningCount() {
+        return this.filteredAlertsForModal.filter(alert => {
+            const type = alert.type.toLowerCase();
+            return type === 'warning' || type === 'memory' || type === 'cpu' || type === 'storage' || type === 'disk';
+        }).length;
+    }
 }
 
 
 
 
-
-/* ✨ ALERT SOURCE GROUPING */
-.alert-source-group {
-    margin-bottom: 40px;
+/* ✨ CARD COLORS FOR EACH TYPE */
+.alert-card-server {
+    border: 3px solid rgba(239, 68, 68, 0.3) !important;
 }
 
-.alert-source-group:last-child {
-    margin-bottom: 0;
+.alert-card-dataset {
+    border: 3px solid rgba(99, 102, 241, 0.3) !important;
 }
 
-.alert-source-header {
+.alert-card-process {
+    border: 3px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+.alert-card-storage {
+    border: 3px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+/* ✨ PULSING ANIMATIONS FOR EACH TYPE */
+.alert-pulse {
+    animation: alertPulse 2s infinite !important;
+}
+
+.dataset-pulse {
+    animation: datasetPulse 2s infinite !important;
+}
+
+.process-pulse {
+    animation: processPulse 2s infinite !important;
+}
+
+.storage-pulse {
+    animation: storagePulse 2s infinite !important;
+}
+
+@keyframes alertPulse {
+    0%, 100% {
+        box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3), 0 0 0 0 rgba(239, 68, 68, 0.4);
+        border-color: rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        box-shadow: 0 12px 36px rgba(239, 68, 68, 0.5), 0 0 0 12px rgba(239, 68, 68, 0);
+        border-color: rgba(239, 68, 68, 0.6);
+    }
+}
+
+@keyframes datasetPulse {
+    0%, 100% {
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3), 0 0 0 0 rgba(99, 102, 241, 0.4);
+        border-color: rgba(99, 102, 241, 0.4);
+    }
+    50% {
+        box-shadow: 0 12px 36px rgba(99, 102, 241, 0.5), 0 0 0 12px rgba(99, 102, 241, 0);
+        border-color: rgba(99, 102, 241, 0.6);
+    }
+}
+
+@keyframes processPulse {
+    0%, 100% {
+        box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3), 0 0 0 0 rgba(245, 158, 11, 0.4);
+        border-color: rgba(245, 158, 11, 0.4);
+    }
+    50% {
+        box-shadow: 0 12px 36px rgba(245, 158, 11, 0.5), 0 0 0 12px rgba(245, 158, 11, 0);
+        border-color: rgba(245, 158, 11, 0.6);
+    }
+}
+
+@keyframes storagePulse {
+    0%, 100% {
+        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3), 0 0 0 0 rgba(59, 130, 246, 0.4);
+        border-color: rgba(59, 130, 246, 0.4);
+    }
+    50% {
+        box-shadow: 0 12px 36px rgba(59, 130, 246, 0.5), 0 0 0 12px rgba(59, 130, 246, 0);
+        border-color: rgba(59, 130, 246, 0.6);
+    }
+}
+
+/* ✨ HEADER COLORS FOR EACH TYPE */
+.alert-header-server::before {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.alert-header-dataset::before {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+}
+
+.alert-header-process::before {
+    background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+}
+
+.alert-header-storage::before {
+    background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
+}
+
+/* ✨ SEVERITY BADGES */
+.alert-detail-severity {
+    font-size: 12px;
+    font-weight: 900;
+    padding: 6px 14px;
+    border-radius: 10px;
+    letter-spacing: 1px;
+}
+
+.severity-critical {
+    background: rgba(239, 68, 68, 0.15);
+    color: #dc2626;
+}
+
+.severity-warning {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+.severity-info {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+/* ✨ USAGE BAR FOR STORAGE */
+.alert-detail-prediction {
+    font-size: 14px;
+    color: var(--text-color);
+    opacity: 0.8;
+    font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 16px 24px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
-    border-radius: 16px;
-    margin-bottom: 16px;
-    border-left: 5px solid var(--primary-color);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    backdrop-filter: blur(10px);
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 10px;
 }
 
-.alert-source-icon {
-    font-size: 28px;
-    animation: bounce 2s infinite;
+.alert-detail-prediction-icon {
+    font-size: 16px;
 }
 
-.alert-source-name {
-    font-size: 20px;
-    font-weight: 900;
+.alert-detail-usage {
+    margin-top: 14px;
+    padding: 14px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 12px;
+}
+
+.usage-bar-container {
+    width: 100%;
+    height: 12px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.usage-bar {
+    height: 100%;
+    transition: width 0.6s ease;
+    border-radius: 10px;
+}
+
+.usage-normal {
+    background: linear-gradient(90deg, #10b981, #14b8a6);
+}
+
+.usage-warning {
+    background: linear-gradient(90deg, #f59e0b, #f97316);
+}
+
+.usage-critical {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+    animation: usagePulse 2s infinite;
+}
+
+@keyframes usagePulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.usage-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 700;
     color: var(--text-color);
-    flex: 1;
+    opacity: 0.8;
 }
 
-.alert-source-count {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white;
-    padding: 6px 16px;
-    border-radius: 14px;
-    font-size: 15px;
-    font-weight: 900;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+/* ✨ FOOTER STATS */
+.alert-detail-footer {
+    padding: 24px 36px;
+    border-top: 2px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-/* Different colors for different sources */
-.alert-source-group:nth-child(1) .alert-source-header {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(220, 38, 38, 0.08) 100%);
-    border-left-color: #ef4444;
+.alert-detail-footer-stats {
+    display: flex;
+    gap: 24px;
 }
 
-.alert-source-group:nth-child(1) .alert-source-count {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
+.footer-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-color);
+    opacity: 0.7;
 }
 
-.alert-source-group:nth-child(2) .alert-source-header {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%);
-    border-left-color: #3b82f6;
-}
-
-.alert-source-group:nth-child(2) .alert-source-count {
-    background: linear-gradient(135deg, #3b82f6, #0ea5e9);
-}
-
-.alert-source-group:nth-child(3) .alert-source-header {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(249, 115, 22, 0.08) 100%);
-    border-left-color: #f59e0b;
-}
-
-.alert-source-group:nth-child(3) .alert-source-count {
-    background: linear-gradient(135deg, #f59e0b, #f97316);
-}
-
-.alert-source-group:nth-child(4) .alert-source-header {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(20, 184, 166, 0.08) 100%);
-    border-left-color: #10b981;
-}
-
-.alert-source-group:nth-child(4) .alert-source-count {
-    background: linear-gradient(135deg, #10b981, #14b8a6);
-}
-
-/* Adjust alert items in groups */
-.alert-source-group .alert-detail-item {
-    margin-left: 20px;
-    margin-bottom: 16px;
+.footer-stat-icon {
+    font-size: 18px;
 }
 
 
