@@ -1,168 +1,550 @@
-def run_single_filter_check(self, source_id):
-    """Run filter check for a single source"""
-    source_key = f"source_{source_id}"
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Starting filter check for source {source_id}")
+@app.route('/geoentity_monitoring/api/filter-check/summary', methods=['GET'])
+def get_filter_check_summary():
+    """Get summary of all filter check results (lightweight)"""
+    summary = {}
     
-    self.filter_check_results[source_key] = {
-        'source_id': source_id,
-        'started_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'status': 'running',
-        'checks': []
-    }
-    
-    try:
-        # Special handling for IDs 15, 26, 28 - use bbox
-        if source_id in [15, 26, 28]:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Using bbox check")
-            self.filter_check_status['current_source'] = f"Source {source_id} (bbox check)"
-            result = self.check_geoentity_with_bbox(source_id)
-            self.filter_check_results[source_key]['checks'].append(result)
-            self.filter_check_results[source_key]['type'] = 'bbox'
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Bbox check completed")
-        else:
-            # Get all geoentities first
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Fetching geoentities list...")
-            url = f"{BASE_URL}/geoentity-sources/{source_id}/geoentities"
-            response = requests.get(url, timeout=30)  # Increased timeout
-            
-            if response.status_code == 200:
-                data = response.json()
-                geoentities = data.get('data', [])
-                total = len(geoentities)
-                
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Found {total} geoentities")
-                
-                self.filter_check_status['total'] = total
-                self.filter_check_results[source_key]['type'] = 'prefix'
-                self.filter_check_results[source_key]['total_entities'] = total
-                
-                # Check each geoentity with prefix
-                for idx, entity in enumerate(geoentities):
-                    geoentity_id = entity.get('geoentity_id')
-                    self.filter_check_status['current_entity'] = geoentity_id
-                    self.filter_check_status['progress'] = idx + 1
-                    
-                    # Print progress every 50 entities
-                    if (idx + 1) % 50 == 0 or idx == 0:
-                        print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Progress {idx+1}/{total}")
-                    
-                    result = self.check_geoentity_with_prefix(source_id, geoentity_id)
-                    result['entity_name'] = entity.get('name', 'N/A')
-                    result['parent_name'] = entity.get('parent_name', 'N/A')
-                    
-                    self.filter_check_results[source_key]['checks'].append(result)
-                    time.sleep(0.05)  # Small delay
-                
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Completed all {total} checks")
-            else:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: ERROR - Got status code {response.status_code}")
-                self.filter_check_results[source_key]['status'] = 'error'
-                self.filter_check_results[source_key]['error'] = f"Failed to fetch geoentities: {response.status_code}"
-        
-        self.filter_check_results[source_key]['status'] = 'completed'
-        self.filter_check_results[source_key]['completed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: COMPLETED")
-        
-    except Exception as e:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: EXCEPTION - {str(e)}")
-        self.filter_check_results[source_key]['status'] = 'error'
-        self.filter_check_results[source_key]['error'] = str(e)
-    
-    # Save results after each source
-    self.save_results()
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Source {source_id}: Results saved to file")
-
-
-
-
-
-@app.route('/geoentity_monitoring/api/filter-check/live-status', methods=['GET'])
-def get_live_status():
-    """Get detailed live status"""
-    results_summary = {}
     for key, result in monitor.filter_check_results.items():
-        results_summary[key] = {
-            'source_id': result.get('source_id'),
+        source_id = result.get('source_id')
+        checks = result.get('checks', [])
+        
+        success_count = sum(1 for c in checks if c.get('status') == 'success')
+        fail_count = len(checks) - success_count
+        
+        total_response_time = sum(c.get('response_time', 0) for c in checks)
+        avg_response_time = round(total_response_time / len(checks), 2) if checks else 0
+        
+        summary[key] = {
+            'source_id': source_id,
+            'type': result.get('type', 'unknown'),
             'status': result.get('status'),
-            'type': result.get('type'),
-            'total_checks': len(result.get('checks', [])),
             'started_at': result.get('started_at'),
-            'completed_at': result.get('completed_at')
+            'completed_at': result.get('completed_at'),
+            'total_checks': len(checks),
+            'success_count': success_count,
+            'fail_count': fail_count,
+            'avg_response_time': avg_response_time,
+            'total_entities': result.get('total_entities', 0)
         }
     
+    return jsonify(summary)
+
+@app.route('/geoentity_monitoring/api/filter-check/result/<int:source_id>/paginated', methods=['GET'])
+def get_paginated_results(source_id):
+    """Get paginated results for a specific source"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)  # 50 items per page
+    
+    source_key = f"source_{source_id}"
+    
+    if source_key not in monitor.filter_check_results:
+        return jsonify({'error': 'No results found'}), 404
+    
+    result = monitor.filter_check_results[source_key]
+    checks = result.get('checks', [])
+    
+    # Calculate pagination
+    total = len(checks)
+    start = (page - 1) * per_page
+    end = start + per_page
+    
+    paginated_checks = checks[start:end]
+    
     return jsonify({
-        'is_running': monitor.filter_check_status['running'],
-        'current_source': monitor.filter_check_status.get('current_source'),
-        'completed_sources': monitor.filter_check_status.get('completed_sources', 0),
-        'total_sources': monitor.filter_check_status.get('total_sources', 0),
-        'current_entity': monitor.filter_check_status.get('current_entity'),
-        'progress': monitor.filter_check_status.get('progress', 0),
-        'total': monitor.filter_check_status.get('total', 0),
-        'last_daily_check': monitor.last_daily_check.strftime('%Y-%m-%d %H:%M:%S') if monitor.last_daily_check else 'Never',
-        'completed_results': results_summary
+        'source_id': source_id,
+        'type': result.get('type'),
+        'status': result.get('status'),
+        'started_at': result.get('started_at'),
+        'completed_at': result.get('completed_at'),
+        'checks': paginated_checks,
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'total_pages': (total + per_page - 1) // per_page,
+            'has_next': end < total,
+            'has_prev': page > 1
+        }
+    })
+
+@app.route('/geoentity_monitoring/api/filter-check/result/<int:source_id>/stats', methods=['GET'])
+def get_source_stats(source_id):
+    """Get only statistics for a source (no detailed checks)"""
+    source_key = f"source_{source_id}"
+    
+    if source_key not in monitor.filter_check_results:
+        return jsonify({'error': 'No results found'}), 404
+    
+    result = monitor.filter_check_results[source_key]
+    checks = result.get('checks', [])
+    
+    success_count = sum(1 for c in checks if c.get('status') == 'success')
+    fail_count = len(checks) - success_count
+    
+    failed_checks = [c for c in checks if c.get('status') != 'success'][:10]  # Only first 10 failures
+    
+    total_response_time = sum(c.get('response_time', 0) for c in checks)
+    avg_response_time = round(total_response_time / len(checks), 2) if checks else 0
+    
+    return jsonify({
+        'source_id': source_id,
+        'type': result.get('type'),
+        'status': result.get('status'),
+        'started_at': result.get('started_at'),
+        'completed_at': result.get('completed_at'),
+        'total_checks': len(checks),
+        'success_count': success_count,
+        'fail_count': fail_count,
+        'avg_response_time': avg_response_time,
+        'failed_checks_sample': failed_checks  # Only show first 10 failures
     })
 
 
 
 
 
-def run_all_filter_checks(self):
-    """Run filter checks for all sources"""
-    if self.filter_check_status['running']:
-        return {'error': 'A filter check is already running'}
-    
-    self.filter_check_status['running'] = True
-    self.filter_check_status['progress'] = 0
-    
-    try:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Starting run_all_filter_checks")
+
+
+
+<!-- Filter Checking Tab -->
+<div id="filterTab" class="tab-content">
+    <div class="main-status">
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div>
+                <h2>🔍 Detailed Filter Checking</h2>
+                <p style="color: #718096; font-size: 14px; margin-top: 8px;">
+                    Check each geoentity with prefix parameter or bbox for specific sources
+                </p>
+                <p style="color: #718096; font-size: 13px; margin-top: 4px;" id="lastDailyCheck">
+                    Last auto-check: Loading...
+                </p>
+            </div>
+            <button class="btn btn-primary" onclick="runAllFilterChecks()" id="runAllBtn">
+                <span>🚀</span> Run All Sources
+            </button>
+        </div>
+
+        <div id="filterCheckStatus" class="filter-status-box" style="display:none;">
+            <div class="progress-container">
+                <div class="progress-info">
+                    <span id="filterStatusText">Initializing...</span>
+                    <span id="filterProgress">0/0</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="filterProgressBar"></div>
+                </div>
+                <div class="current-check" id="currentCheckInfo"></div>
+            </div>
+        </div>
+
+        <!-- Summary Cards Grid -->
+        <div id="filterSummaryGrid" class="stats-grid" style="margin-top: 20px;">
+            <p class="placeholder-text">Loading summary...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Detailed View -->
+<div id="detailModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Source Details</h3>
+            <button class="btn-close" onclick="closeDetailModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            Loading...
+        </div>
+        <div class="modal-footer">
+            <div id="paginationControls"></div>
+            <button class="btn btn-secondary" onclick="closeDetailModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 1200px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    padding: 24px 30px;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0;
+}
+
+.btn-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: #e2e8f0;
+    color: #4a5568;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-close:hover {
+    background: #f56565;
+    color: white;
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 24px 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-footer {
+    padding: 20px 30px;
+    border-top: 2px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+#paginationControls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.pagination-btn {
+    padding: 8px 16px;
+    border: 2px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    border: 2px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+    background: #f7fafc;
+}
+
+/* Summary Card for Sources */
+.source-summary-card {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.source-summary-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+}
+
+.source-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.source-summary-id {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.source-summary-type {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.source-summary-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    font-size: 13px;
+}
+
+.source-summary-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+}
+
+.source-summary-stat-label {
+    color: #718096;
+}
+
+.source-summary-stat-value {
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.source-summary-stat-value.success {
+    color: #48bb78;
+}
+
+.source-summary-stat-value.error {
+    color: #f56565;
+}
+
+
+
+// Filter Check Functions - OPTIMIZED
+let currentDetailPage = 1;
+let currentDetailSourceId = null;
+
+async function loadAllFilterResults() {
+    try {
+        // Load only summary (lightweight)
+        const response = await fetch('/geoentity_monitoring/api/filter-check/summary');
+        const summary = await response.json();
         
-        # Get all sources
-        sources_result = self.check_sources_api()
-        
-        if sources_result['status'] == 'success' and sources_result['data']:
-            sources = sources_result['data'].get('data', [])
-            total_sources = len(sources)
-            
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Found {total_sources} sources to check")
-            
-            self.filter_check_status['total_sources'] = total_sources
-            self.filter_check_status['completed_sources'] = 0
-            
-            # Run check for each source
-            for idx, source in enumerate(sources):
-                source_id = source['id']
-                source_name = source.get('name', 'Unknown')
-                
-                self.filter_check_status['current_source'] = f"Source {source_id}: {source_name}"
-                self.filter_check_status['completed_sources'] = idx
-                
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] === Checking source {source_id} ({idx+1}/{total_sources}) - {source_name} ===")
-                
-                try:
-                    self.run_single_filter_check(source_id)
-                except Exception as e:
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ERROR checking source {source_id}: {e}")
-                    # Continue to next source even if this one fails
-                    continue
-            
-            self.filter_check_status['completed_sources'] = total_sources
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] === All filter checks completed! ===")
-            
-        else:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ERROR: Failed to get sources list")
-            
-    except Exception as e:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] CRITICAL ERROR in run_all_filter_checks: {e}")
-        import traceback
-        traceback.print_exc()
+        displayFilterSummary(summary);
+    } catch (error) {
+        console.error('Error loading summary:', error);
+        document.getElementById('filterSummaryGrid').innerHTML = 
+            '<p class="placeholder-text">Error loading results. Please try again.</p>';
+    }
+}
+
+function displayFilterSummary(summary) {
+    const grid = document.getElementById('filterSummaryGrid');
     
-    finally:
-        self.filter_check_status['running'] = False
-        self.filter_check_status['progress'] = 0
-        self.filter_check_status['current_source'] = None
-        self.filter_check_status['current_entity'] = None
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Filter check process ended")
+    if (Object.keys(summary).length === 0) {
+        grid.innerHTML = '<p class="placeholder-text">No filter checks completed yet. Run a filter check from the Basic Monitoring tab.</p>';
+        return;
+    }
+    
+    let html = '';
+    
+    for (let key in summary) {
+        const s = summary[key];
+        const successRate = s.total_checks > 0 ? ((s.success_count / s.total_checks) * 100).toFixed(1) : 0;
+        
+        html += '<div class="source-summary-card" onclick="openDetailModal(' + s.source_id + ')">' +
+            '<div class="source-summary-header">' +
+                '<div class="source-summary-id">Source ' + s.source_id + '</div>' +
+                '<div class="source-summary-type">' + (s.type || 'N/A') + '</div>' +
+            '</div>' +
+            '<div class="source-summary-stats">' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Total Checks</span>' +
+                    '<span class="source-summary-stat-value">' + s.total_checks + '</span>' +
+                '</div>' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Success Rate</span>' +
+                    '<span class="source-summary-stat-value success">' + successRate + '%</span>' +
+                '</div>' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Success</span>' +
+                    '<span class="source-summary-stat-value success">' + s.success_count + '</span>' +
+                '</div>' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Failed</span>' +
+                    '<span class="source-summary-stat-value error">' + s.fail_count + '</span>' +
+                '</div>' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Avg Time</span>' +
+                    '<span class="source-summary-stat-value">' + s.avg_response_time + 'ms</span>' +
+                '</div>' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Status</span>' +
+                    '<span class="source-summary-stat-value">' + (s.status || 'N/A') + '</span>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }
+    
+    grid.innerHTML = html;
+}
 
+async function openDetailModal(sourceId) {
+    currentDetailSourceId = sourceId;
+    currentDetailPage = 1;
+    
+    document.getElementById('detailModal').style.display = 'flex';
+    document.getElementById('modalTitle').textContent = 'Source ' + sourceId + ' - Loading...';
+    document.getElementById('modalBody').innerHTML = '<p class="placeholder-text">Loading details...</p>';
+    
+    await loadDetailPage(sourceId, 1);
+}
 
+function closeDetailModal() {
+    document.getElementById('detailModal').style.display = 'none';
+    currentDetailSourceId = null;
+    currentDetailPage = 1;
+}
 
+async function loadDetailPage(sourceId, page) {
+    try {
+        const response = await fetch('/geoentity_monitoring/api/filter-check/result/' + sourceId + '/paginated?page=' + page + '&per_page=50');
+        const data = await response.json();
+        
+        displayDetailPage(data);
+    } catch (error) {
+        console.error('Error loading details:', error);
+        document.getElementById('modalBody').innerHTML = '<p class="placeholder-text">Error loading details.</p>';
+    }
+}
+
+function displayDetailPage(data) {
+    document.getElementById('modalTitle').textContent = 
+        'Source ' + data.source_id + ' - Page ' + data.pagination.page + ' of ' + data.pagination.total_pages;
+    
+    let html = '<div class="filter-checks-grid">';
+    
+    for (let i = 0; i < data.checks.length; i++) {
+        const check = data.checks[i];
+        const statusClass = check.status === 'success' ? 'success' : 'error';
+        const statusIcon = check.status === 'success' ? '✓' : '✗';
+        
+        html += '<div class="filter-check-item ' + statusClass + '">' +
+            '<div class="filter-check-info">' +
+                '<div class="filter-check-name">' + statusIcon + ' ';
+        
+        if (check.entity_name) {
+            html += check.entity_name + ' (' + check.geoentity_id + ')';
+        } else if (check.bbox) {
+            html += 'BBox: ' + check.bbox;
+        } else {
+            html += check.geoentity_id || 'Check';
+        }
+        
+        html += '</div>' +
+            '<div class="filter-check-details">';
+        
+        if (check.parent_name) {
+            html += 'Parent: ' + check.parent_name + ' | ';
+        }
+        
+        html += '<a href="' + check.url + '" target="_blank" style="color: #667eea;">🔗 Open</a>' +
+            '</div>' +
+            '</div>' +
+            '<div class="filter-check-stats">' +
+                '<span>' + check.response_time + 'ms</span>' +
+                '<span>Count: ' + (check.count || 0) + '</span>' +
+            '</div>' +
+        '</div>';
+    }
+    
+    html += '</div>';
+    
+    document.getElementById('modalBody').innerHTML = html;
+    
+    // Update pagination controls
+    displayPagination(data.pagination);
+}
+
+function displayPagination(pagination) {
+    let html = '';
+    
+    // Previous button
+    html += '<button class="pagination-btn" onclick="changePage(' + (pagination.page - 1) + ')" ' + 
+        (pagination.has_prev ? '' : 'disabled') + '>← Previous</button>';
+    
+    // Page info
+    html += '<span style="padding: 0 16px; font-weight: 600; color: #4a5568;">Page ' + 
+        pagination.page + ' of ' + pagination.total_pages + '</span>';
+    
+    // Next button
+    html += '<button class="pagination-btn" onclick="changePage(' + (pagination.page + 1) + ')" ' + 
+        (pagination.has_next ? '' : 'disabled') + '>Next →</button>';
+    
+    document.getElementById('paginationControls').innerHTML = html;
+}
+
+function changePage(page) {
+    currentDetailPage = page;
+    loadDetailPage(currentDetailSourceId, page);
+}
+
+// Update the switchTab function to load summary
+function switchTab(tabName) {
+    currentTab = tabName;
+    
+    var tabButtons = document.querySelectorAll('.tab-btn');
+    for (var i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].classList.remove('active');
+    }
+    event.target.closest('.tab-btn').classList.add('active');
+    
+    document.getElementById('basicTab').classList.remove('active');
+    document.getElementById('filterTab').classList.remove('active');
+    
+    if (tabName === 'basic') {
+        document.getElementById('basicTab').classList.add('active');
+    } else {
+        document.getElementById('filterTab').classList.add('active');
+        loadAllFilterResults();  // Load summary only
+    }
+}
