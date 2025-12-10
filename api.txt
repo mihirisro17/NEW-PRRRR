@@ -1,19 +1,66 @@
-http://192.168.2.137:8080/storage_monitoring_api/scanner_stats
+                        try {
+                            const scannerResponse = await fetch('http://192.168.2.137:8080/storage_monitoring_api/scanner_stats');
+                            scannerStats = await scannerResponse.json();
+                            if (scannerStats && scannerStats.last_modified) {
+                                this.storageLastModified = scannerStats.last_modified;
+                            }
+                        } catch (error) {
+                            console.warn('Scanner stats API not reachable:', error);
+                        }
 
-its showing like 
+                        // Fetch Dataset Alerts
+                        let datasetData = null;
+                        try {
+                            const datasetResponse = await fetch('http://192.168.2.137:8080/monitoring_datasets//api/get_status_counts');
+                            datasetData = await datasetResponse.json();
+                        } catch (error) {
+                            console.error('Dataset API error:', error);
+                            this.datasetAlerts = [{
+                                type: 'API-ERROR',
+                                message: 'Dataset Monitoring API is not reachable',
+                                server: 'Dataset Monitoring System'
+                            }];
+                        }
 
-{
-  "exists": true,
-  "last_modified": "2025-12-09T14:54:52.628495",
-  "loadable_pickle": true,
-  "object_type": "dict",
-  "path": "pools_data_console.bin",
-  "size_bytes": 640849171,
-  "size_human": "611.16 MB",
-  "top_level_keys": [
-    "master",
-    "backup"
-  ]
-}
+                        // Fetch Server Alerts
+                        let serverData = { alerts: [] };
+                        try {
+                            const serverResponse = await fetch('http://192.168.2.137:8080/monitoring_server/api/alerts');
+                            serverData = await serverResponse.json();
+                        } catch (error) {
+                            console.error('Server API error:', error);
+                            this.serverAlerts = [{
+                                type: 'API-ERROR',
+                                message: 'Server Monitoring API is not reachable',
+                                server: 'Server Monitoring System'
+                            }];
+                        }
 
-so in this show like current time minus last_modified so it will be like befor 1h or before 3h show time like this in storage pool and filter it alert  notification will be first
+                        // Fetch Process Alerts
+                        let processData = { data: { alerts: [] } };
+                        try {
+                            const processResponse = await fetch('http://192.168.2.137:8080/process_monitoring/get-alerts');
+                            processData = await processResponse.json();
+                        } catch (error) {
+                            console.error('Process API error:', error);
+                            this.processAlerts = [{
+                                type: 'API-ERROR',
+                                message: 'Process Monitoring API is not reachable',
+                                server: 'Process Monitoring System'
+                            }];
+                        }
+
+                        // Fetch Storage Pool Alerts
+                        let storageData = { pools: {} };
+                        try {
+                            const storageResponse = await fetch('http://192.168.2.137:8080/storage_monitoring_api/summary?summary_type=pools_only');
+                            storageData = await storageResponse.json();
+                        } catch (error) {
+                            console.error('Storage API error:', error);
+                            this.storageAlerts = [{
+                                type: 'API-ERROR',
+                                message: 'Storage Pool Monitoring API is not reachable',
+                                server: 'Storage Monitoring System',
+                                lastScanTime: 'Unknown'
+                            }];
+                        }
