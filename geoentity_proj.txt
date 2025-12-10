@@ -1,384 +1,363 @@
-@app.route('/geoentity_monitoring/api/filter-check/summary', methods=['GET'])
-def get_filter_check_summary():
-    """Get summary of all filter check results (lightweight)"""
-    summary = {}
-    
-    for key, result in monitor.filter_check_results.items():
-        source_id = result.get('source_id')
-        checks = result.get('checks', [])
-        
-        success_count = sum(1 for c in checks if c.get('status') == 'success')
-        fail_count = len(checks) - success_count
-        
-        total_response_time = sum(c.get('response_time', 0) for c in checks)
-        avg_response_time = round(total_response_time / len(checks), 2) if checks else 0
-        
-        summary[key] = {
-            'source_id': source_id,
-            'type': result.get('type', 'unknown'),
-            'status': result.get('status'),
-            'started_at': result.get('started_at'),
-            'completed_at': result.get('completed_at'),
-            'total_checks': len(checks),
-            'success_count': success_count,
-            'fail_count': fail_count,
-            'avg_response_time': avg_response_time,
-            'total_entities': result.get('total_entities', 0)
-        }
-    
-    return jsonify(summary)
-
-@app.route('/geoentity_monitoring/api/filter-check/result/<int:source_id>/paginated', methods=['GET'])
-def get_paginated_results(source_id):
-    """Get paginated results for a specific source"""
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 50, type=int)  # 50 items per page
-    
-    source_key = f"source_{source_id}"
-    
-    if source_key not in monitor.filter_check_results:
-        return jsonify({'error': 'No results found'}), 404
-    
-    result = monitor.filter_check_results[source_key]
-    checks = result.get('checks', [])
-    
-    # Calculate pagination
-    total = len(checks)
-    start = (page - 1) * per_page
-    end = start + per_page
-    
-    paginated_checks = checks[start:end]
-    
-    return jsonify({
-        'source_id': source_id,
-        'type': result.get('type'),
-        'status': result.get('status'),
-        'started_at': result.get('started_at'),
-        'completed_at': result.get('completed_at'),
-        'checks': paginated_checks,
-        'pagination': {
-            'page': page,
-            'per_page': per_page,
-            'total': total,
-            'total_pages': (total + per_page - 1) // per_page,
-            'has_next': end < total,
-            'has_prev': page > 1
-        }
-    })
-
-@app.route('/geoentity_monitoring/api/filter-check/result/<int:source_id>/stats', methods=['GET'])
-def get_source_stats(source_id):
-    """Get only statistics for a source (no detailed checks)"""
-    source_key = f"source_{source_id}"
-    
-    if source_key not in monitor.filter_check_results:
-        return jsonify({'error': 'No results found'}), 404
-    
-    result = monitor.filter_check_results[source_key]
-    checks = result.get('checks', [])
-    
-    success_count = sum(1 for c in checks if c.get('status') == 'success')
-    fail_count = len(checks) - success_count
-    
-    failed_checks = [c for c in checks if c.get('status') != 'success'][:10]  # Only first 10 failures
-    
-    total_response_time = sum(c.get('response_time', 0) for c in checks)
-    avg_response_time = round(total_response_time / len(checks), 2) if checks else 0
-    
-    return jsonify({
-        'source_id': source_id,
-        'type': result.get('type'),
-        'status': result.get('status'),
-        'started_at': result.get('started_at'),
-        'completed_at': result.get('completed_at'),
-        'total_checks': len(checks),
-        'success_count': success_count,
-        'fail_count': fail_count,
-        'avg_response_time': avg_response_time,
-        'failed_checks_sample': failed_checks  # Only show first 10 failures
-    })
-
-
-
-
-
-
-
-
-<!-- Filter Checking Tab -->
-<div id="filterTab" class="tab-content">
-    <div class="main-status">
-        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-            <div>
-                <h2>🔍 Detailed Filter Checking</h2>
-                <p style="color: #718096; font-size: 14px; margin-top: 8px;">
-                    Check each geoentity with prefix parameter or bbox for specific sources
-                </p>
-                <p style="color: #718096; font-size: 13px; margin-top: 4px;" id="lastDailyCheck">
-                    Last auto-check: Loading...
-                </p>
-            </div>
-            <button class="btn btn-primary" onclick="runAllFilterChecks()" id="runAllBtn">
-                <span>🚀</span> Run All Sources
-            </button>
-        </div>
-
-        <div id="filterCheckStatus" class="filter-status-box" style="display:none;">
-            <div class="progress-container">
-                <div class="progress-info">
-                    <span id="filterStatusText">Initializing...</span>
-                    <span id="filterProgress">0/0</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="filterProgressBar"></div>
-                </div>
-                <div class="current-check" id="currentCheckInfo"></div>
-            </div>
-        </div>
-
-        <!-- Summary Cards Grid -->
-        <div id="filterSummaryGrid" class="stats-grid" style="margin-top: 20px;">
-            <p class="placeholder-text">Loading summary...</p>
-        </div>
-    </div>
-</div>
-
-<!-- Modal for Detailed View -->
-<div id="detailModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="modalTitle">Source Details</h3>
-            <button class="btn-close" onclick="closeDetailModal()">✕</button>
-        </div>
-        <div class="modal-body" id="modalBody">
-            Loading...
-        </div>
-        <div class="modal-footer">
-            <div id="paginationControls"></div>
-            <button class="btn btn-secondary" onclick="closeDetailModal()">Close</button>
-        </div>
-    </div>
-</div>
-
-
-
-
-
-/* Modal Styles */
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(5px);
-    z-index: 2000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 16px;
-    max-width: 1200px;
-    width: 100%;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-    padding: 24px 30px;
-    border-bottom: 2px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-header h3 {
-    font-size: 22px;
-    font-weight: 700;
-    color: #1a202c;
-    margin: 0;
-}
-
-.btn-close {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    background: #e2e8f0;
-    color: #4a5568;
-    font-size: 20px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-close:hover {
-    background: #f56565;
-    color: white;
-    transform: rotate(90deg);
-}
-
-.modal-body {
-    padding: 24px 30px;
-    overflow-y: auto;
-    flex: 1;
-}
-
-.modal-footer {
-    padding: 20px 30px;
-    border-top: 2px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-#paginationControls {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.pagination-btn {
-    padding: 8px 16px;
-    border: 2px solid #e2e8f0;
-    background: white;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.pagination-btn:hover:not(:disabled) {
-    border-color: #667eea;
-    color: #667eea;
-}
-
-.pagination-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.pagination-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-color: transparent;
-}
-
-.btn-secondary {
-    padding: 10px 20px;
-    border: 2px solid #e2e8f0;
-    background: white;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-secondary:hover {
-    background: #f7fafc;
-}
-
-/* Summary Card for Sources */
-.source-summary-card {
-    background: white;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 20px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.source-summary-card:hover {
-    border-color: #667eea;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    transform: translateY(-4px);
-}
-
-.source-summary-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.source-summary-id {
-    font-size: 18px;
-    font-weight: 700;
-    color: #1a202c;
-}
-
-.source-summary-type {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
-.source-summary-stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    font-size: 13px;
-}
-
-.source-summary-stat {
-    display: flex;
-    justify-content: space-between;
-    padding: 6px 0;
-}
-
-.source-summary-stat-label {
-    color: #718096;
-}
-
-.source-summary-stat-value {
-    font-weight: 700;
-    color: #1a202c;
-}
-
-.source-summary-stat-value.success {
-    color: #48bb78;
-}
-
-.source-summary-stat-value.error {
-    color: #f56565;
-}
-
-
-
-// Filter Check Functions - OPTIMIZED
+let autoRefreshInterval = null;
+let filterCheckInterval = null;
+let currentFilter = 'all';
+let allEndpoints = [];
+let currentTab = 'basic';
 let currentDetailPage = 1;
 let currentDetailSourceId = null;
 
+// Tab switching
+function switchTab(tabName) {
+    currentTab = tabName;
+    
+    var tabButtons = document.querySelectorAll('.tab-btn');
+    for (var i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].classList.remove('active');
+    }
+    event.target.closest('.tab-btn').classList.add('active');
+    
+    document.getElementById('basicTab').classList.remove('active');
+    document.getElementById('filterTab').classList.remove('active');
+    
+    if (tabName === 'basic') {
+        document.getElementById('basicTab').classList.add('active');
+    } else {
+        document.getElementById('filterTab').classList.add('active');
+        loadAllFilterResults();
+    }
+}
+
+// Basic monitoring functions
+async function runCheck() {
+    document.getElementById('loadingOverlay').classList.add('active');
+    
+    try {
+        const response = await fetch('/geoentity_monitoring/api/check');
+        const data = await response.json();
+        updateDashboard(data);
+    } catch (error) {
+        console.error('Error:', error);
+        showError('Failed to fetch data. Please check your connection.');
+    } finally {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    }
+}
+
+function showError(message) {
+    const mainStatusDiv = document.getElementById('mainApiStatus');
+    mainStatusDiv.innerHTML = '<div class="error-message">❌ ' + message + '</div>';
+}
+
+function updateDashboard(data) {
+    const mainStatus = data.sources;
+    const mainStatusDiv = document.getElementById('mainApiStatus');
+    const mainIndicator = document.getElementById('mainStatus');
+    
+    if (mainStatus.status === 'success') {
+        mainIndicator.className = 'status-indicator success';
+        mainStatusDiv.innerHTML = 
+            '<div class="endpoint-stats">' +
+                '<span><strong>Status:</strong> ✓ 200 OK</span>' +
+                '<span><strong>Response Time:</strong> ' + mainStatus.response_time + 'ms</span>' +
+                '<span><strong>Total Sources:</strong> ' + mainStatus.data.count + '</span>' +
+                '<span><strong>Timestamp:</strong> ' + mainStatus.timestamp + '</span>' +
+            '</div>';
+    } else {
+        mainIndicator.className = 'status-indicator error';
+        mainStatusDiv.innerHTML = 
+            '<div class="error-message">' +
+                '❌ <strong>Status:</strong> Failed<br>' +
+                '<strong>Error:</strong> ' + (mainStatus.error || 'Unknown error') +
+            '</div>';
+    }
+
+    allEndpoints = data.geoentities || [];
+    updateStats();
+    displayEndpoints(allEndpoints);
+    document.getElementById('lastUpdateText').textContent = 'Last updated: ' + data.last_check;
+}
+
+function updateStats() {
+    const total = allEndpoints.length;
+    const success = allEndpoints.filter(function(e) {
+        return e.status === 'success';
+    }).length;
+    const failed = total - success;
+    const successRate = total > 0 ? ((success / total) * 100).toFixed(1) : 0;
+    const avgResponse = total > 0 
+        ? (allEndpoints.reduce(function(sum, e) {
+            return sum + e.response_time;
+        }, 0) / total).toFixed(1)
+        : 0;
+
+    animateValue('totalEndpoints', parseInt(document.getElementById('totalEndpoints').textContent) || 0, total, 500);
+    animateValue('successCount', parseInt(document.getElementById('successCount').textContent) || 0, success, 500);
+    animateValue('failedCount', parseInt(document.getElementById('failedCount').textContent) || 0, failed, 500);
+    
+    document.getElementById('successRate').textContent = successRate + '%';
+    document.getElementById('avgResponse').textContent = avgResponse;
+}
+
+function animateValue(id, start, end, duration) {
+    const element = document.getElementById(id);
+    const range = end - start;
+    const increment = range / (duration / 16);
+    let current = start;
+    
+    const timer = setInterval(function() {
+        current += increment;
+        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+            current = end;
+            clearInterval(timer);
+        }
+        element.textContent = Math.round(current);
+    }, 16);
+}
+
+function displayEndpoints(endpoints) {
+    const grid = document.getElementById('endpointsGrid');
+    
+    if (endpoints.length === 0) {
+        grid.innerHTML = '<p class="placeholder-text">No endpoints match the current filter.</p>';
+        return;
+    }
+
+    let html = '';
+    for (var i = 0; i < endpoints.length; i++) {
+        var endpoint = endpoints[i];
+        var apiUrl = endpoint.url || '';
+        
+        html += '<div class="endpoint-card">' +
+            '<div class="endpoint-header">' +
+                '<span class="status-indicator ' + endpoint.status + '"></span>' +
+                '<div class="endpoint-info">' +
+                    '<div class="endpoint-name">' + endpoint.name + '</div>' +
+                    '<div class="endpoint-meta">' +
+                        '<span class="badge">' + endpoint.category + '</span>' +
+                        '<span>📁 ' + endpoint.project + '</span>' +
+                        '<span>🔑 ID: ' + endpoint.id + '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="endpoint-stats">' +
+                '<span>⚡ ' + endpoint.response_time + 'ms</span>' +
+                '<span>📊 ' + endpoint.count + ' entities</span>' +
+                '<span>🕐 ' + endpoint.timestamp + '</span>' +
+            '</div>' +
+            '<div class="endpoint-actions">' +
+                '<a href="' + apiUrl + '" target="_blank" class="btn-small">🔗 Open API</a>' +
+                '<button class="btn-small btn-primary-small" onclick="startFilterCheck(' + endpoint.id + ')">' +
+                    '🔍 Run Filter Check' +
+                '</button>' +
+            '</div>';
+        
+        if (endpoint.error) {
+            html += '<div class="error-message">❌ <strong>Error:</strong> ' + endpoint.error + '</div>';
+        }
+        
+        html += '</div>';
+    }
+    
+    grid.innerHTML = html;
+}
+
+function filterEndpoints() {
+    const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+    let filtered = allEndpoints.slice();
+
+    if (currentFilter !== 'all') {
+        filtered = filtered.filter(function(e) {
+            return e.status === currentFilter;
+        });
+    }
+
+    if (searchTerm) {
+        filtered = filtered.filter(function(e) {
+            return e.name.toLowerCase().indexOf(searchTerm) !== -1 ||
+                   e.category.toLowerCase().indexOf(searchTerm) !== -1 ||
+                   e.project.toLowerCase().indexOf(searchTerm) !== -1;
+        });
+    }
+
+    displayEndpoints(filtered);
+}
+
+function setFilter(filter) {
+    currentFilter = filter;
+    var buttons = document.querySelectorAll('.filter-btn');
+    for (var i = 0; i < buttons.length; i++) {
+        buttons[i].classList.remove('active');
+        if (buttons[i].getAttribute('data-filter') === filter) {
+            buttons[i].classList.add('active');
+        }
+    }
+    filterEndpoints();
+}
+
+function toggleAutoRefresh() {
+    const checkbox = document.getElementById('autoRefresh');
+    
+    if (checkbox.checked) {
+        const interval = parseInt(document.getElementById('refreshInterval').value) * 1000;
+        autoRefreshInterval = setInterval(runCheck, interval);
+        runCheck();
+    } else {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+    }
+}
+
+// Filter Check Functions
+async function startFilterCheck(sourceId) {
+    try {
+        document.getElementById('loadingOverlay').classList.add('active');
+        
+        const response = await fetch('/geoentity_monitoring/api/filter-check/start/' + sourceId, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'started') {
+            document.querySelectorAll('.tab-btn')[1].click();
+            document.getElementById('filterCheckStatus').style.display = 'block';
+            document.getElementById('filterCheckBadge').style.display = 'inline';
+            startFilterCheckPolling(sourceId);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to start filter check');
+    } finally {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    }
+}
+
+async function runAllFilterChecks() {
+    if (confirm('This will check all sources with their geoentities. This may take 10-30 minutes. Continue?')) {
+        try {
+            document.getElementById('loadingOverlay').classList.add('active');
+            document.getElementById('runAllBtn').disabled = true;
+            
+            const response = await fetch('/geoentity_monitoring/api/filter-check/start-all', {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'started') {
+                document.querySelectorAll('.tab-btn')[1].click();
+                document.getElementById('filterCheckStatus').style.display = 'block';
+                document.getElementById('filterCheckBadge').style.display = 'inline';
+                startFilterCheckPolling(null);
+            } else {
+                alert('Error: ' + data.error);
+                document.getElementById('runAllBtn').disabled = false;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to start filter check');
+            document.getElementById('runAllBtn').disabled = false;
+        } finally {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+    }
+}
+
+function startFilterCheckPolling(sourceId) {
+    if (filterCheckInterval) {
+        clearInterval(filterCheckInterval);
+    }
+    
+    filterCheckInterval = setInterval(function() {
+        updateFilterCheckStatus(sourceId);
+    }, 1000);
+}
+
+async function updateFilterCheckStatus(sourceId) {
+    try {
+        const response = await fetch('/geoentity_monitoring/api/filter-check/status');
+        const status = await response.json();
+        
+        if (status.last_daily_check) {
+            var elem = document.getElementById('lastDailyCheck');
+            if (elem) {
+                elem.textContent = 'Last auto-check: ' + status.last_daily_check;
+            }
+        }
+        
+        if (status.running) {
+            if (status.total_sources > 0) {
+                var progressPercent = status.total_sources > 0 ? 
+                    (status.completed_sources / status.total_sources * 100) : 0;
+                
+                document.getElementById('filterStatusText').textContent = 
+                    'Checking all sources: ' + (status.current_source || 'Initializing...');
+                document.getElementById('filterProgress').textContent = 
+                    status.completed_sources + '/' + status.total_sources + ' sources';
+                document.getElementById('filterProgressBar').style.width = progressPercent + '%';
+                document.getElementById('currentCheckInfo').textContent = 
+                    'Current entity: ' + (status.current_entity || 'Please wait...');
+            } else {
+                var progressPercent = status.total > 0 ? (status.progress / status.total * 100) : 0;
+                
+                document.getElementById('filterStatusText').textContent = 
+                    'Checking: ' + (status.current_source || 'Initializing...');
+                document.getElementById('filterProgress').textContent = 
+                    status.progress + '/' + status.total;
+                document.getElementById('filterProgressBar').style.width = progressPercent + '%';
+                document.getElementById('currentCheckInfo').textContent = 
+                    'Current: ' + (status.current_entity || 'Please wait...');
+            }
+        } else {
+            clearInterval(filterCheckInterval);
+            filterCheckInterval = null;
+            
+            document.getElementById('filterCheckStatus').style.display = 'none';
+            document.getElementById('filterCheckBadge').style.display = 'none';
+            var runBtn = document.getElementById('runAllBtn');
+            if (runBtn) runBtn.disabled = false;
+            
+            loadAllFilterResults();
+        }
+    } catch (error) {
+        console.error('Error polling status:', error);
+    }
+}
+
 async function loadAllFilterResults() {
     try {
-        // Load only summary (lightweight)
+        var summaryGrid = document.getElementById('filterSummaryGrid');
+        if (!summaryGrid) {
+            console.error('filterSummaryGrid element not found');
+            return;
+        }
+        
+        summaryGrid.innerHTML = '<p class="placeholder-text">Loading summary...</p>';
+        
         const response = await fetch('/geoentity_monitoring/api/filter-check/summary');
         const summary = await response.json();
         
         displayFilterSummary(summary);
     } catch (error) {
         console.error('Error loading summary:', error);
-        document.getElementById('filterSummaryGrid').innerHTML = 
-            '<p class="placeholder-text">Error loading results. Please try again.</p>';
+        var summaryGrid = document.getElementById('filterSummaryGrid');
+        if (summaryGrid) {
+            summaryGrid.innerHTML = '<p class="placeholder-text">Error loading results. Please try again.</p>';
+        }
     }
 }
 
 function displayFilterSummary(summary) {
     const grid = document.getElementById('filterSummaryGrid');
+    
+    if (!grid) {
+        console.error('filterSummaryGrid element not found');
+        return;
+    }
     
     if (Object.keys(summary).length === 0) {
         grid.innerHTML = '<p class="placeholder-text">No filter checks completed yet. Run a filter check from the Basic Monitoring tab.</p>';
@@ -500,23 +479,18 @@ function displayDetailPage(data) {
     html += '</div>';
     
     document.getElementById('modalBody').innerHTML = html;
-    
-    // Update pagination controls
     displayPagination(data.pagination);
 }
 
 function displayPagination(pagination) {
     let html = '';
     
-    // Previous button
     html += '<button class="pagination-btn" onclick="changePage(' + (pagination.page - 1) + ')" ' + 
         (pagination.has_prev ? '' : 'disabled') + '>← Previous</button>';
     
-    // Page info
     html += '<span style="padding: 0 16px; font-weight: 600; color: #4a5568;">Page ' + 
         pagination.page + ' of ' + pagination.total_pages + '</span>';
     
-    // Next button
     html += '<button class="pagination-btn" onclick="changePage(' + (pagination.page + 1) + ')" ' + 
         (pagination.has_next ? '' : 'disabled') + '>Next →</button>';
     
@@ -528,23 +502,72 @@ function changePage(page) {
     loadDetailPage(currentDetailSourceId, page);
 }
 
-// Update the switchTab function to load summary
-function switchTab(tabName) {
-    currentTab = tabName;
-    
-    var tabButtons = document.querySelectorAll('.tab-btn');
-    for (var i = 0; i < tabButtons.length; i++) {
-        tabButtons[i].classList.remove('active');
-    }
-    event.target.closest('.tab-btn').classList.add('active');
-    
-    document.getElementById('basicTab').classList.remove('active');
-    document.getElementById('filterTab').classList.remove('active');
-    
-    if (tabName === 'basic') {
-        document.getElementById('basicTab').classList.add('active');
-    } else {
-        document.getElementById('filterTab').classList.add('active');
-        loadAllFilterResults();  // Load summary only
-    }
-}
+// Initial check on page load
+window.onload = function() {
+    setTimeout(runCheck, 500);
+};
+
+
+
+
+
+
+
+
+
+<!-- Filter Checking Tab -->
+<div id="filterTab" class="tab-content">
+    <div class="main-status">
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h2>🔍 Detailed Filter Checking</h2>
+                <p style="color: #718096; font-size: 14px; margin-top: 8px;">
+                    Check each geoentity with prefix parameter or bbox for specific sources
+                </p>
+                <p style="color: #718096; font-size: 13px; margin-top: 4px;" id="lastDailyCheck">
+                    Last auto-check: Loading...
+                </p>
+            </div>
+            <button class="btn btn-primary" onclick="runAllFilterChecks()" id="runAllBtn">
+                <span>🚀</span> Run All Sources
+            </button>
+        </div>
+
+        <div id="filterCheckStatus" class="filter-status-box" style="display:none;">
+            <div class="progress-container">
+                <div class="progress-info">
+                    <span id="filterStatusText">Initializing...</span>
+                    <span id="filterProgress">0/0</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="filterProgressBar"></div>
+                </div>
+                <div class="current-check" id="currentCheckInfo"></div>
+            </div>
+        </div>
+
+        <!-- Summary Cards Grid - THIS IS IMPORTANT -->
+        <div id="filterSummaryGrid" class="stats-grid" style="margin-top: 20px;">
+            <p class="placeholder-text">Loading summary...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Detailed View - ADD THIS BEFORE CLOSING </body> TAG -->
+<div id="detailModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Source Details</h3>
+            <button class="btn-close" onclick="closeDetailModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            Loading...
+        </div>
+        <div class="modal-footer">
+            <div id="paginationControls"></div>
+            <button class="btn btn-secondary" onclick="closeDetailModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+
