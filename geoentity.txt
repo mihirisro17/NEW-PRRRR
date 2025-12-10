@@ -1,2 +1,64 @@
-Error loading all results: TypeError: Cannot set properties of null (setting 'innerHTML')
-    at loadAllFilterResults (dashboard.js:563:29)
+Detailed Filter Checking
+Check each geoentity with prefix parameter or bbox for specific sources
+
+Last auto-check: Loading...
+
+
+🚀
+Run All Sources
+Source 13
+prefix
+Total Checks
+19934
+Success Rate
+100.0%
+Success
+19934
+Failed
+0
+Avg Time
+133.39ms
+Status
+running
+Source 15
+bbox
+Total Checks
+1
+Success Rate
+100.0%
+Success
+1
+Failed
+0
+Avg Time
+76.24ms
+Status
+completed
+Source 22
+prefix
+Total Checks
+10
+Success Rate
+100.0%
+Success
+10
+Failed
+0
+Avg Time
+59.55ms
+Status
+completed
+Source 23
+prefix
+Total Checks
+1
+Success Rate
+100.0%
+Success
+1
+Failed
+0
+Avg Time
+42.28ms
+Status
+completed
