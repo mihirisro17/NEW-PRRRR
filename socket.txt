@@ -1,0 +1,363 @@
+from flask import Flask, request, jsonify
+from flask_socketio import SocketIO
+from flask_cors import CORS
+from datetime import datetime
+import json
+
+app = Flask(__name__)
+app.config["SECRET_KEY"] = "vedas-alert-ws"
+CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+
+connected_clients = set()
+
+
+@app.route("/")
+def index():
+    return {
+        "status": "running",
+        "clients": len(connected_clients),
+    }
+
+
+@app.route("/health")
+def health():
+    return {"status": "ok", "clients": len(connected_clients)}
+
+
+@socketio.on("connect")
+def ws_connect():
+    connected_clients.add(request.sid)
+    print(f"✅ Client connected: {request.sid} | total={len(connected_clients)}")
+
+    # send simple info message (optional)
+    socketio.emit(
+        "message",
+        json.dumps(
+            {
+                "category": "system",
+                "type": "info",
+                "message": "Connected to VEDAS Alert WebSocket",
+                "source": "alert_ws_server",
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "metadata": {},
+            }
+        ),
+        to=request.sid,
+    )
+
+
+@socketio.on("disconnect")
+def ws_disconnect():
+    connected_clients.discard(request.sid)
+    print(f"🔌 Client disconnected: {request.sid} | total={len(connected_clients)}")
+
+
+@socketio.on("message")
+def ws_message(data):
+    """
+    Receives json from dashboard (e.g. clear notifications)
+    """
+    try:
+        msg = json.loads(data) if isinstance(data, str) else data
+        print(f"📨 from client: {msg}")
+        # If dashboard sends {action: "clear", ...} you can process here
+        if msg.get("action") == "clear":
+            # broadcast that some alert was cleared (optional)
+            socketio.emit("alert_cleared", json.dumps(msg), broadcast=True)
+    except Exception as exc:
+        print(f"❌ error in ws_message: {exc}")
+
+
+def push_alert(
+    category: str,
+    alert_type: str,
+    message: str,
+    source: str = "",
+    server: str = "",
+    metadata: dict | None = None,
+):
+    """
+    Generic function every monitoring script can call (directly or via HTTP) to push alerts.
+
+    Example:
+        push_alert("server", "offline", "bhuvan-01 is offline",
+                   source="monitoring_server", server="bhuvan-01")
+    """
+    payload = {
+        "category": category,
+        "type": alert_type,
+        "message": message,
+        "source": source or "unknown_source",
+        "server": server or "unknown",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "metadata": metadata or {},
+    }
+
+    socketio.emit("message", json.dumps(payload), broadcast=True)
+    print(f"📤 alert: [{category}] {alert_type} - {message} | clients={len(connected_clients)}")
+
+
+# OPTIONAL: HTTP endpoint so systems can POST alerts instead of importing python
+@app.route("/push-alert", methods=["POST"])
+def http_push_alert():
+    """
+    curl -X POST http://127.0.0.1:8080/push-alert \
+         -H "Content-Type: application/json" \
+         -d '{"category":"server","type":"offline","message":"host down","source":"monitoring_server"}'
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    try:
+        push_alert(
+            category=data.get("category", "generic"),
+            alert_type=data.get("type", "info"),
+            message=data.get("message", "No message"),
+            source=data.get("source", "unknown_source"),
+            server=data.get("server", "unknown"),
+            metadata=data.get("metadata") or {},
+        )
+        return {"status": "ok"}, 200
+    except Exception as exc:
+        return {"status": "error", "error": str(exc)}, 500
+
+
+if __name__ == "__main__":
+    print("🚀 starting VEDAS Alert WebSocket on 0.0.0.0:8080")
+    socketio.run(app, host="0.0.0.0", port=8080, debug=True, allow_unsafe_werkzeug=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+data() {
+  return {
+    // other fields...
+    alertsByCategory: {},   // e.g. { server: [...], dataset: [...], gpu: [...] }
+    alertHistory: [],
+    clearedAlertKeys: new Set(),
+    lastUpdated: '',
+    wsConnected: false,
+    socket: null,
+  };
+},
+computed: {
+  totalAlerts() {
+    return Object.values(this.alertsByCategory)
+      .reduce((sum, arr) => sum + arr.length, 0);
+  },
+  categoriesList() {
+    return Object.keys(this.alertsByCategory).sort();
+  },
+},
+methods: {
+  // single key builder
+  getAlertKey(category, alert) {
+    return `${category}|${alert.type}|${alert.message}|${alert.server}`;
+  },
+
+  formatTime(date = new Date()) {
+    return date.toLocaleString('en-IN', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  },
+
+  // ---- WebSocket ----
+  initWebSocket() {
+    const serverUrl = 'http://127.0.0.1:8080'; // or your IP
+    this.socket = io(serverUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 10,
+    });
+
+    this.socket.on('connect', () => {
+      this.wsConnected = true;
+      console.log('WS connected');
+    });
+
+    this.socket.on('disconnect', () => {
+      this.wsConnected = false;
+      console.log('WS disconnected');
+    });
+
+    this.socket.on('message', (data) => {
+      try {
+        const n = typeof data === 'string' ? JSON.parse(data) : data;
+        this.handleIncomingAlert(n);
+      } catch (e) {
+        console.error('WS message parse error', e);
+      }
+    });
+  },
+
+  // ---- dynamic alert handler ----
+  handleIncomingAlert(notification) {
+    if (!notification.category || !notification.type || !notification.message) {
+      console.warn('Invalid alert', notification);
+      return;
+    }
+
+    const cat = notification.category; // do NOT force to known list
+    if (!this.alertsByCategory[cat]) {
+      this.$set(this.alertsByCategory, cat, []);
+    }
+
+    const alert = {
+      type: notification.type,
+      message: notification.message,
+      server: notification.server || notification.source || 'Unknown',
+      timestamp: notification.timestamp || new Date().toISOString(),
+      metadata: notification.metadata || {},
+    };
+
+    const key = this.getAlertKey(cat, alert);
+    if (this.clearedAlertKeys.has(key)) {
+      return;
+    }
+
+    const arr = this.alertsByCategory[cat];
+    const exists = arr.some(
+      (a) => a.type === alert.type &&
+             a.message === alert.message &&
+             a.server === alert.server
+    );
+    if (!exists) {
+      arr.unshift(alert);
+      this.lastUpdated = this.formatTime();
+    }
+  },
+
+  // ---- DYNAMIC removeAlert ----
+  removeAlert(category, index) {
+    const arr = this.alertsByCategory[category];
+    if (!arr || index < 0 || index >= arr.length) return;
+
+    const alert = arr[index];
+    arr.splice(index, 1);
+
+    const key = this.getAlertKey(category, alert);
+    this.clearedAlertKeys.add(key);
+
+    this.alertHistory.unshift({
+      ...alert,
+      category,
+      clearedAt: this.formatTime(),
+    });
+
+    if (this.alertHistory.length > 50) {
+      this.alertHistory = this.alertHistory.slice(0, 50);
+    }
+
+    // optional: tell server
+    if (this.socket && this.wsConnected) {
+      this.socket.emit('message', JSON.stringify({
+        action: 'clear',
+        category,
+        alert,
+      }));
+    }
+  },
+
+  // ---- DYNAMIC clearAllAlerts ----
+  clearAllAlerts() {
+    const clearedAt = this.formatTime();
+
+    Object.entries(this.alertsByCategory).forEach(([category, arr]) => {
+      arr.forEach((alert) => {
+        this.alertHistory.unshift({
+          ...alert,
+          category,
+          clearedAt,
+        });
+        const key = this.getAlertKey(category, alert);
+        this.clearedAlertKeys.add(key);
+      });
+      arr.length = 0;
+    });
+
+    if (this.alertHistory.length > 50) {
+      this.alertHistory = this.alertHistory.slice(0, 50);
+    }
+  },
+},
+mounted() {
+  // your existing init...
+  this.initWebSocket();
+}
+
+
+
+
+
+<div class="alert-body">
+  <div
+    v-for="cat in categoriesList"
+    :key="cat"
+    class="alert-section"
+  >
+    <div class="alert-section-header" @click="toggleSection(cat)">
+      <div class="alert-section-title">
+        <span class="category-name">{{ cat }}</span>
+        <span class="category-count">{{ alertsByCategory[cat].length }}</span>
+      </div>
+      <div class="collapse-icon">
+        {{ sectionCollapsed?.[cat] ? '▶' : '▼' }}
+      </div>
+    </div>
+
+    <div
+      class="alert-section-content"
+      :class="{ collapsed: sectionCollapsed?.[cat] }"
+    >
+      <div
+        v-for="(alert, idx) in alertsByCategory[cat]"
+        :key="getAlertKey(cat, alert)"
+        class="alert-item"
+        :class="'alert-' + alert.type.toLowerCase()"
+      >
+        <div class="alert-content">
+          <div class="alert-type">{{ alert.type.toUpperCase() }}</div>
+          <div class="alert-message">{{ alert.message }}</div>
+          <div class="alert-server">
+            Source: {{ alert.server }}
+          </div>
+        </div>
+        <button class="alert-delete-btn" @click="removeAlert(cat, idx)">
+          &times;
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+data() {
+  return {
+    // ...
+    sectionCollapsed: {},
+  };
+},
+methods: {
+  toggleSection(category) {
+    const current = this.sectionCollapsed[category] || false;
+    this.$set(this.sectionCollapsed, category, !current);
+  },
+}
+
+
+
