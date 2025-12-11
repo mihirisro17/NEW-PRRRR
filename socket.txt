@@ -7,6 +7,8 @@ import json
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "vedas-alert-ws"
 CORS(app)
+
+# default path "/socket.io" is fine
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 connected_clients = set()
@@ -30,7 +32,6 @@ def ws_connect():
     connected_clients.add(request.sid)
     print(f"✅ Client connected: {request.sid} | total={len(connected_clients)}")
 
-    # send simple info message (optional)
     socketio.emit(
         "message",
         json.dumps(
@@ -61,9 +62,7 @@ def ws_message(data):
     try:
         msg = json.loads(data) if isinstance(data, str) else data
         print(f"📨 from client: {msg}")
-        # If dashboard sends {action: "clear", ...} you can process here
         if msg.get("action") == "clear":
-            # broadcast that some alert was cleared (optional)
             socketio.emit("alert_cleared", json.dumps(msg), broadcast=True)
     except Exception as exc:
         print(f"❌ error in ws_message: {exc}")
@@ -77,13 +76,6 @@ def push_alert(
     server: str = "",
     metadata: dict | None = None,
 ):
-    """
-    Generic function every monitoring script can call (directly or via HTTP) to push alerts.
-
-    Example:
-        push_alert("server", "offline", "bhuvan-01 is offline",
-                   source="monitoring_server", server="bhuvan-01")
-    """
     payload = {
         "category": category,
         "type": alert_type,
@@ -95,14 +87,15 @@ def push_alert(
     }
 
     socketio.emit("message", json.dumps(payload), broadcast=True)
-    print(f"📤 alert: [{category}] {alert_type} - {message} | clients={len(connected_clients)}")
+    print(
+        f"📤 alert: [{category}] {alert_type} - {message} | clients={len(connected_clients)}"
+    )
 
 
-# OPTIONAL: HTTP endpoint so systems can POST alerts instead of importing python
 @app.route("/push-alert", methods=["POST"])
 def http_push_alert():
     """
-    curl -X POST http://127.0.0.1:8080/push-alert \
+    curl -X POST http://127.0.0.1:5015/push-alert \
          -H "Content-Type: application/json" \
          -d '{"category":"server","type":"offline","message":"host down","source":"monitoring_server"}'
     """
@@ -122,8 +115,21 @@ def http_push_alert():
 
 
 if __name__ == "__main__":
-    print("🚀 starting VEDAS Alert WebSocket on 0.0.0.0:8080")
-    socketio.run(app, host="0.0.0.0", port=8080, debug=True, allow_unsafe_werkzeug=True)
+    print("🚀 starting VEDAS Alert WebSocket on 127.0.0.1:5015")
+    socketio.run(app, host="127.0.0.1", port=5015, debug=True, allow_unsafe_werkzeug=True)
+
+
+# REST API under /monitoring_server/api
+ProxyPass        "/monitoring_server/api/" "http://127.0.0.1:5015/"
+ProxyPassReverse "/monitoring_server/api/" "http://127.0.0.1:5015/"
+
+# Socket.IO WebSocket endpoint (default path)
+ProxyPass        "/socket.io/" "ws://127.0.0.1:5015/socket.io/"
+ProxyPassReverse "/socket.io/" "ws://127.0.0.1:5015/socket.io/"
+
+# Optional: forward headers so Flask knows it is behind a proxy
+RequestHeader set X-Forwarded-Proto "http"
+RequestHeader set X-Forwarded-Prefix "/monitoring_server/api"
 
 
 
