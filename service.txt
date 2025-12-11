@@ -1,0 +1,1397 @@
+this is my app.js
+
+const applications = {
+
+
+    "AQ": "Air Quality",
+    "VM": "Vegetation Monitoring",
+    "uva": "UVA",
+    "api_centre": "API Centre",
+    "krishi":"Krishi DSS",
+    "lama":"LAMA"
+
+  };
+
+
+
+  async function getDataFromRidam(prefix,warning_hours,alert_hours) {
+    try {
+      const url = `https://vedas.sac.gov.in/ridam_server/meta/dataset_timestamp?prefix=${prefix}`;
+      const res = await fetch(url);
+      const data = await res.json();
+  
+      const result = data.result || {};
+      const timestamps = Object.values(result).flat();
+      if (!timestamps.length) return { latest: '-', count: 0, status: 'offline' };
+  
+      const allTimes = timestamps.map(ts => {
+        const fixed = ts.replace(
+          /(\d{4})(\d{2})(\d{2}) (\d{2}):(\d{2}):(\d{2})([+-]\d{2})(\d{2})/,
+          '$1-$2-$3T$4:$5:$6$7:$8'
+        );
+        return new Date(fixed);
+      });
+      
+      if (!allTimes.length) return { latest: '-', count: 0, status: 'offline' };
+  
+      const latest = new Date(Math.max(...allTimes));
+      // console.log("latest from ridam",latest)
+      const today = new Date();
+      const diffInhours = Math.floor((today - latest) / (1000 * 60 * 60 ));
+     console.log("diff",diffInhours)
+    
+     let status = 'ok';
+     if (diffInhours >= alert_hours) {
+       status = 'alert';
+     } else if (diffInhours >= warning_hours) {
+       status = 'warning';
+     }
+     
+      return {
+        latest: latest.toLocaleDateString('en-GB').split('/').join('-'), // → DD-MM-YYYY in local time
+        count: allTimes.length,
+        status
+      };
+      
+    } catch (err) {
+      console.error("Error fetching prefix data for " + prefix, err);
+      return { latest: '-', count: 0, status: 'offline' ,ridam_server:'ridam'};
+    }
+  }
+  
+
+  async function getForecastDataFromRidam(prefix, warning_hours, alert_hours) {
+    try {
+      const url = `https://vedas.sac.gov.in/ridam_server/meta/dataset_timestamp?prefix=${prefix}`;
+      const res = await fetch(url);
+      const data = await res.json();
+  
+      const result = data.result || {};
+      const timestamps = Object.values(result).flat();
+      if (!timestamps.length) return { latest: '-', count: 0, status: 'offline' };
+  
+      const allTimes = timestamps.map(ts => {
+        const fixed = ts.replace(
+          /(\d{4})(\d{2})(\d{2}) (\d{2}):(\d{2}):(\d{2})([+-]\d{2})(\d{2})/,
+          '$1-$2-$3T$4:$5:$6$7:$8'
+        );
+        return new Date(fixed);
+      });
+  
+      if (!allTimes.length) return { latest: '-', count: 0, status: 'offline' };
+  
+      const latest = new Date(Math.max(...allTimes));
+      const today = new Date();
+      const diffInhours = Math.floor((today-latest) / (1000 * 60 * 60)); 
+  
+      console.log("hoursAhead from latest fetcghed", diffInhours);
+  
+      let status = 'ok';
+      if (diffInhours >= alert_hours) {
+        status = 'alert';
+      } else if (diffInhours >= warning_hours) {
+        status = 'warning';
+      }
+  
+      return {
+        latest: latest.toLocaleDateString('en-GB').split('/').join('-'),
+        count: allTimes.length,
+        status
+      };
+  
+    } catch (err) {
+      console.error("Error fetching forecast prefix data for " + prefix, err);
+      return { latest: '-', count: 0, status: 'offline', ridam_server: 'ridam' };
+    }
+  }
+
+  async function getDataFromDirectId(datasetId,warning_hours,alert_hours) {
+    try {
+      const url = `https://vedas.sac.gov.in/vone_t0/list_data_ids?dataset_ids=${datasetId}`;
+      const res = await fetch(url);
+      const data = await res.json();
+  
+      const timestamps = data[datasetId] || [];
+      const extractDatePart = (t) =>
+        (t.match(/\d{8}/g) || []).pop();
+  
+      const validTimestamps = timestamps.filter(t => extractDatePart(t));
+
+      // console.log("valid",validTimestamps)
+      if (!validTimestamps.length) return { latest: '-', count: 0, status: 'offline' };
+  
+      const latestStr = validTimestamps.reduce((a, b) =>
+        extractDatePart(a) > extractDatePart(b) ? a : b
+      );
+      const dt = extractDatePart(latestStr);
+      // console.log("dt from fun",dt)
+  
+      const latest = new Date(`${dt.slice(0, 4)}-${dt.slice(4, 6)}-${dt.slice(6, 8)}`);
+      // console.log("latest from dire",latest)
+      const today = new Date();
+      const diffInhours = Math.floor((today - latest) / (1000 * 60 * 60));
+  
+      let status = 'ok';
+     if (diffInhours >= alert_hours) {
+       status = 'alert';
+     } else if (diffInhours >= warning_hours) {
+       status = 'warning';
+     }
+  
+      return {
+        latest: `${dt.slice(6, 8)}-${dt.slice(4, 6)}-${dt.slice(0, 4)}`,
+        count: validTimestamps.length,
+        status
+      };
+    } catch (err) {
+      console.error("Error fetching direct ID data for " + datasetId, err);
+      return { latest: '-', count: 0, status: 'offline' };
+    }
+  }
+
+  
+  
+  async function getDataFrom_geoentity_stats(source_id,param_id,warning_hours,alert_hours){
+    try {
+      const url = `https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/${source_id}/params/timestamps?params=${param_id}&suppress_geom=1`;
+  
+      const res = await fetch(url);
+      const json = await res.json();
+  
+      const timestamps = json[param_id];
+      if (!timestamps || timestamps.length === 0) {
+        return {
+          latest: "No data",
+          status: "offline"
+        };
+      }
+  
+   
+      const latestTimestamp = timestamps[timestamps.length - 1] * 1000;
+      // console.log("latest from geoentity",latestTimestamp)
+      const latestDate = new Date(latestTimestamp);
+      // console.log("conversion",latestDate)
+
+      const now = new Date();
+      // const diffMs = now - latestDate;
+      const diffInhours = Math.round((now- latestDate) / (1000 * 60 * 60));
+  
+    console.log("diff is geoentity_stats",diffInhours)
+
+    let status = 'ok';
+    if (diffInhours >= alert_hours) {
+      status = 'alert';
+    } else if (diffInhours >= warning_hours) {
+      status = 'warning';
+    }
+      
+      const day = latestDate.getDate().toString().padStart(2, '0');
+      // console.log("day",day)
+      const month = (latestDate.getMonth() + 1).toString().padStart(2, '0');
+      const year = latestDate.getFullYear();
+      
+      const formattedDate = `${day}-${month}-${year}`;
+      // console.log("Formatted Date:", formattedDate);
+      return {
+        latest: formattedDate,
+        status
+      };
+    } catch (error) {
+      console.error("GeoEntity fetch error:", error);
+      return {
+        latest: "Error",
+        status: "offline"
+      };
+    }
+  }
+    
+    async function get_data_from_info_service(layer, dataset_id, param, lat, lon, from_time, to_time, warning_hours, alert_hours) {
+      try {
+        const url = `https://vedas.sac.gov.in/ridam_server3/info/`;
+    
+        const payload = {
+          layer,
+          args: {
+            dataset_id,
+            from_time: from_time.toString(),
+            to_time: to_time.toString(),
+            param,
+            lon,
+            lat,
+            filter_nodata: "yes",
+            indexes:[1],
+            composite: false
+          }
+        };
+    
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+    
+        const json = await res.json();
+
+        if (!json.result || !Array.isArray(json.result) || json.result.length === 0) {
+          return { latest: "No data", count: 0, status: "offline" };
+        }
+    
+    
+        const timestamps = json.result.map(entry => new Date(entry[0]));
+        if (!timestamps.length) {
+          return { latest: "No data", count: 0, status: "offline" };
+        }
+    
+    
+        const latest = new Date(Math.max(...timestamps));
+        const now = new Date();
+        const diffInhours = Math.floor((now - latest) / (1000 * 60 * 60));
+
+        console.log("INFO",diffInhours)
+      
+    
+        let status = 'ok';
+        if (diffInhours >= alert_hours) {
+          status = 'alert';
+        } else if (diffInhours >= warning_hours) {
+          status = 'warning';
+        }
+    
+        const formattedDate = latest.toISOString().split("T")[0].split("-").reverse().join("-");
+    
+        return {
+          latest: formattedDate,
+          count: timestamps.length,
+          status
+        };
+      } catch (error) {
+        console.error("Error in get_data_from_info_service:", error);
+        return { latest: "Error", count: 0, status: "offline" };
+      }
+    }
+    
+
+    
+    const datasets = {
+
+
+
+
+
+
+          "Snow Cover AI/ML": {
+     
+            type: "direct",
+            monitoring: async function () {
+              const data = await getDataFromDirectId("AWIFS_NDSI_AIMASK_V2",96,120);
+              return {
+                dataset: "Snow Cover AI/ML",
+                applicationIds: ["lama"],
+                ...data
+              };
+            }
+          },
+
+          "Sentinel-2  Cloud Mask": {
+     
+            type: "ridam",
+            monitoring: async function () {
+              const data = await getDataFromRidam("T0S5P1",72,96);
+              return {
+                dataset:  "Sentinel-2 Cloud Mask",
+                applicationIds: ["uva","api_centre"],
+                ...data
+              };
+            }
+          },
+
+
+          "Sentinel-2 Construction Activity Index": {
+     
+            type: "ridam",
+            monitoring: async function () {
+              const data = await getDataFromRidam("T6S2P3",72,96);
+              return {
+                dataset:  "Sentinel-2 Construction Activity Index",
+                applicationIds: ["uva"],
+                ...data
+              };
+            }
+          },
+
+
+          "Snow Cover (NDSI Sentinel)": {
+     
+            type: "direct",
+            monitoring: async function () {
+              const data = await getDataFromDirectId("SENT_SCM_NDSI_1D",48,72);
+              return {
+                dataset: "Snow Cover (NDSI Sentinel)",
+                applicationIds: ["lama"],
+                ...data
+              };
+            }
+          },
+          "Glacier Melt": {
+  
+          
+          
+            monitoring: async function () {
+              const data = await getDataFromRidam("T4S3P2",24,48);
+              return {
+                dataset: "Glacier Melt",
+                applicationIds:["uva","lama"],
+                ...data
+              };
+            }
+          },
+
+
+          "Snow Melt": {
+  
+          
+          
+            monitoring: async function () {
+              const data = await getDataFromRidam("T4S3P1",24,48);
+              return {
+                dataset: "Snow Melt",
+                applicationIds:["uva","lama"],
+                ...data
+              };
+            }
+          },
+          "Aerosol Index":{
+            monitoring: async function () {
+              const data = await getDataFromRidam("T5S1P6",48,72);
+              return {
+                dataset: "Aerosol Index",
+                applicationIds:["uva","lama"],
+                ...data
+              };
+            }
+
+          },
+          "MODIS NDVI (250m) RIDAM":{
+            monitoring: async function () {
+              const data = await getDataFromRidam("T3S1P2",48,72);
+              return {
+                dataset:  "MODIS NDVI (250m) RIDAM",
+                applicationIds:["uva","lama"],
+                ...data
+              };
+            }
+
+          },
+          "Tropospheric CO (Sentinel5P/TROPOMI - NRTI)":{
+            monitoring: async function () {
+              const data = await getDataFromRidam("T5S1P3",48,72);
+              return {
+                dataset: "Tropospheric CO (Sentinel5P/TROPOMI - NRTI)",
+                applicationIds:["lama"],
+                ...data
+              };
+            }
+
+          },
+          "Tropospheric HCHO (Sentinel5P/TROPOMI - NRTI)":{
+            monitoring: async function () {
+              const data = await getDataFromRidam("T5S1P5",48,72);
+              return {
+                dataset: "Tropospheric HCHO (Sentinel5P/TROPOMI - NRTI)",
+                applicationIds:["lama"],
+                ...data
+              };
+            }
+          },
+          "Tropospheric NO2 (Sentinel5P/TROPOMI - NRTI)":{
+            monitoring: async function () {
+              const data = await getDataFromRidam("T5S1P2",48,72);
+              return {
+                dataset: "Tropospheric NO2 (Sentinel5P/TROPOMI - NRTI)",
+                applicationIds:["lama"],
+                ...data
+              };
+            }
+          },
+
+          "Tropospheric O3 (Sentinel5P/TROPOMI - NRTI)":{
+            monitoring: async function () {
+              const data = await getDataFromRidam("T5S1P4",48,72);
+              return {
+                dataset: "Tropospheric O3 (Sentinel5P/TROPOMI - NRTI)",
+                applicationIds:["lama"],
+                ...data
+              };
+            }
+          },
+
+
+
+          "Tropospheric SO2 (Sentinel5P/TROPOMI - NRTI)":{
+            monitoring: async function () {
+              const data = await getDataFromRidam("T5S1P1",48,72);
+              return {
+                dataset: "Tropospheric SO2 (Sentinel5P/TROPOMI - NRTI)",
+                applicationIds:["lama"],
+                ...data
+              };
+            }
+          },
+          "AWiFS FCC": {
+  
+          
+          
+            monitoring: async function () {
+              const data = await getDataFromRidam("T0S1P1",24*4,24*5);
+              return {
+                dataset: "AWiFS FCC",
+                applicationIds:["uva","api_centre"],
+                ...data
+              };
+            }
+          },
+          
+          "AWIFS NCC (AI Generated)":{
+         
+            monitoring: async function () {
+              const data = await getDataFromRidam("T0S1P2",72,96);
+              return {
+                dataset: "AWIFS NCC (AI Generated)",
+                applicationIds:  ["uva"],
+                ...data
+              };
+            }
+    
+          },
+
+          "MODIS 16 Day Max NDWI": {
+       
+            type: "direct",
+        
+            monitoring: async function () {
+              const data = await getDataFromDirectId("NDWI_15D_MODIS_IND_250",384,768);
+              return {
+                dataset: "MODIS 16 Day Max NDWI",
+                applicationIds: ["VM"],
+                ...data
+              };
+            }
+          },
+
+
+          "MODIS 16 Day Max NDVI": {
+       
+            type: "direct",
+        
+            monitoring: async function () {
+              const data = await getDataFromDirectId("NDVI_15D_MODIS_IND_250",384,768);
+              return {
+                dataset: "MODIS 16 Day Max NDVI",
+                applicationIds: ["VM"],
+                ...data
+              };
+            }
+          },
+
+
+          "Root Zone Soil Moisture": {
+     
+            type: "direct",
+            monitoring: async function () {
+              const data = await getDataFromDirectId("RZSM_DAILY",15*24,20*24);
+              return {
+                dataset: "Root Zone Soil Moisture",
+                applicationIds: ["VM"],
+                ...data
+              };
+            }
+          },
+
+
+
+
+
+        "Sentinel FCC": {
+     
+        
+            monitoring: async function () {
+              const data = await getDataFromRidam("T0S1P0",72,96);
+              return {
+                dataset: "Sentinel FCC",
+                applicationIds: ["uva","api_centre"],
+                ...data
+              };
+            }
+          },
+     
+
+      "Snow Cover AI": {
+
+ 
+        monitoring: async function () {
+          const data = await getDataFromRidam("T4S1P2",120,144);
+          return {
+            dataset: "Snow Cover AI",
+            applicationIds:["uva"],
+            ...data
+          };
+        }
+      },
+
+
+
+
+
+      "Sentinel-5P NO2": {
+          monitoring: async function () {
+          const data = await getDataFromRidam("T5S1P2",72,96);
+          return {
+            dataset: "Sentinel-5P NO2",
+            applicationIds: ["AQ"],
+            ...data
+          };
+        }
+      },
+
+      "Sentinel-2 Scene classification":{
+       
+        monitoring: async function () {
+          const data = await getDataFromRidam("T0S1P6",48,72);
+          return {
+            dataset:     "Sentinel-2 Scene classification",
+            applicationIds: ["uva"],
+            ...data
+          };
+        }
+      },
+      
+  "Sentinel-2 NBR":{
+  
+        
+          monitoring: async function () {
+            const data = await getDataFromRidam("T3S4P1",48,72);
+            return {
+              dataset: "Sentinel-2 NBR",
+              applicationIds: ["uva"],
+              ...data
+            };
+          }
+       },
+       "SWOT Surface Water Elevation": {
+      
+
+        monitoring: async function () {
+          const data = await getDataFromRidam("T0S2P5",24*15,24*16);
+          return {
+            dataset: "SWOT Surface Water Elevation",
+            applicationIds: ["uva"],
+            ...data
+          };
+        }
+      },
+       
+
+      "Sentinel-1 VH": {
+   
+
+        monitoring: async function () {
+          const data = await getDataFromRidam("T0S2P1",72,96);
+          return {
+            dataset:"Sentinel-1 VH",
+            applicationIds: ["uva"],
+            ...data
+          };
+        }
+      },
+
+      "Sentinel-1 VV": {
+   
+
+        monitoring: async function () {
+          const data = await getDataFromRidam("T0S2P2",72,96);
+          return {
+            dataset:"Sentinel-1 VV",
+            applicationIds: ["uva"],
+            ...data
+          };
+        }
+      },
+
+
+      "Sentinel-2 NDVI": {
+   
+
+        monitoring: async function () {
+          const data = await getDataFromRidam("T3S1P1",48,72);
+          return {
+            dataset: "Sentinel-2 NDVI",
+            applicationIds: ["uva","api_centre"],
+            ...data
+          };
+        }
+      },
+      "Sentinel-2 NDMI": {
+   
+
+        monitoring: async function () {
+          const data = await getDataFromRidam("T3S6P1",48,72);
+          return {
+            dataset: "Sentinel-2 NDMI",
+            applicationIds: ["uva","api_centre"],
+            ...data
+          };
+        }
+      },
+      "Temperature Forecast": {
+   
+
+        monitoring: async function () {
+          const data = await getForecastDataFromRidam("T5S2P4",-48, -24);
+          return {
+            dataset: "Temperature Forecast",
+            applicationIds: ["api_centre"],
+            ...data
+          };
+        }
+      },
+      "Fire State Level": {
+   
+
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("18","148",72,96);
+          return {
+            dataset: "Fire State Level",
+            applicationIds:  ["uva","krishi"],
+            ...data
+          };
+        }
+      },
+      "Fire District Level": {
+   
+
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("19","148",72,96);
+          return {
+            dataset: "Fire District Level",
+            applicationIds:  ["uva","krishi"],
+            ...data
+          };
+        }
+      },
+
+      "Fire Tehsil Level": {
+   
+
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("20","148",72,96);
+          return {
+            dataset: "Fire Tehsil Level",
+            applicationIds:  ["uva","krishi"],
+            ...data
+          };
+        }
+      },
+
+      "Relative Humidity Forecast Tehsil": {
+   
+
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("20","301",-48,-24);
+          return {
+            dataset: "Relative Humidity Forecast Tehsil",
+            applicationIds:  ["krishi"],
+            ...data
+          };
+        }
+      },
+      "Relative Humidity Forecast District": {
+   
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("19","301",-48,-24);
+          return {
+            dataset: "Relative Humidity Forecast District",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+      "Daily Rainfall Forecast Tehsil": {
+   
+         monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("20","302",-48,-24);
+          return {
+            dataset: "Daily Rainfall Forecast Tehsil",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+      "Daily Rainfall Forecast District": {
+   
+     
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("19","302",-48,-24);
+          return {
+            dataset: "Daily Rainfall Forecast District ",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+      "Min Temp Forecast Tehsil ": {
+   
+     
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("20","305",-48,-24);
+          return {
+            dataset: "Min Temp Forecast Tehsil",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+      "Min Temp Forecast District": {
+   
+      
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("19","305",-48,-24);
+          return {
+            dataset: "Min Temp Forecast District",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+
+
+
+
+
+      "BMSK Historic Rainfall": {
+   
+      
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("25","145",48,72);
+          return {
+            dataset:  "BMSK Historic Rainfall",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+
+
+
+
+      "BMSK Forecast Rainfall": {
+   
+      
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("29","146",-48,-24);
+          return {
+            dataset:  "BMSK Forecast Rainfall",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+
+
+
+
+      "Gujarat Hydrology Reservoir": {
+   
+      
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("30","147",24,48);
+          return {
+            dataset:   "Gujarat Hydrology Reservoir",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+
+      // "VIIRS Fire": {
+   
+      
+      //   monitoring: async function () {
+      //     const data = await getDataFrom_geoentity_stats("32","148",-48,-24);
+      //     return {
+      //       dataset:   "VIIRS Fire",
+      //       applicationIds: ["krishi"],
+      //       ...data
+      //     };
+      //   }
+      // },
+
+
+
+
+      "Modis NDVI (250m) District (Geoentity)": {
+   
+      
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("19","21",480,720);
+          return {
+            dataset: "Modis NDVI (250m) District (Geoentity)",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+
+      "Modis NDVI (250m) Tehsil (Geoentity)": {
+   
+      
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("20","21",480,720);
+          return {
+            dataset: "Modis NDVI (250m) Tehsil (Geoentity)",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+
+
+
+
+
+
+
+      "Max Temp Forecast Tehsil": {
+   
+
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("20","305",-48,-24);
+          return {
+            dataset: "Max Temp Forecast Tehsil",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+      "Max Temp Forecast District": {
+   
+    
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("19","305",-48,-24);
+          return {
+            dataset: "Max Temp Forecast District",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+      "Rainfall Daily(mm) IMD": {
+   
+    
+        monitoring: async function () {
+          const data = await getDataFrom_geoentity_stats("19","98",48,72);
+          return {
+            dataset: "Rainfall Daily(mm) IMD",
+            applicationIds: ["krishi"],
+            ...data
+          };
+        }
+      },
+      "Sentinel 2 NDVI INFO Service": {
+  
+     
+      
+        monitoring: async function () {
+
+
+          const latLonPairs = [
+            { lat: 32.5, lon: 78.0 }, 
+            { lat: 18.0, lon: 78.0 }, 
+            { lat: 22.5, lon: 88.5 }, 
+            { lat: 22.5, lon: 68.5 },
+            {lat: 24.8613, lon: 93.4606},
+            {lat:24.8198, lon: 93.0348},
+            {lat: 23.0085, lon: 73.7224},
+            {lat: 19.4875, lon: 73.8789},
+            { lat
+              : 
+              27.128687726221923,
+              lon
+              : 
+              83.42458453232842 } ,
+              {
+                lat
+: 
+7.1420297151991505,
+lon
+: 
+93.85079086660812
+              },
+              {
+                lat: 24.8079838059177,lon: 94.7393009220714
+              }
+          ];
+        
+          const results = await Promise.all(
+            latLonPairs.map(pair =>
+              get_data_from_info_service("T0S0I0", "T3S1P1", "NDVI", pair.lat, pair.lon,
+                19700101, 20300615, 48, 72)
+            )
+          );
+        
+  
+          const validResults = results.filter(r => r.latest !== "No data" && r.latest !== "Error");
+        
+          if (!validResults.length) {
+            return {
+              dataset: "Sentinel 2 NDVI INFO Service",
+              applicationIds: ["uva", "api_centre"],
+              latest: "No data",
+              count: 0,
+              status: "offline"
+            };
+          }
+        
+        
+          const latestResult = validResults.reduce((a, b) => {
+            const aDate = new Date(a.latest.split("-").reverse().join("-"));
+            const bDate = new Date(b.latest.split("-").reverse().join("-"));
+            return aDate > bDate ? a : b;
+          });
+        
+          return {
+            dataset: "Sentinel 2 NDVI INFO Service",
+            applicationIds: ["uva", "api_centre"],
+            ...latestResult
+          };
+        }
+        
+      },
+
+      "Sentinel 2 NDMI INFO Service": {
+  
+     
+        monitoring: async function () {
+          const latLonPairs = [
+            { lat: 32.5, lon: 78.0 }, 
+            { lat: 18.0, lon: 78.0 }, 
+            { lat: 22.5, lon: 88.5 }, 
+            { lat: 22.5, lon: 68.5 },
+            {
+              lat
+: 
+27.18842358023921,
+lon
+: 
+83.00643355420742
+            },
+            {
+              lat
+              : 
+              6.460082236241185,
+              lon
+              : 
+              94.326377890483
+            }     ,
+            {
+              lat: 24.8079838059177,lon: 94.7393009220714
+            },{
+              lat
+: 
+18.078705842603192,
+lon
+: 
+75.82319710862885
+            }
+          ];
+        
+          const results = await Promise.all(
+            latLonPairs.map(pair =>
+              get_data_from_info_service("T0S0I0", "T3S6P1", "NDMI", pair.lat, pair.lon,
+                19700101, 20300615, 48, 72)
+            )
+          );
+        
+          // Filter out valid results
+          const validResults = results.filter(r => r.latest !== "No data" && r.latest !== "Error");
+        
+          if (!validResults.length) {
+            return {
+              dataset: "Sentinel 2 NDMI INFO Service",
+              applicationIds: ["uva", "api_centre"],
+              latest: "No data",
+              count: 0,
+              status: "offline"
+            };
+          }
+        
+          // Compare based on actual Date
+          const latestResult = validResults.reduce((a, b) => {
+            const aDate = new Date(a.latest.split("-").reverse().join("-"));
+            const bDate = new Date(b.latest.split("-").reverse().join("-"));
+            return aDate > bDate ? a : b;
+          });
+        
+          return {
+            dataset: "Sentinel 2 NDMI INFO Service",
+            applicationIds: ["uva", "api_centre"],
+            ...latestResult
+          };
+        }
+      },
+
+"WRF Insolation Forecast ": {
+  monitoring: async function () {
+    const data = await getForecastDataFromRidam("T2S1P24", -48, -24); 
+    return {
+      dataset: "WRF Insolation Forecast",
+      applicationIds: ["uva", "api_centre"],
+      ...data
+    };
+  }
+}
+
+  }
+    
+    
+    new Vue({
+      el: "#app",
+      delimiters: ["${", "}"],
+      data() {
+        return {
+          tableData: [],
+          filteredData: [],
+          fromDate: null,
+          toDate: null,
+          selectedApplication: "",
+          isfilterapply: false,
+          applicationOptions: [] ,
+          loading: true,
+          statusOptions: ["Ok", "Warning", "Alert", "Offline"],
+          selectedStatus:"",
+          searchQuery: "",
+          statusCounts: {
+            ok: 0,
+            warning: 0,
+            alert: 0,
+            offline: 0
+          },
+          
+        };
+      },
+      methods: {
+        loadMonitoringData() {
+     
+    this.loading=true;
+          const promises = Object.values(datasets).map(ds =>
+            ds.monitoring().then(result => ({
+            
+              dataset: result.dataset,
+              application: result.applicationIds.map(id => applications[id] || 'Unknown').join(', '),
+              
+              latest: result.latest,
+              count: result.count,
+              status: result.status ,
+              ridam_server: ds.type === 'direct' ? 'vone' : 'ridam',
+         
+            }))
+          );
+    
+          Promise.all(promises).then(results => {
+            this.tableData = this.sortByStatusPriority(results);
+            this.filteredData = [...this.tableData];
+            this.statusCounts = {
+              ok: 0,
+              warning: 0,
+              alert: 0,
+              offline: 0
+            };
+            
+            this.tableData.forEach(item => {
+              const key = item.status?.toLowerCase();
+              if (this.statusCounts[key] !== undefined) {
+                this.statusCounts[key]++;
+              }
+            });
+            
+            this.populateApplicationOptions();
+            this.loading = false;
+          });
+          
+        },
+    
+        applyFilter() {
+          this.isfilterapply = true;
+          this.loadMonitoringData();
+        },
+        getStatusIcon(status) {
+          switch (status.toLowerCase()) {
+            case 'ok':
+              return 'check_circle';
+            case 'warning':
+              return 'warning';
+            case 'alert':
+              return 'data_alert';
+            case 'offline':
+              return 'wifi_off';
+            default:
+              return 'info';
+          }
+        },
+    
+        resetFilters() {
+        //   const today = new Date();
+        //   const priorDate = new Date();
+        //   priorDate.setDate(today.getDate() - 29);
+        
+        //   const toISODate = date => date.toISOString().split('T')[0];
+        
+        //   this.toDate = toISODate(today);
+        //   this.fromDate = toISODate(priorDate);
+        //   this.selectedApplication = "";
+        //   this.isfilterapply = false;
+        //   this.loadMonitoringData();
+    location.reload();    
+    }
+  ,      
+
+        populateApplicationOptions() {
+          const apps = new Set();
+          this.tableData.forEach(item => {
+            item.application.split(', ').forEach(app => apps.add(app));
+          });
+          this.applicationOptions = Array.from(apps).sort();
+        },
+        sortByStatusPriority(data) {
+          const priority = {
+            alert: 1,
+            warning: 2,
+            ok: 3,
+            offline: 4
+          };
+          return data.sort((a, b) => {
+            return priority[a.status?.toLowerCase()] - priority[b.status?.toLowerCase()];
+          });
+        }
+,        
+        applyFilters() {
+          const filtered = this.tableData
+            .filter(item => {
+              const appList = item.application
+                .split(',')
+                .map(app => app.trim().toLowerCase());
+        
+              const matchesApp = this.selectedApplication
+                ? appList.includes(this.selectedApplication.toLowerCase())
+                : true;
+        
+              const matchesStatus = this.selectedStatus
+                ? item.status.toLowerCase() === this.selectedStatus.toLowerCase()
+                : true;
+        
+              const query = this.searchQuery.toLowerCase();
+              const matchesSearch = !this.searchQuery || (
+                item.dataset.toLowerCase().includes(query) ||
+                item.application.toLowerCase().includes(query) ||
+                item.latest.toLowerCase().includes(query) ||
+                item.status.toLowerCase().includes(query)
+              );
+        
+              return matchesApp && matchesStatus && matchesSearch;
+            })  .map(item => {
+              return {
+                ...item,
+                // Show only selected app in the application column if filtering by app
+                application: this.selectedApplication || item.application
+              };
+            });
+
+        
+          this.filteredData = this.sortByStatusPriority(filtered);
+          
+        }
+        
+        
+        
+      },
+    
+      
+      
+
+  watch: {
+    selectedApplication() {
+      this.applyFilters();
+    },
+    selectedStatus() {
+      this.applyFilters();
+    },
+    searchQuery() {
+      this.applyFilters();  // ✅ call filter when user types
+    }
+  }
+  ,    
+  created() {
+    this.loadMonitoringData();
+  
+    // refresh every 10 seconds
+    this.refreshInterval = setInterval(() => {
+      this.loadMonitoringData();
+    }, 60000);
+  },
+  
+  beforeDestroy() {
+
+    clearInterval(this.refreshInterval);
+  }
+    });
+    
+    
+
+
+this is my index.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dataset Monitoring Dashboard</title>
+  <link rel="stylesheet" href="https://vedas.sac.gov.in/vstatic/data_monitoring_system/css/style.css" />
+  <link rel="stylesheet" href="https://vedas.sac.gov.in/vstatic/data_monitoring_system/css/material_symbol.css">
+  <script src="https://vedas.sac.gov.in/vstatic/data_monitoring_system/js/lib/vue.js"></script>
+  <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@600&display=swap" rel="stylesheet"> -->
+</head>
+<body>
+
+  <div class="tech-grid"></div>
+
+  <header class="main-header">
+    <div class="logo-box">
+      <a href="https://vedas.sac.gov.in" target="_blank">
+        <img src="https://vedas.sac.gov.in/vstatic/data_monitoring_system/img/vedas_logo.png" alt="VEDAS" />
+      </a>
+    </div>
+    <h1 class="dashboard-title">
+      <span class="ve">VE</span><span class="d">D</span><span class="as">AS</span> Monitoring System
+    </h1>
+    <div class="logo-box">
+      <a href="https://www.isro.gov.in/" target="_blank">
+        <img src="https://vedas.sac.gov.in/vstatic/data_monitoring_system/img/rightside.png" alt="ISRO" />
+      </a>
+    </div>
+  </header>
+
+  <main id="app" class="main-container">
+
+
+    <div class="count-grid">
+      <div class="count-panel ok-panel">
+        <h2><span class="material-symbols-outlined">check_circle</span> Ok</h2>
+        <p class="count-value">${ statusCounts.ok }</p>
+      </div>
+      <div class="count-panel warning-panel">
+        <h2><span class="material-symbols-outlined">warning</span> Warning</h2>
+        <p class="count-value">${ statusCounts.warning }</p>
+      </div>
+      <div class="count-panel alert-panel">
+        <h2><span class="material-symbols-outlined">data_alert</span> Alert</h2>
+        <p class="count-value">${ statusCounts.alert }</p>
+      </div>
+      <div class="count-panel offline-panel">
+        <h2><span class="material-symbols-outlined">wifi_off</span> Offline</h2>
+        <p class="count-value">${ statusCounts.offline }</p>
+      </div>
+    </div>
+
+
+    <div class="filter-container">
+      <section class="filters">
+        <label>
+          Filter by Application:
+          <select v-model="selectedApplication" class="custom-select">
+            <option value="">All</option>
+            <option disabled>---------------------------</option>
+            <option v-for="app in applicationOptions" :key="app" :value="app">${ app }</option>
+          </select>
+        </label>
+      </section>
+      <section class="filters">
+        <label>
+          Filter by Status:
+          <select v-model="selectedStatus" class="custom-select">
+            <option value="">All</option>
+            <option disabled>---------------------------</option>
+            <option v-for="status in statusOptions" :key="status" :value="status">${ status }</option>
+          </select>
+        </label>
+      </section>
+    </div>
+
+ 
+    <section class="filters mobile-search">
+      <label for="search">Search:</label>
+      <input
+        type="text"
+        id="search"
+        v-model="searchQuery"
+        class="custom-search"
+        placeholder="Type to filter table..."
+      />
+    </section>
+
+ 
+    <section class="data-table" v-if="!loading && tableData.length">
+      <table>
+        <thead>
+          <tr>
+            <th>Sr.No</th>
+            <th>Dataset</th>
+            <th>Application</th>
+            <th>Latest</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(item, index) in filteredData" :key="index">
+            <td>${ index + 1 }</td>
+            <td>${ item.dataset }</td>
+            <td>${ item.application }</td>
+            <td>${ item.latest }</td>
+            <td>
+              <span :class="'status-label ' + item.status">
+                <span class="material-symbols-outlined">${ getStatusIcon(item.status) }</span>
+                ${ item.status }
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+
+    <div v-if="loading" class="loader-container">
+      <div class="progress-bar"></div>
+      <p class="loading-text">Please wait, syncing data...</p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    © 2025 VEDAS, SAC, ISRO, Government of India | All Rights Reserved
+  </footer>
+
+  <script src="https://vedas.sac.gov.in/vstatic/data_monitoring_system/js/app/app.js" async></script>
+</body>
+</html>
+
+
+
+now here i want to add 
+this
+https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/
+if on this get 200 the show OK else alert and its giving like
+{"count":39,"data":[{"category":"LULC","id":15,"name":"SISDP LULC 10K 2016-19","parent_id":null,"project":"SISDP LULC10K","theme":null},{"category":"Hydrology","id":22,"name":"LAMA Hydro Gauge Station","parent_id":null,"project":"LAMA","theme":null},{"category":"Village","id":23,"name":"Gujarat Village Boundary 2025","parent_id":null,"project":"Encroachment Monitoring","theme":null},{"category":"POI","id":13,"name":"NWIC Ground Water Level","parent_id":null,"project":"Krishi DSS","theme":null},{"category":"POI","id":14,"name":"NWIC Reservoir","parent_id":null,"project":"Krishi DSS","theme":null},{"category":"cadastral","id":24,"name":"Gujarat cadastral Boundary 2025","parent_id":23,"project":"Encroachment Monitoring","theme":null},{"category":"POI","id":25,"name":"BMSK AWS Station","parent_id":null,"project":"Krishi DSS","theme":null},{"category":"Wetland","id":11,"name":"Wetland 2017-18 at 1:50K Refined and Updated for WLIS","parent_id":6,"project":"Wetland Information System","theme":null},{"category":"Village","id":12,"name":"Village Boundary 2023","parent_id":null,"project":"Vegetation Monitoring","theme":null},{"category":"Country","id":1,"name":"SOI Country 2023","parent_id":null,"project":"KrishiDSS","theme":"Admin"},{"category":"State","id":2,"name":"SOI State 2023","parent_id":1,"project":"KrishiDSS","theme":"Admin"},{"category":"District","id":3,"name":"SOI District 2023","parent_id":2,"project":"KrishiDSS","theme":"Admin"},{"category":"Tehsil","id":4,"name":"SOI Tehsil 2023","parent_id":3,"project":"KrishiDSS","theme":"Admin"},{"category":"Hydrology","id":6,"name":"IndiaWRIS India Boundary","parent_id":null,"project":"IndiaWRIS","theme":"Hydrology"},{"category":"Hydrology","id":7,"name":"IndiaWRIS Basin Boundary","parent_id":6,"project":"IndiaWRIS","theme":"Hydrology"},{"category":"Hydrology","id":8,"name":"IndiaWRIS Sub-Basin Boundary","parent_id":7,"project":"IndiaWRIS","theme":"Hydrology"},{"category":"Wetland","id":5,"name":"Wetland 2017-18 at 1:50K","parent_id":6,"project":"Wetland Information System","theme":"Hydrology"},{"category":"Wetland","id":9,"name":"Wetland 2017-18 at 1:50K Refined for WLIS","parent_id":6,"project":"Wetland Information System","theme":"Hydrology"},{"category":"Hydrology","id":16,"name":"LAMA Basin Boundary","parent_id":null,"project":"LAMA","theme":"Hydrology"},{"category":"Hydrology","id":17,"name":"Ladakh Indus Basin Boundary","parent_id":null,"project":"LAMA","theme":null},{"category":"cadastral","id":26,"name":"Gujarat cadastral Complete","parent_id":null,"project":"Encroachment Monitoring","theme":null},{"category":"cadastral","id":27,"name":"Gujarat village Complete","parent_id":null,"project":"Encroachment Monitoring","theme":null},{"category":"POI","id":29,"name":"BMSK AWS Station Forecast","parent_id":null,"project":"Krishi DSS","theme":null},{"category":"cadastral","id":28,"name":"Gujarat cadastral example Complete","parent_id":null,"project":"Encroachment Monitoring","theme":null},{"category":"Panchayat","id":31,"name":"Bihar Panchayat Boundary","parent_id":null,"project":"Bihar Flood Alert System","theme":null},{"category":"Fire Event POI","id":32,"name":"Temporal VIIRS Fire Event","parent_id":null,"project":"Temporal VIIRS Fire Event","theme":null},{"category":"State","id":18,"name":"SOI State 2025","parent_id":null,"project":"General_VEDAS","theme":"Admin"},{"category":"District","id":19,"name":"SOI District 2025","parent_id":18,"project":"General VEDAS","theme":"Admin"},{"category":"Tehsil","id":20,"name":"SOI Tehsil 2025","parent_id":3,"project":"KrishiDSS","theme":"Admin"},{"category":"Tehsil","id":21,"name":"SOI Village 2025","parent_id":null,"project":"General VEDAS","theme":"Admin"},{"category":"POI","id":30,"name":"Hydrology WRD Reservoir","parent_id":null,"project":"Krishi DSS","theme":"Hydrology"},{"category":"POI","id":10,"name":"MNCFC Reservoir","parent_id":null,"project":"Krishi DSS","theme":"Hydrology"},{"category":"District","id":34,"name":"District Bihar Boundary","parent_id":null,"project":"Bihar Flood","theme":null},{"category":"POI","id":33,"name":"MNCFC Reservoir API","parent_id":null,"project":"Krishi DSS","theme":null},{"category":"FPS","id":40,"name":"AUDA FPS Boundary","parent_id":null,"project":"AUDA","theme":null},{"category":"AMC ZONE","id":35,"name":"AMC Zone Boundary","parent_id":null,"project":"Ahmedabad City GIS Application","theme":null},{"category":"AUDA AMC GMC ","id":36,"name":"AUDA AMC GMC Boundary","parent_id":null,"project":"Ahmedabad City GIS Application","theme":null},{"category":"AMC ZONE","id":39,"name":"AMC TPS Boundary","parent_id":null,"project":"Ahmedabad City GIS Application","theme":null},{"category":"Block","id":38,"name":"Bihar Block Boundary test","parent_id":null,"project":"Bihar Flood","theme":null}]}
+
+now from above take any 2 id and sun like
+https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/{id}/geoentities
+make it dynamic as its created above so new entry easlt any one can add
