@@ -1,92 +1,46 @@
-// Function 1: Check sources API only
-async function getDataFromGeoentitySources() {
+// Function to check single geoentity with its name
+async function getDataFromSingleGeoentity(id) {
   try {
+    // First, get the name from sources API
     const sourcesUrl = 'https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/';
     const sourcesRes = await fetch(sourcesUrl);
     
-    if (!sourcesRes.ok) {
+    let sourceName = `ID ${id}`;
+    
+    if (sourcesRes.ok) {
+      const sourcesData = await sourcesRes.json();
+      const sourceItem = sourcesData.data.find(item => item.id === id);
+      if (sourceItem) {
+        sourceName = sourceItem.name;
+      }
+    }
+    
+    // Now check the geoentity endpoint
+    const geoUrl = `https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/${id}/geoentities`;
+    const geoRes = await fetch(geoUrl);
+    
+    if (!geoRes.ok) {
       return {
+        name: sourceName,
         latest: '-',
         count: 0,
         status: 'alert'
       };
     }
-
-    const sourcesData = await sourcesRes.json();
+    
+    const geoData = await geoRes.json();
     
     return {
-      latest: new Date().toLocaleDateString('en-GB').split('/').join('-'),
-      count: sourcesData.count || 0,
+      name: sourceName,
+      latest: '-',
+      count: geoData.count || 0,
       status: 'ok'
     };
-
+    
   } catch (err) {
-    console.error("Error fetching geoentity sources:", err);
+    console.error(`Error fetching geoentity ID ${id}:`, err);
     return {
-      latest: '-',
-      count: 0,
-      status: 'offline'
-    };
-  }
-}
-
-// Function 2: Check specific geoentity IDs
-async function getDataFromGeoentities(idsToCheck) {
-  try {
-    const geoentityPromises = idsToCheck.map(async (id) => {
-      try {
-        const geoUrl = `https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/${id}/geoentities`;
-        const geoRes = await fetch(geoUrl);
-        
-        if (!geoRes.ok) {
-          return {
-            id,
-            status: 'alert',
-            statusCode: geoRes.status
-          };
-        }
-        
-        const geoData = await geoRes.json();
-        return {
-          id,
-          status: 'ok',
-          count: geoData.count || 0
-        };
-        
-      } catch (error) {
-        return {
-          id,
-          status: 'offline',
-          error: error.message
-        };
-      }
-    });
-
-    const results = await Promise.all(geoentityPromises);
-    
-    // Determine overall status
-    const hasOffline = results.some(r => r.status === 'offline');
-    const hasAlert = results.some(r => r.status === 'alert');
-    
-    let overallStatus = 'ok';
-    if (hasOffline) {
-      overallStatus = 'offline';
-    } else if (hasAlert) {
-      overallStatus = 'alert';
-    }
-    
-    // Get total count
-    const totalCount = results.reduce((sum, r) => sum + (r.count || 0), 0);
-
-    return {
-      latest: new Date().toLocaleDateString('en-GB').split('/').join('-'),
-      count: totalCount,
-      status: overallStatus
-    };
-
-  } catch (err) {
-    console.error("Error fetching geoentities:", err);
-    return {
+      name: `ID ${id}`,
       latest: '-',
       count: 0,
       status: 'offline'
@@ -100,22 +54,7 @@ async function getDataFromGeoentities(idsToCheck) {
 
 
 
-
-
-
-const applications = {
-  "AQ": "Air Quality",
-  "VM": "Vegetation Monitoring",
-  "uva": "UVA",
-  "api_centre": "API Centre",
-  "krishi": "Krishi DSS",
-  "lama": "LAMA",
-  "geoentity_service": "Geoentity Service"  // Add this
-};
-
-
-
-// Entry 1: Monitor sources API
+// Entry for Sources API
 "Geoentity Sources API": {
   type: "geoentity",
   monitoring: async function () {
@@ -128,42 +67,32 @@ const applications = {
   }
 },
 
-// Entry 2: Monitor specific geoentities (e.g., IDs 18 and 19)
-"Geoentity Data (ID 18, 19)": {
+// Entry for ID 18
+"Geoentity - ID 18": {
   type: "geoentity",
   monitoring: async function () {
-    const data = await getDataFromGeoentities([18, 19]);
+    const data = await getDataFromSingleGeoentity(18);
     return {
-      dataset: "Geoentity Data (ID 18, 19)",
+      dataset: `Geoentity - ${data.name}`,
       applicationIds: ["geoentity_service"],
-      ...data
+      latest: data.latest,
+      count: data.count,
+      status: data.status
     };
   }
 },
 
-
-
-"Geoentity Data (ID 15, 22)": {
+// Entry for ID 19 (example)
+"Geoentity - ID 19": {
   type: "geoentity",
   monitoring: async function () {
-    const data = await getDataFromGeoentities([15, 22]);
+    const data = await getDataFromSingleGeoentity(19);
     return {
-      dataset: "Geoentity Data (ID 15, 22)",
+      dataset: `Geoentity - ${data.name}`,
       applicationIds: ["geoentity_service"],
-      ...data
+      latest: data.latest,
+      count: data.count,
+      status: data.status
     };
   }
 },
-
-"Geoentity Data (ID 23, 24)": {
-  type: "geoentity",
-  monitoring: async function () {
-    const data = await getDataFromGeoentities([23, 24]);
-    return {
-      dataset: "Geoentity Data (ID 23, 24)",
-      applicationIds: ["geoentity_service"],
-      ...data
-    };
-  }
-},
-
