@@ -3357,7 +3357,7 @@
             computed: {
                 allApplications() {
                     return [...this.monitoringApps, ...this.dataApps, ...this.toolsApps];
-                },
+                },  
                 totalAlerts() {
                     return this.datasetAlerts.length + this.serverAlerts.length + this.processAlerts.length + this.storageAlerts.length;
                 },
