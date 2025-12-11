@@ -1,104 +1,119 @@
-@bp.route('/api/alerts')
-def alerts():
-    cache = load_cache()
-    if not cache:
-        cache = update_server_cache()
-    
-    alerts = []
-    alert_servers = set()
-    
-    for server in cache['servers']:
-        server_has_alert = False
+from flask import Flask, request, jsonify
+from flask_socketio import SocketIO
+from flask_cors import CORS
+from datetime import datetime
+import json
 
-        # 1) Server offline
-        if server['status'] != 'online':
-            msg = f"Server '{server['name']}' is offline"
-            alert = {
-                'server': server['name'],
-                'type': 'Offline',
-                'message': msg,
+app = Flask(__name__)
+app.config["SECRET_KEY"] = "vedas-alert-ws"
+CORS(app)
+
+# default path "/socket.io" is fine
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+
+connected_clients = set()
+
+
+@app.route("/")
+def index():
+    return {
+        "status": "running",
+        "clients": len(connected_clients),
+    }
+
+
+@app.route("/health")
+def health():
+    return {"status": "ok", "clients": len(connected_clients)}
+
+
+@socketio.on("connect")
+def ws_connect():
+    connected_clients.add(request.sid)
+    print(f"✅ Client connected: {request.sid} | total={len(connected_clients)}")
+
+    socketio.emit(
+        "message",
+        json.dumps(
+            {
+                "category": "system",
+                "type": "info",
+                "message": "Connected to VEDAS Alert WebSocket",
+                "source": "alert_ws_server",
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "metadata": {},
             }
-            alerts.append(alert)
-            alert_servers.add(server['name'])
+        ),
+        to=request.sid,
+    )
 
-            # push to central socket server
-            send_alert_to_socket(
-                category="server",
-                alert_type="offline",
-                message=msg,
-                server_name=server['name'],
-                metadata={"source_system": "server_monitor", "status": server['status']},
-            )
-            continue
-        
-        # 2) CPU high
-        if server.get('cpu') and server['cpu'] > 75:
-            msg = f"CPU usage is high ({server['cpu']}%)"
-            alert = {
-                'server': server['name'],
-                'type': 'CPU',
-                'message': msg,
-            }
-            alerts.append(alert)
-            server_has_alert = True
 
-            send_alert_to_socket(
-                category="server",
-                alert_type="cpu_high",
-                message=msg,
-                server_name=server['name'],
-                metadata={"cpu": server['cpu']},
-            )
-        
-        # 3) Memory high
-        mem = server.get('memory')
-        if mem and mem.get('usage_percent', 0) > 75:
-            msg = f"Memory usage is high ({mem['usage_percent']}%)"
-            alert = {
-                'server': server['name'],
-                'type': 'Memory',
-                'message': msg,
-            }
-            alerts.append(alert)
-            server_has_alert = True
+@socketio.on("disconnect")
+def ws_disconnect():
+    connected_clients.discard(request.sid)
+    print(f"🔌 Client disconnected: {request.sid} | total={len(connected_clients)}")
 
-            send_alert_to_socket(
-                category="server",
-                alert_type="memory_high",
-                message=msg,
-                server_name=server['name'],
-                metadata={"memory_usage": mem['usage_percent']},
-            )
-        
-        # 4) Storage high
-        for storage in server.get('storage', []):
-            if storage['mountpoint'] in ('/', '/root') and storage.get('percent', 0) > 75:
-                msg = f"Root storage usage is high ({storage['percent']}%)"
-                alert = {
-                    'server': server['name'],
-                    'type': 'Storage',
-                    'message': msg,
-                }
-                alerts.append(alert)
-                server_has_alert = True
 
-                send_alert_to_socket(
-                    category="server",
-                    alert_type="storage_high",
-                    message=msg,
-                    server_name=server['name'],
-                    metadata={
-                        "mountpoint": storage['mountpoint'],
-                        "percent": storage['percent'],
-                    },
-                )
-                break
-        
-        if server_has_alert:
-            alert_servers.add(server['name'])
-    
-    return jsonify({
-        'alerts': alerts,
-        'total_servers': len(cache['servers']),
-        'alert_servers': len(alert_servers),
-    })
+@socketio.on("message")
+def ws_message(data):
+    """
+    Receives json from dashboard (e.g. clear notifications)
+    """
+    try:
+        msg = json.loads(data) if isinstance(data, str) else data
+        print(f"📨 from client: {msg}")
+        if msg.get("action") == "clear":
+            socketio.emit("alert_cleared", json.dumps(msg), broadcast=True)
+    except Exception as exc:
+        print(f"❌ error in ws_message: {exc}")
+
+
+def push_alert(
+    category: str,
+    alert_type: str,
+    message: str,
+    source: str = "",
+    server: str = "",
+    metadata: dict | None = None,
+):
+    payload = {
+        "category": category,
+        "type": alert_type,
+        "message": message,
+        "source": source or "unknown_source",
+        "server": server or "unknown",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "metadata": metadata or {},
+    }
+
+    socketio.emit("message", json.dumps(payload), broadcast=True)
+    print(
+        f"📤 alert: [{category}] {alert_type} - {message} | clients={len(connected_clients)}"
+    )
+
+
+@app.route("/push-alert", methods=["POST"])
+def http_push_alert():
+    """
+    curl -X POST http://127.0.0.1:5015/push-alert \
+         -H "Content-Type: application/json" \
+         -d '{"category":"server","type":"offline","message":"host down","source":"monitoring_server"}'
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    try:
+        push_alert(
+            category=data.get("category", "generic"),
+            alert_type=data.get("type", "info"),
+            message=data.get("message", "No message"),
+            source=data.get("source", "unknown_source"),
+            server=data.get("server", "unknown"),
+            metadata=data.get("metadata") or {},
+        )
+        return {"status": "ok"}, 200
+    except Exception as exc:
+        return {"status": "error", "error": str(exc)}, 500
+
+
+if __name__ == "__main__":
+    print("🚀 starting VEDAS Alert WebSocket on 127.0.0.1:5015")
+    socketio.run(app, host="127.0.0.1", port=5015, debug=True, allow_unsafe_werkzeug=True)
