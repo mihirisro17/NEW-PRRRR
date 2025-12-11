@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VEDAS Alert Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -321,14 +325,37 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
         }
 
-        .alert-item.alert-offline { border-color: #ef4444; }
-        .alert-item.alert-failed { border-color: #dc2626; }
-        .alert-item.alert-memory { border-color: #f59e0b; }
-        .alert-item.alert-cpu { border-color: #f97316; }
-        .alert-item.alert-storage { border-color: #eab308; }
-        .alert-item.alert-warning { border-color: #f59e0b; }
-        .alert-item.alert-alert { border-color: #ef4444; }
-        .alert-item.alert-info { border-color: #3b82f6; }
+        .alert-item.alert-offline {
+            border-color: #ef4444;
+        }
+
+        .alert-item.alert-failed {
+            border-color: #dc2626;
+        }
+
+        .alert-item.alert-memory {
+            border-color: #f59e0b;
+        }
+
+        .alert-item.alert-cpu {
+            border-color: #f97316;
+        }
+
+        .alert-item.alert-storage {
+            border-color: #eab308;
+        }
+
+        .alert-item.alert-warning {
+            border-color: #f59e0b;
+        }
+
+        .alert-item.alert-alert {
+            border-color: #ef4444;
+        }
+
+        .alert-item.alert-info {
+            border-color: #3b82f6;
+        }
 
         .alert-content {
             flex: 1;
@@ -426,10 +453,13 @@
         }
 
         @keyframes pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 box-shadow: 0 8px 32px rgba(239, 68, 68, 0.5);
                 transform: scale(1);
             }
+
             50% {
                 box-shadow: 0 12px 48px rgba(239, 68, 68, 0.8);
                 transform: scale(1.05);
@@ -442,9 +472,21 @@
         }
 
         @keyframes ring {
-            0%, 100% { transform: rotate(0deg); }
-            10%, 30% { transform: rotate(15deg); }
-            20%, 40% { transform: rotate(-15deg); }
+
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+
+            10%,
+            30% {
+                transform: rotate(15deg);
+            }
+
+            20%,
+            40% {
+                transform: rotate(-15deg);
+            }
         }
 
         .notification-count {
@@ -455,7 +497,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .loading {
@@ -564,6 +608,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Header -->
     <div class="header">
@@ -741,10 +786,10 @@
         // WEBSOCKET CONNECTION
         // ==========================================
         function initWebSocket() {
-            const serverUrl = 'http://localhost:8080'; // Change to your server IP if needed
-            
+            const serverUrl = 'http://192.168.2.137:8080'; // Change to your server IP if needed
+
             console.log('🔌 Connecting to WebSocket server:', serverUrl);
-            
+
             try {
                 state.socket = io(serverUrl, {
                     transports: ['websocket', 'polling'],
@@ -991,9 +1036,9 @@
 
         function renderNotificationIndicator() {
             const total = state.serverAlerts.length +
-                          state.datasetAlerts.length +
-                          state.processAlerts.length +
-                          state.storageAlerts.length;
+                state.datasetAlerts.length +
+                state.processAlerts.length +
+                state.storageAlerts.length;
 
             const indicator = document.getElementById('notification-indicator');
             const count = document.getElementById('notification-count');
@@ -1071,7 +1116,7 @@
         // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 VEDAS Alert Dashboard Initializing...');
-            
+
             // Update time every second
             updateTime();
             setInterval(updateTime, 1000);
@@ -1096,4 +1141,5 @@
         });
     </script>
 </body>
+
 </html>
