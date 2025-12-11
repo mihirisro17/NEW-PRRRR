@@ -1,0 +1,204 @@
+async function getDataFromGeoentityService() {
+  try {
+    const sourcesUrl = 'https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/';
+    const sourcesRes = await fetch(sourcesUrl);
+    
+    if (!sourcesRes.ok) {
+      return {
+        latest: '-',
+        count: 0,
+        status: 'alert',
+        message: `Sources API returned ${sourcesRes.status}`
+      };
+    }
+
+    const sourcesData = await sourcesJson();
+    
+    if (!sourcesData.data || sourcesData.data.length === 0) {
+      return {
+        latest: '-',
+        count: 0,
+        status: 'offline',
+        message: 'No geoentity sources available'
+      };
+    }
+
+    // Take first 2 IDs dynamically (or any 2)
+    const idsToCheck = sourcesData.data.slice(0, 2).map(item => item.id);
+    
+    // Check geoentities for each ID
+    const geoentityPromises = idsToCheck.map(async (id) => {
+      try {
+        const geoUrl = `https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/${id}/geoentities`;
+        const geoRes = await fetch(geoUrl);
+        return {
+          id,
+          status: geoRes.ok ? 'ok' : 'alert',
+          statusCode: geoRes.status
+        };
+      } catch (error) {
+        return {
+          id,
+          status: 'offline',
+          error: error.message
+        };
+      }
+    });
+
+    const results = await Promise.all(geoentityPromises);
+    
+    // Determine overall status
+    const hasAlert = results.some(r => r.status === 'alert');
+    const hasOffline = results.some(r => r.status === 'offline');
+    
+    let overallStatus = 'ok';
+    if (hasOffline) {
+      overallStatus = 'offline';
+    } else if (hasAlert) {
+      overallStatus = 'alert';
+    }
+
+    return {
+      latest: new Date().toLocaleDateString('en-GB').split('/').join('-'),
+      count: sourcesData.count,
+      status: overallStatus,
+      checkedIds: idsToCheck
+    };
+
+  } catch (err) {
+    console.error("Error fetching geoentity service data:", err);
+    return {
+      latest: '-',
+      count: 0,
+      status: 'offline',
+      error: err.message
+    };
+  }
+}
+
+
+
+
+
+
+const applications = {
+  "AQ": "Air Quality",
+  "VM": "Vegetation Monitoring",
+  "uva": "UVA",
+  "api_centre": "API Centre",
+  "krishi": "Krishi DSS",
+  "lama": "LAMA",
+  "geoentity_service": "Geoentity Service"  // Add this line
+};
+
+
+
+
+
+
+
+
+
+async function getDataFromGeoentityService(idsToCheck = null, maxIds = 2) {
+  try {
+    const sourcesUrl = 'https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/';
+    const sourcesRes = await fetch(sourcesUrl);
+    
+    if (!sourcesRes.ok) {
+      return {
+        latest: '-',
+        count: 0,
+        status: 'alert',
+        message: `Sources API returned ${sourcesRes.status}`
+      };
+    }
+
+    const sourcesData = await sourcesRes.json();
+    
+    if (!sourcesData.data || sourcesData.data.length === 0) {
+      return {
+        latest: '-',
+        count: 0,
+        status: 'offline',
+        message: 'No geoentity sources available'
+      };
+    }
+
+    // Use provided IDs or take first N IDs dynamically
+    const selectedIds = idsToCheck || sourcesData.data.slice(0, maxIds).map(item => item.id);
+    
+    // Check geoentities for each ID
+    const geoentityPromises = selectedIds.map(async (id) => {
+      try {
+        const geoUrl = `https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/${id}/geoentities`;
+        const geoRes = await fetch(geoUrl);
+        return {
+          id,
+          status: geoRes.ok ? 'ok' : 'alert',
+          statusCode: geoRes.status
+        };
+      } catch (error) {
+        return {
+          id,
+          status: 'offline',
+          error: error.message
+        };
+      }
+    });
+
+    const results = await Promise.all(geoentityPromises);
+    
+    // Determine overall status
+    const hasAlert = results.some(r => r.status === 'alert');
+    const hasOffline = results.some(r => r.status === 'offline');
+    
+    let overallStatus = 'ok';
+    if (hasOffline) {
+      overallStatus = 'offline';
+    } else if (hasAlert) {
+      overallStatus = 'alert';
+    }
+
+    return {
+      latest: new Date().toLocaleDateString('en-GB').split('/').join('-'),
+      count: sourcesData.count,
+      status: overallStatus,
+      checkedIds: selectedIds
+    };
+
+  } catch (err) {
+    console.error("Error fetching geoentity service data:", err);
+    return {
+      latest: '-',
+      count: 0,
+      status: 'offline',
+      error: err.message
+    };
+  }
+}
+
+
+
+
+
+
+
+"Geoentity Service API": {
+  type: "geoentity",
+  monitoring: async function () {
+    // Option 1: Check first 2 IDs automatically
+    const data = await getDataFromGeoentityService();
+    
+    // Option 2: Check specific IDs (uncomment to use)
+    // const data = await getDataFromGeoentityService([18, 19]);
+    
+    // Option 3: Check first 3 IDs
+    // const data = await getDataFromGeoentityService(null, 3);
+    
+    return {
+      dataset: "Geoentity Service API",
+      applicationIds: ["geoentity_service"],
+      ...data
+    };
+  }
+},
