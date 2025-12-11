@@ -1,4 +1,5 @@
-async function getDataFromGeoentityService() {
+// Function 1: Check sources API only
+async function getDataFromGeoentitySources() {
   try {
     const sourcesUrl = 'https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/';
     const sourcesRes = await fetch(sourcesUrl);
@@ -7,35 +8,51 @@ async function getDataFromGeoentityService() {
       return {
         latest: '-',
         count: 0,
-        status: 'alert',
-        message: `Sources API returned ${sourcesRes.status}`
+        status: 'alert'
       };
     }
 
-    const sourcesData = await sourcesJson();
+    const sourcesData = await sourcesRes.json();
     
-    if (!sourcesData.data || sourcesData.data.length === 0) {
-      return {
-        latest: '-',
-        count: 0,
-        status: 'offline',
-        message: 'No geoentity sources available'
-      };
-    }
+    return {
+      latest: new Date().toLocaleDateString('en-GB').split('/').join('-'),
+      count: sourcesData.count || 0,
+      status: 'ok'
+    };
 
-    // Take first 2 IDs dynamically (or any 2)
-    const idsToCheck = sourcesData.data.slice(0, 2).map(item => item.id);
-    
-    // Check geoentities for each ID
+  } catch (err) {
+    console.error("Error fetching geoentity sources:", err);
+    return {
+      latest: '-',
+      count: 0,
+      status: 'offline'
+    };
+  }
+}
+
+// Function 2: Check specific geoentity IDs
+async function getDataFromGeoentities(idsToCheck) {
+  try {
     const geoentityPromises = idsToCheck.map(async (id) => {
       try {
         const geoUrl = `https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/${id}/geoentities`;
         const geoRes = await fetch(geoUrl);
+        
+        if (!geoRes.ok) {
+          return {
+            id,
+            status: 'alert',
+            statusCode: geoRes.status
+          };
+        }
+        
+        const geoData = await geoRes.json();
         return {
           id,
-          status: geoRes.ok ? 'ok' : 'alert',
-          statusCode: geoRes.status
+          status: 'ok',
+          count: geoData.count || 0
         };
+        
       } catch (error) {
         return {
           id,
@@ -48,8 +65,8 @@ async function getDataFromGeoentityService() {
     const results = await Promise.all(geoentityPromises);
     
     // Determine overall status
-    const hasAlert = results.some(r => r.status === 'alert');
     const hasOffline = results.some(r => r.status === 'offline');
+    const hasAlert = results.some(r => r.status === 'alert');
     
     let overallStatus = 'ok';
     if (hasOffline) {
@@ -57,24 +74,29 @@ async function getDataFromGeoentityService() {
     } else if (hasAlert) {
       overallStatus = 'alert';
     }
+    
+    // Get total count
+    const totalCount = results.reduce((sum, r) => sum + (r.count || 0), 0);
 
     return {
       latest: new Date().toLocaleDateString('en-GB').split('/').join('-'),
-      count: sourcesData.count,
-      status: overallStatus,
-      checkedIds: idsToCheck
+      count: totalCount,
+      status: overallStatus
     };
 
   } catch (err) {
-    console.error("Error fetching geoentity service data:", err);
+    console.error("Error fetching geoentities:", err);
     return {
       latest: '-',
       count: 0,
-      status: 'offline',
-      error: err.message
+      status: 'offline'
     };
   }
 }
+
+
+
+
 
 
 
@@ -88,117 +110,60 @@ const applications = {
   "api_centre": "API Centre",
   "krishi": "Krishi DSS",
   "lama": "LAMA",
-  "geoentity_service": "Geoentity Service"  // Add this line
+  "geoentity_service": "Geoentity Service"  // Add this
 };
 
 
 
-
-
-
-
-
-
-async function getDataFromGeoentityService(idsToCheck = null, maxIds = 2) {
-  try {
-    const sourcesUrl = 'https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/';
-    const sourcesRes = await fetch(sourcesUrl);
-    
-    if (!sourcesRes.ok) {
-      return {
-        latest: '-',
-        count: 0,
-        status: 'alert',
-        message: `Sources API returned ${sourcesRes.status}`
-      };
-    }
-
-    const sourcesData = await sourcesRes.json();
-    
-    if (!sourcesData.data || sourcesData.data.length === 0) {
-      return {
-        latest: '-',
-        count: 0,
-        status: 'offline',
-        message: 'No geoentity sources available'
-      };
-    }
-
-    // Use provided IDs or take first N IDs dynamically
-    const selectedIds = idsToCheck || sourcesData.data.slice(0, maxIds).map(item => item.id);
-    
-    // Check geoentities for each ID
-    const geoentityPromises = selectedIds.map(async (id) => {
-      try {
-        const geoUrl = `https://vedas.sac.gov.in/geoentity-services/api/geoentity-sources/${id}/geoentities`;
-        const geoRes = await fetch(geoUrl);
-        return {
-          id,
-          status: geoRes.ok ? 'ok' : 'alert',
-          statusCode: geoRes.status
-        };
-      } catch (error) {
-        return {
-          id,
-          status: 'offline',
-          error: error.message
-        };
-      }
-    });
-
-    const results = await Promise.all(geoentityPromises);
-    
-    // Determine overall status
-    const hasAlert = results.some(r => r.status === 'alert');
-    const hasOffline = results.some(r => r.status === 'offline');
-    
-    let overallStatus = 'ok';
-    if (hasOffline) {
-      overallStatus = 'offline';
-    } else if (hasAlert) {
-      overallStatus = 'alert';
-    }
-
-    return {
-      latest: new Date().toLocaleDateString('en-GB').split('/').join('-'),
-      count: sourcesData.count,
-      status: overallStatus,
-      checkedIds: selectedIds
-    };
-
-  } catch (err) {
-    console.error("Error fetching geoentity service data:", err);
-    return {
-      latest: '-',
-      count: 0,
-      status: 'offline',
-      error: err.message
-    };
-  }
-}
-
-
-
-
-
-
-
-"Geoentity Service API": {
+// Entry 1: Monitor sources API
+"Geoentity Sources API": {
   type: "geoentity",
   monitoring: async function () {
-    // Option 1: Check first 2 IDs automatically
-    const data = await getDataFromGeoentityService();
-    
-    // Option 2: Check specific IDs (uncomment to use)
-    // const data = await getDataFromGeoentityService([18, 19]);
-    
-    // Option 3: Check first 3 IDs
-    // const data = await getDataFromGeoentityService(null, 3);
-    
+    const data = await getDataFromGeoentitySources();
     return {
-      dataset: "Geoentity Service API",
+      dataset: "Geoentity Sources API",
       applicationIds: ["geoentity_service"],
       ...data
     };
   }
 },
+
+// Entry 2: Monitor specific geoentities (e.g., IDs 18 and 19)
+"Geoentity Data (ID 18, 19)": {
+  type: "geoentity",
+  monitoring: async function () {
+    const data = await getDataFromGeoentities([18, 19]);
+    return {
+      dataset: "Geoentity Data (ID 18, 19)",
+      applicationIds: ["geoentity_service"],
+      ...data
+    };
+  }
+},
+
+
+
+"Geoentity Data (ID 15, 22)": {
+  type: "geoentity",
+  monitoring: async function () {
+    const data = await getDataFromGeoentities([15, 22]);
+    return {
+      dataset: "Geoentity Data (ID 15, 22)",
+      applicationIds: ["geoentity_service"],
+      ...data
+    };
+  }
+},
+
+"Geoentity Data (ID 23, 24)": {
+  type: "geoentity",
+  monitoring: async function () {
+    const data = await getDataFromGeoentities([23, 24]);
+    return {
+      dataset: "Geoentity Data (ID 23, 24)",
+      applicationIds: ["geoentity_service"],
+      ...data
+    };
+  }
+},
+
