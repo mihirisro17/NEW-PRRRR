@@ -20,3 +20,10 @@ def send_alert_to_socket(category, alert_type, message, server_name, metadata=No
             print("Failed to push alert:", r.status_code, r.text)
     except Exception as exc:
         print("Error pushing alert:", exc)
+
+
+and did entry like
+
+      # Socket.IO WebSocket endpoint (default path)
+        ProxyPass        "/socket.io/" "ws://127.0.0.1:5015/socket.io/"
+        ProxyPassReverse "/socket.io/" "ws://127.0.0.1:5015/socket.io/"
