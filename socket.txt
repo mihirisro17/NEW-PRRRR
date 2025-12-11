@@ -1,22 +1,22 @@
-16:01:36 sac@vedas-logging 169.254.3.1 2025-12-11 Thursday 1500MHz RAM:96Gi/1.0Ti DISK:541G/878G Load:2.86,3.34,3.26 Uptime:3 weeks, 1 day, 5 hours, 27 minutes Users:41 Git: 
-✔ ~/webapps/physical_monitoring_portal/Vedas_MIS_S $ python alert_s.py 
-🚀 starting VEDAS Alert WebSocket on 127.0.0.1:5015
- * Serving Flask app 'alert_s'
- * Debug mode: on
-WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
- * Running on http://127.0.0.1:5015
-Press CTRL+C to quit
- * Restarting with stat
-🚀 starting VEDAS Alert WebSocket on 127.0.0.1:5015
- * Debugger is active!
- * Debugger PIN: 117-412-040
-/home/sac/webapps/physical_monitoring_portal/Vedas_MIS_S/alert_s.py:85: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
-  "timestamp": datetime.utcnow().isoformat() + "Z",
-127.0.0.1 - - [11/Dec/2025 16:01:39] "POST /push-alert HTTP/1.1" 500 -
-127.0.0.1 - - [11/Dec/2025 16:01:39] "POST /push-alert HTTP/1.1" 500 -
-127.0.0.1 - - [11/Dec/2025 16:01:39] "POST /push-alert HTTP/1.1" 500 -
-127.0.0.1 - - [11/Dec/2025 16:01:39] "POST /push-alert HTTP/1.1" 500 -
-127.0.0.1 - - [11/Dec/2025 16:01:41] "POST /push-alert HTTP/1.1" 500 -
-127.0.0.1 - - [11/Dec/2025 16:01:41] "POST /push-alert HTTP/1.1" 500 -
-127.0.0.1 - - [11/Dec/2025 16:01:41] "POST /push-alert HTTP/1.1" 500 -
-127.0.0.1 - - [11/Dec/2025 16:01:41] "POST /push-alert HTTP/1.1" 500 -
+import requests
+import socket
+
+ALERT_ENDPOINT = "http://127.0.0.1:5015/push-alert"
+MONITOR_SOURCE = socket.gethostname()  # or hardcode e.g. "server_monitor_dashboard"
+TIMEOUT = 3  # seconds
+
+def send_alert_to_socket(category, alert_type, message, server_name, metadata=None):
+    payload = {
+        "category": category,            # e.g. "server"
+        "type": alert_type,              # e.g. "CPU", "Memory", "Offline"
+        "message": message,
+        "source": MONITOR_SOURCE,        # identifies THIS monitoring system
+        "server": server_name,
+        "metadata": metadata or {},
+    }
+    try:
+        r = requests.post(ALERT_ENDPOINT, json=payload, timeout=TIMEOUT)
+        if not r.ok:
+            print("Failed to push alert:", r.status_code, r.text)
+    except Exception as exc:
+        print("Error pushing alert:", exc)
