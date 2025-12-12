@@ -1,48 +1,6 @@
-Overview
-The VEDAS Alert WebSocket server provides a simple HTTP endpoint for any monitoring system to push real-time notifications that will be broadcast to all connected dashboard clients.
+VEDAS Management Information System - Summary
+The VEDAS Management Information System (MIS) is a comprehensive real-time monitoring and analytics dashboard developed for SAC (Space Applications Centre), ISRO. It provides centralized monitoring of 8+ critical applications including server infrastructure, data pipelines, processing scripts, satellite tracking, and geospatial services through an integrated web interface.
 
-Endpoint Details
-URL: http://127.0.0.1:5015/push-alert
-Method: POST
-Content-Type: application/json
+The system features real-time alert notifications via Socket.IO WebSocket connections, displaying categorized alerts (server, system) with live updates, smart duplicate prevention, and detailed alert history tracking. The modern Vue.js-based interface includes multiple theme options (including a custom VEDAS tricolor theme), automatic break-time notifications for staff wellness, and seamless iframe-based application navigation.
 
-JSON Request Format
-Required Fields
-Field	Type	Description	Example
-category	string	Alert category (e.g., "server", "dataset", "gpu", "storage")	"server"
-type	string	Alert type/severity (e.g., "offline", "cpu_high", "memory_high")	"offline"
-message	string	Human-readable alert message	"Server 'bhuvan-01' is offline"
-Optional Fields
-Field	Type	Description	Default
-source	string	Monitoring system identifier	"unknown_source"
-server	string	Target server/resource name	"unknown"
-metadata	object	Additional contextual data	{}
-Complete JSON Structure
-json
-{
-  "category": "server",
-  "type": "offline",
-  "message": "Server 'bhuvan-01' is offline",
-  "source": "monitoring_server",
-  "server": "bhuvan-01",
-  "metadata": {
-    "status": "down",
-    "last_seen": "2025-12-12T10:30:00Z"
-  }
-}
-Usage Examples
-1. Server Offline Alert
-bash
-curl -X POST "http://127.0.0.1:5015/push-alert" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "category": "server",
-    "type": "offline",
-    "message": "Server bhuvan-01 is offline",
-    "source": "server_monitor",
-    "server": "bhuvan-01",
-    "metadata": {
-      "status": "down",
-      "downtime_duration": "5m"
-    }
-  }'
+Built with a responsive design, it offers collapsible notification panels, individual alert management, auto-rotation through monitoring apps every 10 minutes, and comprehensive statistics display showing active alerts, total applications, servers, and services - all designed to provide mission-critical system oversight for ISRO's VEDAS operations.
