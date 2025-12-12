@@ -823,15 +823,14 @@
             font-weight: 500;
         }
 
+        /* ✅ FIX #1: MAIN CONTENT WITHOUT PADDING FOR IFRAMES */
         .main-content {
             margin-left: 320px;
             margin-top: 80px;
             width: calc(100% - 320px);
             height: calc(100vh - 80px);
-            padding: 45px;
-            /* ✅ RESTORED PADDING */
-            padding-bottom: 80px;
-            overflow-y: auto;
+            padding: 0;  /* ✅ No padding for iframe mode */
+            overflow: hidden;  /* ✅ Changed from auto */
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             background: var(--bg-color);
             position: relative;
@@ -842,6 +841,7 @@
             width: 100%;
         }
 
+        /* ✅ FIX #1: HOME CONTAINER WITH PADDING */
         .home-container {
             display: flex;
             flex-direction: column;
@@ -850,6 +850,9 @@
             height: 100%;
             text-align: center;
             position: relative;
+            padding: 45px;  /* ✅ Padding only for home */
+            padding-bottom: 80px;
+            overflow-y: auto;  /* ✅ Scrolling for home page */
         }
 
         .particles {
@@ -1260,16 +1263,22 @@
             letter-spacing: 1.3px;
         }
 
+        /* ✅ FIX #1: IFRAME WRAPPER AND FRAME */
+        .iframe-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
         .app-frame {
             width: 100%;
             height: 100%;
             border: none;
-            border-radius: 24px;
-            /* ✅ RESTORED BORDER RADIUS */
-            box-shadow: var(--shadow-lg);
-            /* ✅ RESTORED SHADOW */
+            display: block;  /* ✅ Prevents extra spacing */
         }
 
+        /* ✅ NOTIFICATION BELL INDICATOR */
         .notification-indicator {
             position: fixed;
             right: 40px;
@@ -1356,137 +1365,140 @@
             backdrop-filter: blur(30px) saturate(180%);
             -webkit-backdrop-filter: blur(30px) saturate(180%);
             border-radius: 28px;
-            box-shadow: var(--shadow-xl);
-            z-index: 998;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.15);
             transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            overflow: hidden;
+            z-index: 998;
             display: flex;
             flex-direction: column;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: auto;
         }
 
         .alert-panel.collapsed-up {
-            transform: translateY(calc(-100% - 150px));
+            transform: translateY(calc(-100% - 250px));
         }
 
         .alert-panel.collapsed-left {
-            transform: translateX(500px);
+            transform: translateX(550px);
         }
 
         .alert-header {
-            background: var(--bg-gradient);
+            padding: 20px 26px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: var(--sidebar-text);
-            padding: 24px 28px;
-            border-radius: 26px 26px 0 0;
+            border-radius: 28px 28px 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-shrink: 0;
-            position: relative;
-        }
-
-        .alert-header::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 5%;
-            right: 5%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .alert-header-title {
-            font-size: 20px;
+            font-size: 17px;
             font-weight: 900;
             display: flex;
             align-items: center;
             gap: 12px;
+            letter-spacing: 0.3px;
         }
 
         .alert-header-icon {
-            font-size: 24px;
+            font-size: 22px;
+            animation: ring 3s infinite;
         }
 
         .alert-badge {
-            background: rgba(255, 255, 255, 0.3);
-            padding: 5px 12px;
-            border-radius: 12px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 18px;
             font-size: 13px;
             font-weight: 900;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            animation: bounce-badge 1.8s infinite;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        @keyframes bounce-badge {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-3px) scale(1.05);
+            }
         }
 
         .alert-controls {
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
 
         .alert-control-btn {
             background: rgba(255, 255, 255, 0.25);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.4);
             color: var(--sidebar-text);
-            padding: 6px 10px;
-            border-radius: 10px;
+            padding: 8px 15px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 14px;
-            font-weight: 700;
-            transition: all 0.3s;
+            font-size: 12px;
+            font-weight: 900;
+            transition: all 0.4s;
             backdrop-filter: blur(10px);
         }
 
         .alert-control-btn:hover {
             background: rgba(255, 255, 255, 0.4);
-            transform: scale(1.05);
+            transform: scale(1.1) translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
         }
 
         .alert-body {
             flex: 1;
             overflow-y: auto;
-            padding: 20px 24px;
-            min-height: 200px;
-        }
-
-        .no-alerts {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-color);
-            opacity: 0.6;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 20px;
         }
 
         .alert-section {
             margin-bottom: 20px;
+            animation: slideIn 0.6s ease;
         }
 
         .alert-section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px 18px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-            border-radius: 16px;
+            margin-bottom: 14px;
             cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid rgba(99, 102, 241, 0.2);
-            margin-bottom: 12px;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.04);
+            backdrop-filter: blur(15px);
+            border-radius: 14px;
+            transition: all 0.4s;
+            border: 1px solid rgba(0, 0, 0, 0.04);
         }
 
         .alert-section-header:hover {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
-            border-color: rgba(99, 102, 241, 0.3);
+            background: rgba(0, 0, 0, 0.08);
+            transform: translateX(-4px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         }
 
         .alert-section-title {
             font-size: 15px;
             font-weight: 900;
             color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .collapse-icon {
-            font-size: 14px;
-            transition: transform 0.3s;
+            font-size: 13px;
+            transition: transform 0.4s;
+            font-weight: 900;
         }
 
         .collapse-icon.collapsed {
@@ -1496,150 +1508,290 @@
         .alert-section-content {
             max-height: 1000px;
             overflow: hidden;
-            transition: max-height 0.4s ease, opacity 0.3s ease;
+            transition: max-height 0.6s ease, opacity 0.5s ease;
             opacity: 1;
         }
 
         .alert-section-content.collapsed {
-            max-height: 0;
+            max-height: 0 !important;
             opacity: 0;
         }
 
         .alert-section-content.limit-height {
-            max-height: 300px;
-            overflow-y: auto;
+            max-height: 180px !important;
+            overflow-y: auto !important;
+            padding-right: 5px;
+        }
+
+        .alert-section-content.limit-height::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .alert-section-content.limit-height::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+
+        .alert-section-content.limit-height::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 10px;
+        }
+
+        .alert-section-content.limit-height::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
         }
 
         .alert-item {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 16px;
+            padding: 16px 18px;
             margin-bottom: 12px;
-            border-left: 5px solid #6366f1;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-sm);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .alert-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(139, 92, 246, 0.03) 100%);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .alert-item:hover::before {
-            opacity: 1;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            animation: slideIn 0.5s ease;
+            transition: all 0.5s;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, 0.06);
         }
 
         .alert-item:hover {
-            transform: translateX(6px);
-            box-shadow: var(--shadow-md);
+            transform: translateX(-8px) scale(1.03);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
         }
 
-        .alert-offline {
-            border-left-color: #ef4444;
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
-        .alert-failed {
-            border-left-color: #dc2626;
-        }
-
-        .alert-memory {
-            border-left-color: #f59e0b;
-        }
-
+        .alert-offline,
+        .alert-memory,
         .alert-cpu {
-            border-left-color: #f97316;
+            background: rgba(239, 68, 68, 0.12) !important;
+            border-left: 6px solid #ef4444 !important;
+            animation: blinkRed 3s ease-in-out infinite;
+            backdrop-filter: blur(20px);
         }
 
-        .alert-storage {
-            border-left-color: #eab308;
-        }
-
+        .alert-storage,
+        .alert-disk,
         .alert-warning {
-            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.12) !important;
+            border-left: 6px solid #f59e0b !important;
+            animation: blinkOrange 3s ease-in-out infinite;
+            backdrop-filter: blur(20px);
         }
 
+        .alert-failed,
         .alert-alert {
-            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.12) !important;
+            border-left: 6px solid #ef4444 !important;
+            animation: blinkRed 3s ease-in-out infinite;
         }
 
         .alert-info {
-            border-left-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.12) !important;
+            border-left: 6px solid #3b82f6 !important;
+            animation: blinkBlue 3s ease-in-out infinite;
+            backdrop-filter: blur(20px);
         }
 
+        /* API ERROR ALERT */
         .alert-api-error {
-            border-left-color: #a855f7;
+            background: rgba(168, 85, 247, 0.12) !important;
+            border-left: 6px solid #a855f7 !important;
+            animation: blinkPurple 3s ease-in-out infinite;
+            backdrop-filter: blur(20px);
+        }
+
+        @keyframes blinkPurple {
+
+            0%,
+            100% {
+                box-shadow: 0 4px 20px rgba(168, 85, 247, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 8px 40px rgba(168, 85, 247, 0.4);
+            }
+        }
+
+        .theme-vedas .alert-offline,
+        .theme-vedas .alert-memory,
+        .theme-vedas .alert-cpu,
+        .theme-vedas .alert-alert {
+            background: rgba(239, 68, 68, 0.08) !important;
+            border-left: 6px solid #dc2626 !important;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.15) !important;
+        }
+
+        .theme-vedas .alert-storage,
+        .theme-vedas .alert-disk,
+        .theme-vedas .alert-warning {
+            background: rgba(245, 158, 11, 0.08) !important;
+            border-left: 6px solid #f59e0b !important;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15) !important;
+        }
+
+        .theme-vedas .alert-failed {
+            background: rgba(239, 68, 68, 0.08) !important;
+            border-left: 6px solid #dc2626 !important;
+        }
+
+        .theme-vedas .alert-info {
+            background: rgba(59, 130, 246, 0.08) !important;
+            border-left: 6px solid #3b82f6 !important;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15) !important;
+        }
+
+        .theme-vedas .alert-api-error {
+            background: rgba(168, 85, 247, 0.08) !important;
+            border-left: 6px solid #a855f7 !important;
+            box-shadow: 0 4px 20px rgba(168, 85, 247, 0.15) !important;
+        }
+
+        @keyframes blinkRed {
+
+            0%,
+            100% {
+                box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 8px 40px rgba(239, 68, 68, 0.4);
+            }
+        }
+
+        @keyframes blinkOrange {
+
+            0%,
+            100% {
+                box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 8px 40px rgba(245, 158, 11, 0.4);
+            }
+        }
+
+        @keyframes blinkBlue {
+
+            0%,
+            100% {
+                box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 8px 40px rgba(59, 130, 246, 0.4);
+            }
         }
 
         .alert-content {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            position: relative;
-            z-index: 1;
+            flex: 1;
         }
 
         .alert-type {
             font-size: 10px;
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
-            color: var(--danger-color);
-            opacity: 0.8;
+            margin-bottom: 6px;
+            letter-spacing: 1.5px;
+            opacity: 0.9;
+        }
+
+        .alert-offline .alert-type,
+        .alert-memory .alert-type,
+        .alert-cpu .alert-type,
+        .alert-failed .alert-type,
+        .alert-alert .alert-type {
+            color: #dc2626 !important;
+            font-weight: 900;
+        }
+
+        .alert-storage .alert-type,
+        .alert-disk .alert-type,
+        .alert-warning .alert-type {
+            color: #f59e0b !important;
+            font-weight: 900;
+        }
+
+        .alert-info .alert-type {
+            color: #3b82f6 !important;
+            font-weight: 900;
+        }
+
+        .alert-api-error .alert-type {
+            color: #a855f7 !important;
+            font-weight: 900;
         }
 
         .alert-message {
             font-size: 14px;
-            font-weight: 600;
             color: var(--text-color);
-            line-height: 1.5;
+            line-height: 1.7;
+            font-weight: 700;
         }
 
         .alert-server {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-color);
-            opacity: 0.7;
-            font-weight: 600;
+            margin-top: 6px;
+            font-weight: 800;
+            opacity: 0.6;
         }
 
+        /* ✅ FIX #2: REMOVE ALERT BUTTON */
         .alert-delete-btn {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: rgba(239, 68, 68, 0.1);
-            border: 2px solid rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            padding: 6px 10px;
-            border-radius: 10px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger-color);
             cursor: pointer;
-            font-size: 12px;
-            font-weight: 700;
-            transition: all 0.3s;
+            font-size: 22px;
+            padding: 0;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 900;
         }
 
         .alert-delete-btn:hover {
-            background: #ef4444;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
             color: white;
-            transform: scale(1.1);
+            transform: rotate(180deg) scale(1.3);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .no-alerts {
+            text-align: center;
+            padding: 60px 25px;
+            color: var(--text-color);
+            opacity: 0.5;
+            font-size: 15px;
+            font-weight: 700;
         }
 
         .last-updated {
-            text-align: center;
             padding: 14px 20px;
-            font-size: 12px;
+            background: rgba(0, 0, 0, 0.04);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            font-size: 11px;
             color: var(--text-color);
-            opacity: 0.6;
-            font-weight: 600;
-            border-top: 2px solid rgba(0, 0, 0, 0.05);
-            flex-shrink: 0;
+            text-align: center;
+            font-weight: 800;
+            opacity: 0.7;
         }
 
         .history-modal {
@@ -1649,29 +1801,31 @@
             right: 0;
             bottom: 0;
             background: rgba(0, 0, 0, 0.6);
-            z-index: 1500;
+            backdrop-filter: blur(8px);
+            z-index: 2000;
             display: flex;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(8px);
+            padding: 20px;
         }
 
         .history-content {
             background: var(--card-bg);
             border-radius: 24px;
-            width: 90%;
-            max-width: 700px;
+            max-width: 800px;
+            width: 100%;
             max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
-            box-shadow: var(--shadow-xl);
-            overflow: hidden;
         }
 
         .history-header {
-            background: var(--bg-gradient);
-            color: var(--sidebar-text);
             padding: 24px 28px;
+            background: var(--bg-gradient);
+            color: white;
+            border-radius: 24px 24px 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -1680,52 +1834,46 @@
         .history-title {
             font-size: 22px;
             font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .history-close-btn {
-            background: rgba(255, 255, 255, 0.25);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: var(--sidebar-text);
-            padding: 8px 12px;
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
             cursor: pointer;
-            font-size: 16px;
-            font-weight: 700;
+            padding: 8px 12px;
+            border-radius: 12px;
             transition: all 0.3s;
         }
 
         .history-close-btn:hover {
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
         }
 
         .history-body {
-            flex: 1;
-            overflow-y: auto;
             padding: 24px;
-        }
-
-        .empty-history {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-color);
-            opacity: 0.6;
-            font-size: 16px;
-            font-weight: 600;
+            overflow-y: auto;
+            flex: 1;
         }
 
         .history-item {
-            background: var(--card-bg);
-            border: 2px solid rgba(0, 0, 0, 0.08);
-            border-radius: 16px;
             padding: 18px;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.02);
+            border: 2px solid rgba(0, 0, 0, 0.06);
             transition: all 0.3s;
         }
 
         .history-item:hover {
-            border-color: rgba(0, 0, 0, 0.15);
-            box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.12);
+            transform: translateX(-4px);
         }
 
         .history-item-header {
@@ -1739,12 +1887,14 @@
             font-size: 11px;
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--danger-color);
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
         }
 
         .history-item-time {
-            font-size: 11px;
+            font-size: 12px;
             color: var(--text-color);
             opacity: 0.6;
             font-weight: 600;
@@ -1752,304 +1902,49 @@
 
         .history-item-message {
             font-size: 14px;
-            font-weight: 600;
             color: var(--text-color);
-            margin-bottom: 8px;
+            font-weight: 600;
+            margin-bottom: 6px;
         }
 
         .history-item-server {
             font-size: 12px;
             color: var(--text-color);
-            opacity: 0.7;
-            font-weight: 600;
-        }
-
-        /* Alert Detail Modal Styles */
-        .alert-detail-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(10px);
-            padding: 20px;
-        }
-
-        .alert-detail-content {
-            background: var(--card-bg);
-            border-radius: 28px;
-            width: 95%;
-            max-width: 900px;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: var(--shadow-xl);
-            overflow: hidden;
-            animation: modalSlideIn 0.4s ease;
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px) scale(0.9);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .alert-detail-header {
-            background: var(--bg-gradient);
-            color: var(--sidebar-text);
-            padding: 28px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .alert-header-server {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        }
-
-        .alert-header-dataset {
-            background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
-        }
-
-        .alert-header-process {
-            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-        }
-
-        .alert-header-storage {
-            background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
-        }
-
-        .alert-detail-title {
-            font-size: 26px;
-            font-weight: 900;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .alert-detail-icon {
-            font-size: 32px;
-        }
-
-        .alert-detail-badge {
-            background: rgba(255, 255, 255, 0.3);
-            padding: 6px 14px;
-            border-radius: 14px;
-            font-size: 16px;
-            font-weight: 900;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .alert-detail-close-btn {
-            background: rgba(255, 255, 255, 0.25);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: var(--sidebar-text);
-            padding: 10px 14px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: 700;
-            transition: all 0.3s;
-        }
-
-        .alert-detail-close-btn:hover {
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(1.1);
-        }
-
-        .alert-detail-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 32px;
-        }
-
-        .no-alerts-modal {
-            text-align: center;
-            padding: 80px 40px;
-        }
-
-        .no-alerts-icon {
-            font-size: 80px;
-            margin-bottom: 24px;
-            opacity: 0.5;
-        }
-
-        .no-alerts-text {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--text-color);
-            margin-bottom: 12px;
-        }
-
-        .no-alerts-subtext {
-            font-size: 16px;
-            color: var(--text-color);
             opacity: 0.6;
+            font-weight: 700;
         }
 
-        .alert-detail-item {
-            background: var(--card-bg);
-            border: 2px solid rgba(0, 0, 0, 0.08);
-            border-radius: 20px;
-            padding: 24px;
-            margin-bottom: 20px;
-            border-left: 6px solid #6366f1;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .alert-detail-item:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--primary-color);
-        }
-
-        .alert-detail-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
-        }
-
-        .alert-detail-type {
-            font-size: 13px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            padding: 6px 12px;
-            border-radius: 10px;
-            background: var(--bg-gradient);
-            color: white;
-        }
-
-        .alert-detail-source {
-            font-size: 12px;
-            font-weight: 800;
-            color: var(--text-color);
-            opacity: 0.7;
-            padding: 6px 12px;
-            background: rgba(0, 0, 0, 0.04);
-            border-radius: 10px;
-        }
-
-        .main-content {
-            margin-left: 320px;
-            margin-top: 80px;
-            width: calc(100% - 320px);
-            height: calc(100vh - 80px);
-            padding: 0;
-            /* ✅ REMOVED PADDING FOR IFRAME PAGES */
-            overflow-y: auto;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            background: var(--bg-color);
-            position: relative;
-        }
-
-        .main-content.expanded {
-            margin-left: 0;
-            width: 100%;
-        }
-
-        /* ✅ ADD PADDING ONLY TO HOME PAGE */
-        .home-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
+        .empty-history {
             text-align: center;
-            position: relative;
-            padding: 45px;
-            /* ✅ PADDING HERE INSTEAD */
-            padding-bottom: 80px;
-        }
-
-
-
-        .alert-detail-message {
-            font-size: 16px;
-            font-weight: 600;
+            padding: 60px 20px;
             color: var(--text-color);
-            line-height: 1.6;
-            margin-top: 14px;
-        }
-
-        .alert-detail-server,
-        .alert-detail-time {
-            font-size: 14px;
-            color: var(--text-color);
-            opacity: 0.7;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .alert-detail-server-icon,
-        .alert-detail-time-icon {
+            opacity: 0.5;
             font-size: 16px;
         }
 
-        .alert-detail-footer {
-            padding: 24px 32px;
-            border-top: 2px solid rgba(0, 0, 0, 0.08);
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        .alert-detail-action-btn {
-            background: var(--bg-gradient);
-            color: white;
-            border: none;
-            padding: 12px 32px;
-            border-radius: 16px;
-            font-size: 16px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: all 0.4s;
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .alert-detail-action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 36px rgba(99, 102, 241, 0.4);
-        }
-
-        /* Footer Styles */
         .footer {
             position: fixed;
             left: 0;
             right: 0;
             bottom: 0;
-            height: 40px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: var(--bg-color);
             color: var(--text-color);
             font-weight: 700;
-            font-size: 12px;
+            font-size: 11px;
             z-index: 1100;
-            border-top: 2px solid rgba(0, 0, 0, 0.08);
+            border-top: 2px solid rgba(0, 0, 0, 0.06);
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
             backdrop-filter: blur(10px);
+        }
+
+        .theme-vedas .footer {
+            border-top: 3px solid transparent;
+            border-image: linear-gradient(90deg, #ff9933 0%, #ffffff 50%, #138808 100%) 1;
+            background: rgba(255, 255, 255, 0.95);
         }
 
         .footer-content {
@@ -2070,31 +1965,25 @@
             font-weight: 900;
         }
 
-        /* Responsive Adjustments */
-        @media (max-width: 1280px) {
-            .stats-container {
-                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-                gap: 25px;
-            }
-
-            .alert-panel {
-                width: 380px;
-            }
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
         }
 
-        @media (max-width: 1024px) {
-            .stats-container {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 20px;
-            }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 14px;
+        }
 
-            .alert-panel {
-                width: 340px;
-            }
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-gradient);
+            border-radius: 14px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
 
-            .main-content {
-                padding: 30px;
-            }
+        ::-webkit-scrollbar-thumb:hover {
+            border: 1px solid transparent;
         }
 
         @media (max-width: 768px) {
@@ -2103,12 +1992,9 @@
                 padding: 0 25px;
             }
 
-            .header-title {
-                font-size: 20px;
-            }
-
             .sidebar {
                 width: 280px;
+                top: 70px;
             }
 
             .sidebar.collapsed {
@@ -2117,214 +2003,68 @@
 
             .main-content {
                 margin-left: 280px;
+                margin-top: 70px;
                 width: calc(100% - 280px);
                 padding: 30px;
             }
 
-            .main-content.expanded {
-                margin-left: 0;
-                width: 100%;
+            .alert-panel {
+                width: 350px;
+                right: 25px;
+                top: 90px;
             }
 
             .welcome-title {
                 font-size: 48px;
             }
 
+            .logo img {
+                width: 340px;
+            }
+
             .stats-container {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
                 gap: 20px;
             }
-
-            .alert-panel {
-                width: 300px;
-                right: 25px;
-                top: 90px;
-            }
-
-            .footer {
-                height: 36px;
-                font-size: 11px;
-            }
-        }
-
-        /* Pulsing Animations for Cards */
-        .alert-card-critical {
-            border: 3px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .alert-card-warning {
-            border: 3px solid rgba(245, 158, 11, 0.3);
-        }
-
-        .alert-card-dataset {
-            border: 3px solid rgba(99, 102, 241, 0.3);
-        }
-
-        .alert-card-storage {
-            border: 3px solid rgba(59, 130, 246, 0.3);
-        }
-
-        .alert-card-critical:hover,
-        .alert-card-warning:hover,
-        .alert-card-dataset:hover,
-        .alert-card-storage:hover {
-            transform: translateY(-18px) scale(1.05);
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
-        }
-
-        .alert-pulse {
-            animation: alertPulse 2s infinite;
-        }
-
-        .warning-pulse {
-            animation: warningPulse 2s infinite;
-        }
-
-        .dataset-pulse {
-            animation: datasetPulse 2s infinite;
-        }
-
-        .storage-pulse {
-            animation: storagePulse 2s infinite;
-        }
-
-        @keyframes alertPulse {
-
-            0%,
-            100% {
-                box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3), 0 0 0 0 rgba(239, 68, 68, 0.4);
-                border-color: rgba(239, 68, 68, 0.4);
-            }
-
-            50% {
-                box-shadow: 0 12px 36px rgba(239, 68, 68, 0.5), 0 0 0 12px rgba(239, 68, 68, 0.4);
-                border-color: rgba(239, 68, 68, 0.6);
-            }
-        }
-
-        @keyframes warningPulse {
-
-            0%,
-            100% {
-                box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3), 0 0 0 0 rgba(245, 158, 11, 0.4);
-                border-color: rgba(245, 158, 11, 0.4);
-            }
-
-            50% {
-                box-shadow: 0 12px 36px rgba(245, 158, 11, 0.5), 0 0 0 12px rgba(245, 158, 11, 0.4);
-                border-color: rgba(245, 158, 11, 0.6);
-            }
-        }
-
-        @keyframes datasetPulse {
-
-            0%,
-            100% {
-                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3), 0 0 0 0 rgba(99, 102, 241, 0.4);
-                border-color: rgba(99, 102, 241, 0.4);
-            }
-
-            50% {
-                box-shadow: 0 12px 36px rgba(99, 102, 241, 0.5), 0 0 0 12px rgba(99, 102, 241, 0.4);
-                border-color: rgba(99, 102, 241, 0.6);
-            }
-        }
-
-        @keyframes storagePulse {
-
-            0%,
-            100% {
-                box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3), 0 0 0 0 rgba(59, 130, 246, 0.4);
-                border-color: rgba(59, 130, 246, 0.4);
-            }
-
-            50% {
-                box-shadow: 0 12px 36px rgba(59, 130, 246, 0.5), 0 0 0 12px rgba(59, 130, 246, 0.4);
-                border-color: rgba(59, 130, 246, 0.6);
-            }
-        }
-
-        /* Usage Class Animations */
-        .usage-critical {
-            background: rgba(239, 68, 68, 0.15);
-            border-left: 6px solid #ef4444;
-        }
-
-        .usage-warning {
-            background: rgba(245, 158, 11, 0.15);
-            border-left: 6px solid #f59e0b;
-        }
-
-        .usage-normal {
-            background: rgba(59, 130, 246, 0.15);
-            border-left: 6px solid #3b82f6;
-        }
-
-        /* Scrollbar Styles */
-        .alert-section-content::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .alert-section-content::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 10px;
-        }
-
-        .alert-section-content::-webkit-scrollbar-thumb {
-            background: var(--primary-color);
-            border-radius: 10px;
-        }
-
-        .alert-section-content::-webkit-scrollbar-thumb:hover {
-            background: var(--secondary-color);
-        }
-
-        /* Detail Modal Scrollbar */
-        .alert-detail-body::-webkit-scrollbar {
-            width: 10px;
-        }
-
-        .alert-detail-body::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 10px;
-        }
-
-        .alert-detail-body::-webkit-scrollbar-thumb {
-            background: var(--primary-color);
-            border-radius: 10px;
-        }
-
-        .alert-detail-body::-webkit-scrollbar-thumb:hover {
-            background: var(--secondary-color);
         }
     </style>
 </head>
 
 <body>
     <div id="app">
+        <!-- Break Time Notification Modal -->
+        <transition name="fade">
+            <div v-if="showBreakNotification" class="break-notification-modal">
+                <div class="break-notification-content">
+                    <div class="break-icon">{{ breakNotification.icon }}</div>
+                    <div class="break-title">{{ breakNotification.title }}</div>
+                    <div class="break-message">{{ breakNotification.message }}</div>
+                    <button class="break-close-btn" @click="closeBreakNotification">OKAY, GOT IT!</button>
+                    <div class="break-countdown">Auto-closing in {{ breakAutoCloseSeconds }}s...</div>
+                </div>
+            </div>
+        </transition>
+
         <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <button class="menu-toggle" @click="toggleSidebar">
-                    <span v-if="sidebarCollapsed">☰</span>
-                    <span v-else>✕</span>
-                </button>
-                <h1 class="header-title">VEDAS Management Information System</h1>
+                <button class="menu-toggle" @click="toggleSidebar">☰</button>
+                <div class="header-title">VEDAS Management Information System</div>
             </div>
             <div class="header-right">
-                <button class="refresh-btn" :class="{ loading: isRefreshing }" @click="manualRefresh">↻</button>
+                <button class="refresh-btn" @click="manualRefresh" :class="{ loading: isLoading }">🔄</button>
                 <div class="live-time">{{ currentTime }}</div>
                 <button class="history-btn" @click="showHistory = true">
                     📜
                     <span v-if="alertHistory.length > 0" class="history-badge">{{ alertHistory.length }}</span>
                 </button>
                 <select class="theme-selector" v-model="currentTheme" @change="handleThemeChange">
-                    <option value="theme-vedas">VEDAS</option>
-                    <option value="theme-dark">Dark</option>
-                    <option value="theme-ocean">Ocean</option>
-                    <option value="theme-forest">Forest</option>
-                    <option value="theme-sunset">Sunset</option>
-                    <option value="auto">Auto</option>
+                    <option value="theme-vedas">🇮🇳 VEDAS</option>
+                    <option value="theme-dark">🌙 Dark</option>
+                    <option value="theme-ocean">🌊 Ocean</option>
+                    <option value="theme-forest">🌲 Forest</option>
+                    <option value="theme-sunset">🌅 Sunset</option>
+                    <option value="auto">🔄 Auto</option>
                 </select>
             </div>
         </header>
@@ -2333,7 +2073,7 @@
         <aside :class="['sidebar', { collapsed: sidebarCollapsed }]">
             <h2 class="sidebar-title">Applications</h2>
 
-            <!-- ✅ HOME NAVIGATION BUTTON -->
+            <!-- ✅ FIX #3: HOME BUTTON -->
             <button class="nav-button" @click="setActive('home')" :class="{ active: currentPage === 'home' }">
                 <div class="nav-icon-wrapper">
                     <span class="nav-icon">🏠</span>
@@ -2358,6 +2098,21 @@
                     <div v-if="app.badge" class="app-badge">{{ app.badge }}</div>
                 </button>
             </div>
+
+            <div class="app-category">
+                <h3 class="category-title">Data Analytics</h3>
+                <button v-for="app in analyticsApps" :key="app.id" class="nav-button" @click="setActive(app.id)"
+                    :class="{ active: currentPage === app.id }">
+                    <div class="nav-icon-wrapper">
+                        <span class="nav-icon">{{ app.icon }}</span>
+                    </div>
+                    <div class="nav-text">
+                        <div class="nav-name">{{ app.name }}</div>
+                        <div class="nav-description">{{ app.description }}</div>
+                    </div>
+                </button>
+            </div>
+
             <div class="app-category">
                 <h3 class="category-title">Tools</h3>
                 <button v-for="app in toolsApps" :key="app.id" class="nav-button" @click="setActive(app.id)"
@@ -2369,223 +2124,190 @@
                         <div class="nav-name">{{ app.name }}</div>
                         <div class="nav-description">{{ app.description }}</div>
                     </div>
-                    <div v-if="app.badge" class="app-badge">{{ app.badge }}</div>
                 </button>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <!-- <main :class="['main-content', { expanded: sidebarCollapsed }]">
-            <transition name="page-transition" mode="out-in">
-                <div v-if="currentPage === 'home'" class="home-container">
-                    <div class="particles">
-                        <div v-for="n in 5" :key="n" class="particle"></div>
-                    </div>
-                    <div class="floating-elements">
-                        <div v-for="n in 8" :key="n" class="floating-star">✨</div>
-                    </div>
-                    <div class="logo-container">
-                        <div class="logo">
-                            <img src="vedas_logo.png" alt="VEDAS Logo">
-                        </div>
-                        <div class="decorative-line"></div>
-                        <h1 class="welcome-title">VEDAS</h1>
-                        <p class="welcome-subtitle">Management Information System</p>
-                    </div>
-                    <div class="stats-container">
-                        <div v-for="category in alertCategories" :key="'card-' + category" class="stat-card"
-                            :class="['alert-card-' + category, getCategoryCount(category) > 0 ? category + '-pulse' : '']"
-                            @click="openAlertModal(category)">
-                            <div class="stat-icon">{{ getCategoryIcon(category) }}</div>
-                            <div class="stat-value">{{ getCategoryCount(category) }}</div>
-                            <div class="stat-label">{{ getCategoryName(category) }}</div>
-                            <div class="card-hint" v-if="getCategoryCount(category) > 0">Click to view details</div>
-                        </div>
-                    </div>
-                </div>
-                <div v-else>
-                    <iframe :src="currentAppUrl" class="app-frame" @load="onIframeLoad"></iframe>
-                </div>
-            </transition>
-        </main> -->
         <main :class="['main-content', { expanded: sidebarCollapsed }]">
             <transition name="page-transition" mode="out-in">
                 <div v-if="currentPage === 'home'" class="home-container">
                     <div class="particles">
-                        <div v-for="n in 5" :key="n" class="particle"></div>
+                        <div class="particle" style="width: 350px; height: 350px; top: 10%; left: 15%;"></div>
+                        <div class="particle" style="width: 280px; height: 280px; top: 60%; right: 10%;"></div>
+                        <div class="particle" style="width: 400px; height: 400px; bottom: 5%; left: 50%;"></div>
+                        <div class="particle" style="width: 320px; height: 320px; top: 30%; right: 30%;"></div>
+                        <div class="particle" style="width: 260px; height: 260px; bottom: 20%; left: 20%;"></div>
                     </div>
+
                     <div class="floating-elements">
-                        <div v-for="n in 8" :key="n" class="floating-star">✨</div>
+                        <div class="floating-star" style="top: 15%; left: 25%; animation-delay: 0s;">⭐</div>
+                        <div class="floating-star" style="top: 45%; right: 15%; animation-delay: 2s;">✨</div>
+                        <div class="floating-star" style="bottom: 25%; left: 35%; animation-delay: 4s;">💫</div>
+                        <div class="floating-star" style="top: 65%; right: 40%; animation-delay: 6s;">🌟</div>
                     </div>
+
                     <div class="logo-container">
                         <div class="logo">
                             <img src="vedas_logo.png" alt="VEDAS Logo">
                         </div>
-                        <div class="decorative-line"></div>
-                        <h1 class="welcome-title">VEDAS</h1>
-                        <p class="welcome-subtitle">Management Information System</p>
                     </div>
+
+                    <div class="decorative-line"></div>
+                    <h1 class="welcome-title">Welcome to VEDAS MIS</h1>
+                    <p class="welcome-subtitle">Comprehensive Monitoring & Analytics Dashboard</p>
+
                     <div class="stats-container">
-                        <div v-for="category in alertCategories" :key="'card-' + category" class="stat-card"
-                            :class="['alert-card-' + category, getCategoryCount(category) > 0 ? category + '-pulse' : '']"
-                            @click="openAlertModal(category)">
-                            <div class="stat-icon">{{ getCategoryIcon(category) }}</div>
-                            <div class="stat-value">{{ getCategoryCount(category) }}</div>
-                            <div class="stat-label">{{ getCategoryName(category) }}</div>
-                            <div class="card-hint" v-if="getCategoryCount(category) > 0">Click to view details</div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🖥️</div>
+                            <div class="stat-value">{{ totalAlerts }}</div>
+                            <div class="stat-label">Active Alerts</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-value">{{ allApplications.length }}</div>
+                            <div class="stat-label">Applications</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-value">{{ totalServers }}</div>
+                            <div class="stat-label">Servers</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🔄</div>
+                            <div class="stat-value">{{ totalServices }}</div>
+                            <div class="stat-label">Services</div>
                         </div>
                     </div>
                 </div>
-                <div v-else>
+                
+                <!-- ✅ FIX #1: IFRAME CONTAINER -->
+                <div v-else class="iframe-container">
                     <iframe :src="currentAppUrl" class="app-frame" @load="onIframeLoad"></iframe>
+                </div>
+            </transition>
+
+            <transition name="fade">
+                <div v-if="isLoading" class="loading-overlay">
+                    <div class="loading-spinner"></div>
                 </div>
             </transition>
         </main>
 
-        <!-- Alert Panel -->
-        <div v-if="!sidebarCollapsed" class="notification-indicator" :class="{ hidden: totalAlerts === 0 }"
-            @click="expandAlertPanel">
+        <!-- ✅ FIX #2: NOTIFICATION BELL (SHOWS WHEN PANEL IS CLOSED) -->
+        <div v-if="totalAlerts > 0 && alertPanelCollapsedLeft" class="notification-indicator"
+            @click="alertPanelCollapsedLeft = false">
             <div class="notification-icon">🔔</div>
             <div class="notification-count">{{ totalAlerts }}</div>
         </div>
 
-        <div
-            :class="['alert-panel', { 'collapsed-up': alertPanelCollapsedUp, 'collapsed-left': alertPanelCollapsedLeft }]">
+        <!-- Alert Panel -->
+        <div :class="['alert-panel', { 'collapsed-up': alertPanelCollapsedUp, 'collapsed-left': alertPanelCollapsedLeft }]">
             <div class="alert-header">
                 <div class="alert-header-title">
                     <span class="alert-header-icon">🔔</span>
-                    Notifications
-                    <span class="alert-badge">{{ totalAlerts }}</span>
+                    <span>Notifications</span>
+                    <span v-if="totalAlerts > 0" class="alert-badge">{{ totalAlerts }}</span>
                 </div>
                 <div class="alert-controls">
-                    <button class="alert-control-btn" @click="collapseAllSections">{{ allSectionsCollapsed ? 'Expand' :
-                        'Collapse' }} All</button>
-                    <button class="alert-control-btn" @click="clearAllAlerts">Clear All</button>
+                    <button class="alert-control-btn" @click="collapseAllSections" v-if="totalAlerts > 0">
+                        {{ allSectionsCollapsed ? 'Expand All' : 'Collapse All' }}
+                    </button>
+                    <button class="alert-control-btn" @click="clearAllAlerts" v-if="totalAlerts > 0">Clear</button>
+                    <button class="alert-control-btn" @click="closeAlertPanel">✕</button>
                 </div>
             </div>
+
             <div class="alert-body">
                 <div v-if="totalAlerts === 0" class="no-alerts">
-                    <p>No active alerts</p>
+                    🎉 No alerts<br>All systems operational
                 </div>
+
                 <div v-else>
-                    <div v-for="category in alertCategories" :key="category" class="alert-section">
-                        <div class="alert-section-header" @click="toggleSection(category)">
+                    <!-- ✅ ALL ALERT CATEGORIES WITH REMOVE BUTTONS -->
+                    
+                    <!-- SERVER ALERTS -->
+                    <div class="alert-section" v-if="alertsByCategory.server && alertsByCategory.server.length > 0">
+                        <div class="alert-section-header" @click="toggleServerSection">
                             <div class="alert-section-title">
-                                {{ getCategoryIcon(category) }} {{ getCategoryName(category) }} ({{
-                                getCategoryCount(category) }})
+                                🖥️ Server ({{ alertsByCategory.server.length }})
                             </div>
-                            <span class="collapse-icon" :class="{ collapsed: sectionCollapsed[category] }">▼</span>
+                            <span class="collapse-icon" :class="{ collapsed: serverSectionCollapsed }">▼</span>
                         </div>
                         <div class="alert-section-content"
-                            :class="{ collapsed: sectionCollapsed[category], 'limit-height': !sectionCollapsed[category] && getCategoryCount(category) > 2 }">
-                            <div v-for="(alert, index) in getCategoryAlerts(category)" :key="category + '-' + index"
+                            :class="{ collapsed: serverSectionCollapsed, 'limit-height': !serverSectionCollapsed && alertsByCategory.server.length > 2 }">
+                            <div v-for="(alert, index) in alertsByCategory.server" :key="'server-' + index"
                                 class="alert-item" :class="'alert-' + alert.type.toLowerCase()">
                                 <div class="alert-content">
                                     <div class="alert-type">{{ alert.type }}</div>
                                     <div class="alert-message">{{ alert.message }}</div>
                                     <div class="alert-server">{{ alert.server }}</div>
                                 </div>
-                                <button class="alert-delete-btn" @click="removeAlert(category, index)">✖</button>
+                                <button class="alert-delete-btn" @click="removeAlert('server', index)">✕</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SYSTEM ALERTS -->
+                    <div class="alert-section" v-if="alertsByCategory.system && alertsByCategory.system.length > 0">
+                        <div class="alert-section-header" @click="toggleSystemSection">
+                            <div class="alert-section-title">
+                                ⚠️ System ({{ alertsByCategory.system.length }})
+                            </div>
+                            <span class="collapse-icon" :class="{ collapsed: systemSectionCollapsed }">▼</span>
+                        </div>
+                        <div class="alert-section-content"
+                            :class="{ collapsed: systemSectionCollapsed, 'limit-height': !systemSectionCollapsed && alertsByCategory.system.length > 2 }">
+                            <div v-for="(alert, index) in alertsByCategory.system" :key="'system-' + index"
+                                class="alert-item" :class="'alert-' + alert.type.toLowerCase()">
+                                <div class="alert-content">
+                                    <div class="alert-type">{{ alert.type }}</div>
+                                    <div class="alert-message">{{ alert.message }}</div>
+                                    <div class="alert-server">{{ alert.server }}</div>
+                                </div>
+                                <button class="alert-delete-btn" @click="removeAlert('system', index)">✕</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="last-updated">Last updated: {{ lastUpdated }}</div>
+
+            <div class="last-updated" v-if="lastUpdated">{{ lastUpdated }}</div>
         </div>
 
         <!-- History Modal -->
-        <div v-if="showHistory" class="history-modal">
-            <div class="history-content">
-                <div class="history-header">
-                    <div class="history-title">Alert History</div>
-                    <button class="history-close-btn" @click="showHistory = false">✕</button>
-                </div>
-                <div class="history-body">
-                    <div v-if="alertHistory.length === 0" class="empty-history">
-                        <p>No alert history</p>
+        <transition name="fade">
+            <div v-if="showHistory" class="history-modal" @click.self="showHistory = false">
+                <div class="history-content">
+                    <div class="history-header">
+                        <div class="history-title">📜 Alert History</div>
+                        <button class="history-close-btn" @click="showHistory = false">✕</button>
                     </div>
-                    <div v-else>
-                        <div v-for="(alert, index) in alertHistory" :key="index" class="history-item">
-                            <div class="history-item-header">
-                                <div class="history-item-type">{{ alert.type }}</div>
-                                <div class="history-item-time">{{ alert.clearedAt }}</div>
+                    <div class="history-body">
+                        <div v-if="alertHistory.length === 0" class="empty-history">
+                            No alert history available
+                        </div>
+                        <div v-else>
+                            <div v-for="(item, index) in alertHistory" :key="index" class="history-item">
+                                <div class="history-item-header">
+                                    <span class="history-item-type">{{ item.type }}</span>
+                                    <span class="history-item-time">{{ item.clearedAt }}</span>
+                                </div>
+                                <div class="history-item-message">{{ item.message }}</div>
+                                <div class="history-item-server">{{ item.server }}</div>
                             </div>
-                            <div class="history-item-message">{{ alert.message }}</div>
-                            <div class="history-item-server">{{ alert.server }}</div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Alert Detail Modal -->
-        <div v-if="showAlertModal" class="alert-detail-modal">
-            <div class="alert-detail-content">
-                <div class="alert-detail-header" :class="'alert-header-' + currentAlertType">
-                    <div class="alert-detail-title">
-                        {{ alertModalIcon }} {{ alertModalTitle }}
-                        <span class="alert-detail-badge">{{ filteredAlertsForModal.length }}</span>
-                    </div>
-                    <button class="alert-detail-close-btn" @click="closeAlertModal">✕</button>
-                </div>
-                <div class="alert-detail-body">
-                    <div v-if="filteredAlertsForModal.length === 0" class="no-alerts-modal">
-                        <div class="no-alerts-icon">🔔</div>
-                        <div class="no-alerts-text">No alerts</div>
-                        <div class="no-alerts-subtext">No alerts found for this category</div>
-                    </div>
-                    <div v-else>
-                        <div v-for="(alert, index) in filteredAlertsForModal" :key="index" class="alert-detail-item"
-                            :class="'alert-' + alert.type.toLowerCase()">
-                            <div class="alert-detail-item-header">
-                                <div class="alert-detail-type">{{ alert.type }}</div>
-                                <div class="alert-detail-source">{{ alert.source }}</div>
-                            </div>
-                            <div class="alert-detail-message">{{ alert.message }}</div>
-                            <div class="alert-detail-server">
-                                <span class="alert-detail-server-icon">🖥️</span>
-                                {{ alert.server }}
-                            </div>
-                            <div class="alert-detail-time">
-                                <span class="alert-detail-time-icon">⏰</span>
-                                {{ formatTime(alert.timestamp) }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="alert-detail-footer">
-                    <button class="alert-detail-action-btn" @click="clearAlertsByCategory(currentAlertType)">
-                        Clear All {{ alertModalTitle }}
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Break Notification Modal -->
-        <div v-if="showBreakNotification" class="break-notification-modal">
-            <div class="break-notification-content">
-                <div class="break-icon">{{ breakNotification.icon }}</div>
-                <div class="break-title">{{ breakNotification.title }}</div>
-                <div class="break-message">{{ breakNotification.message }}</div>
-                <button class="break-close-btn" @click="closeBreakNotification">Close</button>
-                <div class="break-countdown">{{ breakAutoCloseSeconds }} seconds</div>
-            </div>
-        </div>
+        </transition>
 
         <!-- Footer -->
-        <div class="footer">
-            <!-- <div class="footer-content"> -->
-            <span>©
-                2025 VEDAS, SAC, ISRO, Government of India | All Rights Reserved</span>
-            <!-- <span>MIS</span> -->
-            <!-- </div> -->
-        </div>
-
-        <!-- Loading Overlay -->
-        <div v-if="isLoading" class="loading-overlay">
-            <div class="loading-spinner"></div>
-        </div>
+        <footer class="footer">
+            <div class="footer-content">
+                © 2025 VEDAS, SAC, ISRO, Government of India | All Rights Reserved
+            </div>
+        </footer>
     </div>
 
     <script>
@@ -2594,294 +2316,216 @@
         createApp({
             data() {
                 return {
-                    // Theme
-                    currentTheme: 'theme-vedas',
-                    autoThemeEnabled: false,
                     currentTime: '',
-
-                    // UI State
-                    sidebarCollapsed: false,
                     currentPage: 'home',
                     currentAppUrl: '',
+                    sidebarCollapsed: false,
+                    isLoading: false,
+                    currentTheme: 'theme-vedas',
+                    autoThemeEnabled: false,
+                    showHistory: false,
+
+                    // ✅ FIX #2: ALERTS DATA
+                    alertsByCategory: {
+                        server: [],
+                        system: []
+                    },
+                    clearedAlerts: new Set(),
+                    processedAlerts: new Set(),  // ✅ TRACK PROCESSED ALERTS
+                    alertHistory: [],
+                    lastUpdated: '',
+
+                    // Panel states
                     alertPanelCollapsedUp: false,
                     alertPanelCollapsedLeft: false,
-
-                    // DYNAMIC ALERT STORAGE
-                    alertsByCategory: {},
-                    sectionCollapsed: {},
-                    categoryMetadata: {},
-
-                    clearedAlerts: new Set(),
-                    lastUpdated: 'Initializing...',
+                    serverSectionCollapsed: false,
+                    systemSectionCollapsed: false,
+                    allSectionsCollapsed: false,
 
                     // Stats
-                    totalServers: 20,
-                    totalServices: 41,
+                    totalServers: 0,
+                    totalServices: 0,
 
-                    // Loading State
-                    isLoading: false,
-                    isRefreshing: false,
-
-                    // History
-                    showHistory: false,
-                    alertHistory: [],
-
-                    // Break Notification
+                    // Break notification
                     showBreakNotification: false,
                     breakNotification: {},
-                    breakAutoCloseSeconds: 30,
+                    breakAutoCloseSeconds: 150,
                     breakAutoCloseInterval: null,
                     shownBreakTimes: new Set(),
 
-                    // Alert Detail Modal
-                    showAlertModal: false,
-                    currentAlertType: '',
-
-                    // Socket.IO
+                    // Socket.io
                     socket: null,
                     socketConnected: false,
-                    processedAlerts: new Set(),
 
-                    // Apps
                     monitoringApps: [
-                        { id: 'monitoringserver', name: 'Server Monitor', description: 'Infrastructure Health', icon: '🖥️', url: 'http://192.168.2.137:8080/monitoring_server/home' },
-                        { id: 'servicedatasets', name: 'Service Monitor', description: 'Data Pipeline Status', icon: '📊', url: 'http://192.168.2.137:8080/monitoring_datasets' },
-                        { id: 'processingscriptmonitoring', name: 'Processing Script Monitor', description: 'Service Health Check', icon: '⚙️', url: 'http://192.168.2.137:8080/process_monitoring' },
-                        { id: 'datachainsentinel', name: 'Data Chain Monitoring', description: 'Satellite Tracking', icon: '🛰️', url: 'http://192.168.2.137:8080/monitoring_sentinel' },
-                        { id: 'publishmonitoring', name: 'Publish Monitoring', description: 'Browse & Search Data', icon: '🔍', url: 'http://192.168.2.137:8080/ridam_dataset_publisher' },
-                        { id: 'ridalpoolanalytics', name: 'Ridam Pool Analytics', description: 'Browse & Search Data', icon: '💾', url: 'http://192.168.2.137:8080/pool_storage_monitoring' },
-                        { id: 'poolgrouphealth', name: 'Pool Group Health Monitoring', description: 'Browse & Search Data', icon: '🏥', url: 'http://192.168.2.137:8080/monitoring_health' },
-                        { id: 'geoentitymonitoring', name: 'Geoentity Monitoring', description: 'Browse & Search Data', icon: '🌍', url: 'http://192.168.2.137:8080/geoentity_monitoring' },
+                        { id: 'servermonitor', name: 'Server Monitor', description: 'Infrastructure Status', icon: '🖥️', url: 'http://localhost:5000/' },
+                        { id: 'servicemonitor', name: 'Service Monitor', description: 'Data Pipeline Status', icon: '📊', url: 'http://localhost:5001/' },
+                        { id: 'processingscriptmonitor', name: 'Processing Script Monitor', description: 'Service Health Check', icon: '🔄', url: 'http://localhost:5002/' },
+                        { id: 'datachainmonitoring', name: 'Data Chain Monitoring', description: 'Satellite Tracking', icon: '🛰️', url: 'http://localhost:5003/' },
+                        { id: 'publishmonitoring', name: 'Publish Monitoring', description: 'Bounds & Search Data', icon: '🔍', url: 'http://localhost:5004/' },
+                        { id: 'ridampoolanalytics', name: 'Ridam Pool Analytics', description: 'Bounds & Search Data', icon: '💾', url: 'http://localhost:5005/' },
+                        { id: 'poolgrouphealthmonitoring', name: 'Pool Group Health Monitoring', description: 'Bounds & Search Data', icon: '💽', url: 'http://localhost:5006/' },
+                        { id: 'geoentitymonitoring', name: 'Geoentity Monitoring', description: 'Bounds & Search Data', icon: '🌍', url: 'http://localhost:5007/' },
                     ],
-                    dataApps: [
-                        { id: 'ridamregistration', name: 'RIDAM Registry', description: 'Data Registration', icon: '📝', url: 'http://192.168.2.137:8080/ridam_registration' },
+
+                    analyticsApps: [
+                        { id: 'teamanalytics', name: 'Team Analytics', description: 'Performance Metrics', icon: '📈', url: 'http://localhost:6000/' }
                     ],
-                    toolsApps: [
-                        { id: 'teamanalytics', name: 'Team Analytics', description: 'Performance Metrics', icon: '📈', url: 'http://192.168.2.137:8080/taskboard/dashboard' },
-                    ]
+
+                    toolsApps: []
                 };
             },
+
             computed: {
                 allApplications() {
-                    return [...this.monitoringApps, ...this.dataApps, ...this.toolsApps];
+                    return [...this.monitoringApps, ...this.analyticsApps, ...this.toolsApps];
                 },
 
                 totalAlerts() {
                     return Object.values(this.alertsByCategory).reduce((sum, alerts) => sum + alerts.length, 0);
-                },
-
-                isPanelCollapsed() {
-                    return this.alertPanelCollapsedUp || this.alertPanelCollapsedLeft;
-                },
-
-                allSectionsCollapsed() {
-                    return Object.values(this.sectionCollapsed).every(collapsed => collapsed);
-                },
-
-                alertCategories() {
-                    return Object.keys(this.alertsByCategory)
-                        .filter(category => this.alertsByCategory[category].length > 0)
-                        .sort((a, b) => this.alertsByCategory[b].length - this.alertsByCategory[a].length);
-                },
-
-                alertModalIcon() {
-                    const metadata = this.categoryMetadata[this.currentAlertType];
-                    return metadata?.icon || '🔔';
-                },
-
-                alertModalTitle() {
-                    const metadata = this.categoryMetadata[this.currentAlertType];
-                    return metadata?.name || this.capitalizeFirst(this.currentAlertType);
-                },
-
-                filteredAlertsForModal() {
-                    return this.alertsByCategory[this.currentAlertType] || [];
-                },
-
-                getCriticalCount() {
-                    return this.filteredAlertsForModal.filter(alert => {
-                        const type = alert.type.toLowerCase();
-                        return (type === 'offline' || type === 'failed' || type === 'alert' || type === 'critical');
-                    }).length;
-                },
-
-                getWarningCount() {
-                    return this.filteredAlertsForModal.filter(alert => {
-                        const type = alert.type.toLowerCase();
-                        return (type === 'warning' || type === 'memory' || type === 'cpu' || type === 'storage' || type === 'disk');
-                    }).length;
                 }
             },
-            methods: {
-                // ============= DYNAMIC CATEGORY MANAGEMENT =============
-                ensureCategory(category) {
-                    if (!this.alertsByCategory[category]) {
-                        this.alertsByCategory[category] = [];
-                        this.sectionCollapsed[category] = false;
 
-                        if (!this.categoryMetadata[category]) {
-                            this.categoryMetadata[category] = this.getDefaultCategoryMetadata(category);
-                        }
+            methods: {
+                toggleSidebar() {
+                    this.sidebarCollapsed = !this.sidebarCollapsed;
+                },
+
+                // ✅ FIX #3: SET ACTIVE WITH HOME HANDLING
+                setActive(appId) {
+                    this.isLoading = true;
+                    this.currentPage = appId;
+
+                    if (appId === 'home') {
+                        this.currentAppUrl = '';
+                        this.isLoading = false;
+                        return;
+                    }
+
+                    const app = this.allApplications.find(a => a.id === appId);
+                    if (app) {
+                        this.currentAppUrl = app.url;
                     }
                 },
 
-                getDefaultCategoryMetadata(category) {
-                    const defaults = {
-                        'server': { icon: '🖥️', name: 'Server Alerts', color: '#ef4444' },
-                        'dataset': { icon: '📊', name: 'Dataset Alerts', color: '#6366f1' },
-                        'process': { icon: '⚙️', name: 'Process Alerts', color: '#f59e0b' },
-                        'storage': { icon: '💾', name: 'Storage Alerts', color: '#3b82f6' },
-                        'network': { icon: '🌐', name: 'Network Alerts', color: '#10b981' },
-                        'database': { icon: '🗄️', name: 'Database Alerts', color: '#8b5cf6' },
-                        'application': { icon: '📱', name: 'Application Alerts', color: '#ec4899' }
+                onIframeLoad() {
+                    setTimeout(() => {
+                        this.isLoading = false;
+                    }, 500);
+                },
+
+                handleThemeChange() {
+                    if (this.currentTheme === 'auto') {
+                        this.autoThemeEnabled = true;
+                        this.applyAutoTheme();
+                    } else {
+                        this.autoThemeEnabled = false;
+                        document.body.className = this.currentTheme;
+                    }
+                },
+
+                applyAutoTheme() {
+                    const hour = new Date().getHours();
+                    let themeClass;
+                    if (hour >= 5 && hour < 12) {
+                        themeClass = 'theme-auto-morning';
+                    } else if (hour >= 12 && hour < 17) {
+                        themeClass = 'theme-auto-afternoon';
+                    } else if (hour >= 17 && hour < 21) {
+                        themeClass = 'theme-auto-evening';
+                    } else {
+                        themeClass = 'theme-auto-night';
+                    }
+                    document.body.className = themeClass;
+                },
+
+                updateTime() {
+                    const now = new Date();
+                    const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                    this.currentTime = now.toLocaleString('en-IN', options);
+
+                    if (this.autoThemeEnabled) {
+                        this.applyAutoTheme();
+                    }
+
+                    if (now.getSeconds() === 0) {
+                        this.checkBreakTime();
+                    }
+                },
+
+                checkBreakTime() {
+                    const now = new Date();
+                    const hours = now.getHours();
+                    const minutes = now.getMinutes();
+                    const timeKey = `${hours}:${minutes}`;
+
+                    if (this.shownBreakTimes.has(timeKey)) return;
+
+                    const breakTimes = {
+                        '11:0': { icon: '☕', title: 'Tea Break!', message: 'Time for a refreshing cup of tea!' },
+                        '13:0': { icon: '🍽️', title: 'Lunch Time!', message: 'Enjoy your meal and recharge!' },
+                        '16:30': { icon: '☕', title: 'Evening Snacks!', message: 'Take a break and have some snacks!' },
+                        '18:30': { icon: '🌆', title: 'Office Time is Over!', message: 'Great work today! Time to head home and relax!' }
                     };
 
-                    return defaults[category] || {
-                        icon: '🔔',
-                        name: `${this.capitalizeFirst(category)} Alerts`,
-                        color: '#6366f1'
-                    };
+                    const breakInfo = breakTimes[timeKey];
+                    if (breakInfo) {
+                        this.breakNotification = breakInfo;
+                        this.showBreakNotification = true;
+                        this.shownBreakTimes.add(timeKey);
+                        this.breakAutoCloseSeconds = 150;
+                        this.breakAutoCloseInterval = setInterval(() => {
+                            this.breakAutoCloseSeconds--;
+                            if (this.breakAutoCloseSeconds <= 0) {
+                                this.closeBreakNotification();
+                            }
+                        }, 1000);
+                    }
                 },
 
-                capitalizeFirst(str) {
-                    return str.charAt(0).toUpperCase() + str.slice(1);
+                closeBreakNotification() {
+                    this.showBreakNotification = false;
+                    if (this.breakAutoCloseInterval) {
+                        clearInterval(this.breakAutoCloseInterval);
+                        this.breakAutoCloseInterval = null;
+                    }
                 },
 
-                getCategoryIcon(category) {
-                    return this.categoryMetadata[category]?.icon || '🔔';
+                async manualRefresh() {
+                    this.isLoading = true;
+                    await this.fetchAlertsFromSocket();
+                    setTimeout(() => {
+                        this.isLoading = false;
+                    }, 1000);
                 },
 
-                getCategoryName(category) {
-                    return this.categoryMetadata[category]?.name || this.capitalizeFirst(category);
-                },
-
-                getCategoryAlerts(category) {
-                    return this.alertsByCategory[category] || [];
-                },
-
-                getCategoryCount(category) {
-                    return this.getCategoryAlerts(category).length;
-                },
-
-                // ============= SOCKET.IO INITIALIZATION (MATCHES YOUR ALERT DASHBOARD) =============
+                // ✅ FIX #2: SOCKET.IO INITIALIZATION
                 initializeSocket() {
                     console.log('🔌 Initializing Socket.IO connection...');
-                    console.log('📍 Connecting to: http://192.168.2.137:8080');
-
-                    this.socket = io('http://192.168.2.137:8080', {
+                    this.socket = io('http://localhost:5009', {
                         transports: ['websocket', 'polling'],
                         reconnection: true,
-                        reconnectionDelay: 1000,
-                        reconnectionAttempts: 10,
-                        timeout: 20000
+                        reconnectionAttempts: 5,
+                        reconnectionDelay: 1000
                     });
 
-                    // Connection Events
                     this.socket.on('connect', () => {
-                        console.log('✅ Socket.IO Connected - ID:', this.socket.id);
+                        console.log('✅ Socket.IO connected');
                         this.socketConnected = true;
-                        this.lastUpdated = `Connected at ${this.formatTime(new Date())}`;
                     });
 
-                    this.socket.on('disconnect', (reason) => {
-                        console.log('❌ Socket.IO Disconnected - Reason:', reason);
+                    this.socket.on('disconnect', () => {
+                        console.log('❌ Socket.IO disconnected');
                         this.socketConnected = false;
-                        this.lastUpdated = `Disconnected: ${reason}`;
                     });
 
-                    this.socket.on('connect_error', (error) => {
-                        console.error('🔥 Socket.IO Connection Error:', error.message);
-                        this.socketConnected = false;
-                        this.lastUpdated = 'Connection Error';
+                    this.socket.on('alert', (notification) => {
+                        console.log('📨 Received alert via Socket.IO:', notification);
+                        this.handleIncomingAlert(notification);
                     });
-
-                    // ===== PRIMARY MESSAGE HANDLER (MATCHES YOUR ALERT DASHBOARD) =====
-                    this.socket.on('message', (data) => {
-                        try {
-                            const notification = typeof data === 'string' ? JSON.parse(data) : data;
-                            console.log('📩 [MESSAGE EVENT] Received:', notification);
-                            this.handleIncomingAlert(notification);
-                        } catch (e) {
-                            console.error('❌ Error parsing message:', e);
-                        }
-                    });
-
-                    // Additional event listeners for different event names
-                    this.socket.on('alert', (data) => {
-                        console.log('🔔 [ALERT EVENT]:', data);
-                        this.handleIncomingAlert(data);
-                    });
-
-                    this.socket.on('new_alert', (data) => {
-                        console.log('🔔 [NEW_ALERT EVENT]:', data);
-                        this.handleIncomingAlert(data);
-                    });
-
-                    this.socket.on('server_alert', (data) => {
-                        console.log('🖥️ [SERVER_ALERT EVENT]:', data);
-                        this.handleIncomingAlert({ ...data, category: 'server' });
-                    });
-
-                    this.socket.on('dataset_alert', (data) => {
-                        console.log('📊 [DATASET_ALERT EVENT]:', data);
-                        this.handleIncomingAlert({ ...data, category: 'dataset' });
-                    });
-
-                    this.socket.on('process_alert', (data) => {
-                        console.log('⚙️ [PROCESS_ALERT EVENT]:', data);
-                        this.handleIncomingAlert({ ...data, category: 'process' });
-                    });
-
-                    this.socket.on('storage_alert', (data) => {
-                        console.log('💾 [STORAGE_ALERT EVENT]:', data);
-                        this.handleIncomingAlert({ ...data, category: 'storage' });
-                    });
-
-                    // Alert cleared
-                    this.socket.on('alert_cleared', (data) => {
-                        console.log('✅ [ALERT_CLEARED EVENT]:', data);
-                        this.handleAlertCleared(data);
-                    });
-
-                    // Clear alerts
-                    this.socket.on('clear_alerts', (data) => {
-                        console.log('🗑️ [CLEAR_ALERTS EVENT]:', data);
-                        if (data.category) {
-                            this.clearAlertsByCategory(data.category);
-                        } else {
-                            this.clearAllAlerts();
-                        }
-                    });
-
-                    // Stats update
-                    this.socket.on('update_stats', (data) => {
-                        console.log('📊 [UPDATE_STATS EVENT]:', data);
-                        if (data.totalServers !== undefined) this.totalServers = data.totalServers;
-                        if (data.totalServices !== undefined) this.totalServices = data.totalServices;
-                    });
-
-                    // Category metadata
-                    this.socket.on('category_metadata', (data) => {
-                        console.log('📋 [CATEGORY_METADATA EVENT]:', data);
-                        if (data.category && data.metadata) {
-                            this.categoryMetadata[data.category] = data.metadata;
-                        }
-                    });
-
-                    // Initial alerts load
-                    this.socket.on('initial_alerts', (data) => {
-                        console.log('📦 [INITIAL_ALERTS EVENT]:', data);
-                        Object.keys(data).forEach(category => {
-                            this.ensureCategory(category);
-                            this.alertsByCategory[category] = data[category] || [];
-                        });
-                        this.lastUpdated = this.formatTime(new Date());
-                    });
-
-                    console.log('✅ All Socket.IO event listeners registered');
                 },
 
-                // ============= INCOMING ALERT HANDLER (MATCHES YOUR ALERT DASHBOARD) =============
+                // ✅ FIX #2: HANDLE INCOMING ALERTS (NO DUPLICATES)
                 handleIncomingAlert(notification) {
                     console.log('🔔 [handleIncomingAlert] Processing:', notification);
 
@@ -2905,7 +2549,7 @@
                     // ✅ CREATE UNIQUE ALERT KEY
                     const alertKey = this.getAlertKey(category, alert);
 
-                    // ✅ CHECK IF ALREADY PROCESSED (PREVENTS DUPLICATES)
+                    // ✅ CHECK IF ALREADY PROCESSED
                     if (this.processedAlerts.has(alertKey)) {
                         console.log('⏭️ Alert already processed, ignoring duplicate:', alertKey);
                         return;
@@ -2920,7 +2564,7 @@
                     // Ensure category exists
                     this.ensureCategory(category);
 
-                    // ✅ CHECK FOR EXACT DUPLICATES IN CATEGORY
+                    // ✅ CHECK FOR EXACT DUPLICATES
                     const exists = this.alertsByCategory[category].some(a =>
                         a.type === alert.type &&
                         a.message === alert.message &&
@@ -2938,85 +2582,52 @@
                     this.lastUpdated = this.formatTime(new Date());
                 },
 
-                handleAlertCleared(data) {
-                    const category = data.category;
-                    if (!category || !this.alertsByCategory[category]) return;
-
-                    const alertKey = this.getAlertKey(category, data.alert);
-                    this.clearedAlerts.add(alertKey);
-
-                    this.alertsByCategory[category] = this.alertsByCategory[category].filter(a =>
-                        this.getAlertKey(category, a) !== alertKey
-                    );
-
-                    this.lastUpdated = this.formatTime(new Date());
+                ensureCategory(category) {
+                    if (!this.alertsByCategory[category]) {
+                        this.alertsByCategory[category] = [];
+                    }
                 },
 
                 getAlertKey(category, alert) {
-                    return `${category}|${alert.type}|${alert.message}|${alert.server}`;
+                    return `${category}-${alert.server}-${alert.type}-${alert.message}`;
                 },
 
+                formatTime(date) {
+                    return date.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                },
+
+                // ✅ FIX #2: REMOVE INDIVIDUAL ALERT
                 removeAlert(category, index) {
                     if (!this.alertsByCategory[category]) return;
 
                     const now = new Date();
-                    const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const timeStr = this.formatTime(now);
 
                     const alert = this.alertsByCategory[category][index];
                     if (!alert) return;
 
+                    // Add to history
                     this.alertHistory.unshift({ ...alert, category, clearedAt: timeStr });
 
+                    // Mark as cleared
                     const alertKey = this.getAlertKey(category, alert);
                     this.clearedAlerts.add(alertKey);
                     this.processedAlerts.delete(alertKey);  // ✅ REMOVE FROM PROCESSED
 
+                    // Remove from category
                     this.alertsByCategory[category].splice(index, 1);
 
-                    if (this.socket && this.socketConnected) {
-                        this.socket.emit('message', JSON.stringify({
-                            action: 'clear',
-                            category,
-                            alert
-                        }));
-                    }
-
-                    if (this.alertHistory.length > 50) {
-                        this.alertHistory = this.alertHistory.slice(0, 50);
-                    }
-                },
-                clearAlertsByCategory(category) {
-                    if (!this.alertsByCategory[category]) return;
-
-                    const now = new Date();
-                    const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-                    this.alertsByCategory[category].forEach(alert => {
-                        this.alertHistory.unshift({ ...alert, category, clearedAt: timeStr });
-                        const alertKey = this.getAlertKey(category, alert);
-                        this.clearedAlerts.add(alertKey);
-                        this.processedAlerts.delete(alertKey);  // ✅ REMOVE FROM PROCESSED
-                    });
-
-                    this.alertsByCategory[category] = [];
-
-                    if (this.socket && this.socketConnected) {
-                        this.socket.emit('message', JSON.stringify({
-                            action: 'clear_category',
-                            category
-                        }));
-                    }
-
+                    // Limit history
                     if (this.alertHistory.length > 50) {
                         this.alertHistory = this.alertHistory.slice(0, 50);
                     }
 
-                    this.closeAlertModal();
+                    console.log(`🗑️ Removed alert from "${category}". Remaining:`, this.alertsByCategory[category].length);
                 },
 
                 clearAllAlerts() {
                     const now = new Date();
-                    const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const timeStr = this.formatTime(now);
 
                     Object.keys(this.alertsByCategory).forEach(category => {
                         this.alertsByCategory[category].forEach(alert => {
@@ -3028,72 +2639,11 @@
                         this.alertsByCategory[category] = [];
                     });
 
-                    if (this.socket && this.socketConnected) {
-                        this.socket.emit('message', JSON.stringify({
-                            action: 'clear_all'
-                        }));
-                    }
-
                     if (this.alertHistory.length > 50) {
                         this.alertHistory = this.alertHistory.slice(0, 50);
                     }
-                },
 
-                manualRefresh() {
-                    this.isRefreshing = true;
-
-                    if (this.socket && this.socketConnected) {
-                        this.socket.emit('message', JSON.stringify({
-                            action: 'request_alerts'
-                        }));
-                        console.log('🔄 Requested latest alerts from server');
-                    } else {
-                        console.warn('⚠️ Socket not connected, cannot refresh');
-                    }
-
-                    setTimeout(() => {
-                        this.isRefreshing = false;
-                    }, 1000);
-                },
-
-                // ============= UI CONTROLS =============
-                toggleSidebar() {
-                    this.sidebarCollapsed = !this.sidebarCollapsed;
-                },
-
-                navigateTo(page) {
-                    this.currentPage = page;
-                    if (page === 'home') {
-                        this.currentAppUrl = '';
-                    }
-                },
-
-                setActive(appId) {
-                    this.isLoading = true;
-                    this.currentPage = appId;
-
-                    // ✅ FIX #3: HANDLE HOME NAVIGATION
-                    if (appId === 'home') {
-                        this.currentAppUrl = '';
-                        this.isLoading = false;
-                        return;
-                    }
-
-                    const app = this.allApplications.find(a => a.id === appId);
-                    if (app) {
-                        this.currentAppUrl = app.url;
-                    }
-                },
-
-                onIframeLoad() {
-                    setTimeout(() => {
-                        this.isLoading = false;
-                    }, 500);
-                },
-
-                expandAlertPanel() {
-                    this.alertPanelCollapsedUp = false;
-                    this.alertPanelCollapsedLeft = false;
+                    console.log('🧹 All alerts cleared');
                 },
 
                 closeAlertPanel() {
@@ -3101,156 +2651,34 @@
                     this.alertPanelCollapsedLeft = true;
                 },
 
-                toggleSection(category) {
-                    if (this.sectionCollapsed[category] === undefined) {
-                        this.sectionCollapsed[category] = false;
-                    }
-                    this.sectionCollapsed[category] = !this.sectionCollapsed[category];
+                toggleServerSection() {
+                    this.serverSectionCollapsed = !this.serverSectionCollapsed;
+                },
+
+                toggleSystemSection() {
+                    this.systemSectionCollapsed = !this.systemSectionCollapsed;
                 },
 
                 collapseAllSections() {
-                    const newState = !this.allSectionsCollapsed;
-                    Object.keys(this.sectionCollapsed).forEach(category => {
-                        this.sectionCollapsed[category] = newState;
-                    });
+                    this.allSectionsCollapsed = !this.allSectionsCollapsed;
+                    this.serverSectionCollapsed = this.allSectionsCollapsed;
+                    this.systemSectionCollapsed = this.allSectionsCollapsed;
                 },
 
-                openAlertModal(category) {
-                    this.currentAlertType = category;
-                    this.showAlertModal = true;
-                },
-
-                closeAlertModal() {
-                    this.showAlertModal = false;
-                    this.currentAlertType = '';
-                },
-
-                // ============= THEME =============
-                handleThemeChange() {
-                    if (this.currentTheme === 'auto') {
-                        this.autoThemeEnabled = true;
-                        this.applyAutoTheme();
-                    } else {
-                        this.autoThemeEnabled = false;
-                        document.body.className = this.currentTheme;
-                    }
-                },
-
-                applyAutoTheme() {
-                    const hour = new Date().getHours();
-                    let themeClass;
-
-                    if (hour >= 5 && hour < 12) themeClass = 'theme-auto-morning';
-                    else if (hour >= 12 && hour < 17) themeClass = 'theme-auto-afternoon';
-                    else if (hour >= 17 && hour < 21) themeClass = 'theme-auto-evening';
-                    else themeClass = 'theme-auto-night';
-
-                    document.body.className = themeClass;
-                },
-
-                // ============= UTILITIES =============
-                updateTime() {
-                    const now = new Date();
-                    const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-                    this.currentTime = now.toLocaleString('en-IN', options);
-
-                    if (this.autoThemeEnabled) {
-                        this.applyAutoTheme();
-                    }
-
-                    if (now.getSeconds() === 0) {
-                        this.checkBreakTime();
-                    }
-                },
-
-                formatTime(date) {
-                    const d = new Date(date);
-                    return d.toLocaleString('en-IN', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                },
-
-                getSeverity(type) {
-                    const typeStr = type.toLowerCase();
-                    if (typeStr === 'offline' || typeStr === 'failed' || typeStr === 'alert' || typeStr === 'critical') {
-                        return 'critical';
-                    } else if (typeStr === 'warning' || typeStr === 'memory' || typeStr === 'cpu' || typeStr === 'storage' || typeStr === 'disk') {
-                        return 'warning';
-                    } else if (typeStr === 'info') {
-                        return 'info';
-                    }
-                    return 'warning';
-                },
-
-                getSeverityLabel(type) {
-                    const severity = this.getSeverity(type);
-                    if (severity === 'critical') return 'Critical';
-                    if (severity === 'warning') return 'Warning';
-                    if (severity === 'info') return 'Info';
-                    return 'Warning';
-                },
-
-                // ============= BREAK TIME NOTIFICATION =============
-                checkBreakTime() {
-                    const now = new Date();
-                    const hour = now.getHours();
-                    const minute = now.getMinutes();
-                    const timeKey = `${hour}${minute}`;
-
-                    if (this.shownBreakTimes.has(timeKey)) return;
-
-                    let breakInfo = null;
-
-                    if (hour === 10 && minute === 30) {
-                        breakInfo = { icon: '☕', title: 'Morning Tea Break!', message: 'Time to refresh! Grab a cup of tea and enjoy a short break.' };
-                    } else if (hour === 12 && minute === 30) {
-                        breakInfo = { icon: '🍽️', title: 'Lunch Time!', message: 'Take a break and enjoy your delicious lunch!' };
-                    } else if (hour === 15 && minute === 0) {
-                        breakInfo = { icon: '🍵', title: 'Afternoon Tea Break!', message: 'Time for some energy! Enjoy your tea and snacks.' };
-                    } else if (hour === 17 && minute === 30) {
-                        breakInfo = { icon: '🏠', title: 'Office Time is Over!', message: 'Great work today! Time to head home and relax.' };
-                    }
-
-                    if (breakInfo) {
-                        this.breakNotification = breakInfo;
-                        this.showBreakNotification = true;
-                        this.shownBreakTimes.add(timeKey);
-
-                        this.breakAutoCloseSeconds = 150;
-                        this.breakAutoCloseInterval = setInterval(() => {
-                            this.breakAutoCloseSeconds--;
-                            if (this.breakAutoCloseSeconds <= 0) {
-                                this.closeBreakNotification();
-                            }
-                        }, 1000);
-                    }
-                },
-
-                closeBreakNotification() {
-                    this.showBreakNotification = false;
-                    if (this.breakAutoCloseInterval) {
-                        clearInterval(this.breakAutoCloseInterval);
-                        this.breakAutoCloseInterval = null;
-                    }
+                async fetchAlertsFromSocket() {
+                    // Placeholder for manual refresh
+                    console.log('🔄 Manual refresh triggered');
                 }
             },
 
-            watch: {
-                currentTheme(newTheme) {
-                    if (newTheme !== 'auto') {
-                        document.body.className = newTheme;
-                    }
-                }
-            },
             mounted() {
                 console.log('🚀 VEDAS MIS Vue app mounted');
                 document.body.className = 'theme-vedas';
 
+                // Initialize Socket.IO
                 this.initializeSocket();
 
+                // Reset break times at midnight
                 const now = new Date();
                 const midnight = new Date(now);
                 midnight.setHours(24, 0, 0, 0);
@@ -3260,9 +2688,11 @@
                     setInterval(() => this.shownBreakTimes.clear(), 24 * 60 * 60 * 1000);
                 }, msUntilMidnight);
 
+                // Start time updates
                 this.updateTime();
                 setInterval(this.updateTime, 1000);
 
+                // Auto-rotation (every 10 minutes)
                 setInterval(() => {
                     const monitoringApps = this.monitoringApps.filter(app => app.id !== 'monitoringsentinel');
                     if (monitoringApps.length === 0) return;
