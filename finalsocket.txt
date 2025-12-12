@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VEDAS Management Information System</title>
     <script src="vue.js"></script>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -789,10 +792,13 @@
         }
 
         @keyframes pulse-badge {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scale(1);
                 box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
             }
+
             50% {
                 transform: scale(1.05);
                 box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
@@ -882,18 +888,24 @@
         }
 
         @keyframes float {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translate(0, 0) scale(1) rotate(0deg);
             }
+
             20% {
                 transform: translate(140px, -120px) scale(1.4) rotate(72deg);
             }
+
             40% {
                 transform: translate(-120px, 140px) scale(0.8) rotate(144deg);
             }
+
             60% {
                 transform: translate(-140px, -120px) scale(1.3) rotate(216deg);
             }
+
             80% {
                 transform: translate(120px, 120px) scale(0.9) rotate(288deg);
             }
@@ -915,10 +927,13 @@
         }
 
         @keyframes float-star {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0) rotate(0deg);
                 opacity: 0.3;
             }
+
             50% {
                 transform: translateY(-30px) rotate(180deg);
                 opacity: 0.6;
@@ -933,9 +948,12 @@
         }
 
         @keyframes float-logo {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0);
             }
+
             50% {
                 transform: translateY(-15px);
             }
@@ -957,10 +975,13 @@
         }
 
         @keyframes pulse-glow {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translate(-50%, -50%) scale(1);
                 opacity: 0.08;
             }
+
             50% {
                 transform: translate(-50%, -50%) scale(1.2);
                 opacity: 0.15;
@@ -972,6 +993,7 @@
                 opacity: 0;
                 transform: translateY(70px) scale(0.85);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -993,9 +1015,12 @@
         }
 
         @keyframes logo-glow {
-            0%, 100% {
+
+            0%,
+            100% {
                 filter: drop-shadow(0 35px 70px rgba(0, 0, 0, 0.18));
             }
+
             50% {
                 filter: drop-shadow(0 40px 80px rgba(99, 102, 241, 0.3));
             }
@@ -1017,9 +1042,12 @@
         }
 
         @keyframes width-expand {
-            0%, 100% {
+
+            0%,
+            100% {
                 width: 120px;
             }
+
             50% {
                 width: 160px;
             }
@@ -1042,18 +1070,24 @@
         }
 
         @keyframes gradient-shift {
-            0%, 100% {
+
+            0%,
+            100% {
                 background-position: 0% 50%;
             }
+
             50% {
                 background-position: 100% 50%;
             }
         }
 
         @keyframes text-float {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0);
             }
+
             50% {
                 transform: translateY(-8px);
             }
@@ -1072,9 +1106,12 @@
         }
 
         @keyframes fade-pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 opacity: 0.75;
             }
+
             50% {
                 opacity: 0.9;
             }
@@ -1125,6 +1162,7 @@
                 opacity: 0;
                 transform: translateY(40px) scale(0.9);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -1180,15 +1218,20 @@
         }
 
         @keyframes bounce-rotate {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0) rotate(0deg);
             }
+
             25% {
                 transform: translateY(-12px) rotate(-5deg);
             }
+
             50% {
                 transform: translateY(-6px) rotate(0deg);
             }
+
             75% {
                 transform: translateY(-8px) rotate(5deg);
             }
@@ -1254,10 +1297,13 @@
         }
 
         @keyframes pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 box-shadow: 0 12px 48px rgba(239, 68, 68, 0.5);
                 transform: scale(1);
             }
+
             50% {
                 box-shadow: 0 18px 70px rgba(239, 68, 68, 0.8);
                 transform: scale(1.1);
@@ -1272,13 +1318,19 @@
         }
 
         @keyframes ring {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: rotate(0deg);
             }
-            10%, 30% {
+
+            10%,
+            30% {
                 transform: rotate(20deg);
             }
-            20%, 40% {
+
+            20%,
+            40% {
                 transform: rotate(-20deg);
             }
         }
@@ -1743,6 +1795,7 @@
                 opacity: 0;
                 transform: translateY(-50px) scale(0.9);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -1872,310 +1925,349 @@
             font-size: 13px;
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing:
-        .alert-detail-type {
-            font-size: 13px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            padding: 6px 12px;
-            border-radius: 10px;
-            background: var(--bg-gradient);
-            color: white;
-        }
 
-        .alert-detail-source {
-            font-size: 12px;
-            font-weight: 800;
-            color: var(--text-color);
-            opacity: 0.7;
-            padding: 6px 12px;
-            background: rgba(0, 0, 0, 0.04);
-            border-radius: 10px;
-        }
+            letter-spacing: .alert-detail-type {
+                font-size: 13px;
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+                padding: 6px 12px;
+                border-radius: 10px;
+                background: var(--bg-gradient);
+                color: white;
+            }
 
-        .alert-detail-message {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-color);
-            line-height: 1.6;
-            margin-top: 14px;
-        }
+            .alert-detail-source {
+                font-size: 12px;
+                font-weight: 800;
+                color: var(--text-color);
+                opacity: 0.7;
+                padding: 6px 12px;
+                background: rgba(0, 0, 0, 0.04);
+                border-radius: 10px;
+            }
 
-        .alert-detail-server,
-        .alert-detail-time {
-            font-size: 14px;
-            color: var(--text-color);
-            opacity: 0.7;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 12px;
-        }
+            .alert-detail-message {
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--text-color);
+                line-height: 1.6;
+                margin-top: 14px;
+            }
 
-        .alert-detail-server-icon,
-        .alert-detail-time-icon {
-            font-size: 16px;
-        }
+            .alert-detail-server,
+            .alert-detail-time {
+                font-size: 14px;
+                color: var(--text-color);
+                opacity: 0.7;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: 12px;
+            }
 
-        .alert-detail-footer {
-            padding: 24px 32px;
-            border-top: 2px solid rgba(0, 0, 0, 0.08);
-            display: flex;
-            justify-content: flex-end;
-        }
+            .alert-detail-server-icon,
+            .alert-detail-time-icon {
+                font-size: 16px;
+            }
 
-        .alert-detail-action-btn {
-            background: var(--bg-gradient);
-            color: white;
-            border: none;
-            padding: 12px 32px;
-            border-radius: 16px;
-            font-size: 16px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: all 0.4s;
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+            .alert-detail-footer {
+                padding: 24px 32px;
+                border-top: 2px solid rgba(0, 0, 0, 0.08);
+                display: flex;
+                justify-content: flex-end;
+            }
 
-        .alert-detail-action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 36px rgba(99, 102, 241, 0.4);
-        }
+            .alert-detail-action-btn {
+                background: var(--bg-gradient);
+                color: white;
+                border: none;
+                padding: 12px 32px;
+                border-radius: 16px;
+                font-size: 16px;
+                font-weight: 800;
+                cursor: pointer;
+                transition: all 0.4s;
+                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
 
-        /* Footer Styles */
-        .footer {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-color);
-            color: var(--text-color);
-            font-weight: 700;
-            font-size: 12px;
-            z-index: 1100;
-            border-top: 2px solid rgba(0, 0, 0, 0.08);
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-            backdrop-filter: blur(10px);
-        }
+            .alert-detail-action-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 36px rgba(99, 102, 241, 0.4);
+            }
 
-        .footer-content {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .footer-content span {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            border-radius: 50%;
-            border: 1.5px solid currentColor;
-            width: 20px;
-            height: 20px;
-            font-weight: 900;
-        }
-
-        /* Responsive Adjustments */
-        @media (max-width: 1280px) {
-            .stats-container {
-                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-                gap: 25px;
-            }
-            .alert-panel {
-                width: 380px;
-            }
-        }
-
-        @media (max-width: 1024px) {
-            .stats-container {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 20px;
-            }
-            .alert-panel {
-                width: 340px;
-            }
-            .main-content {
-                padding: 30px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .header {
-                height: 70px;
-                padding: 0 25px;
-            }
-            .header-title {
-                font-size: 20px;
-            }
-            .sidebar {
-                width: 280px;
-            }
-            .sidebar.collapsed {
-                transform: translateX(-280px);
-            }
-            .main-content {
-                margin-left: 280px;
-                width: calc(100% - 280px);
-                padding: 30px;
-            }
-            .main-content.expanded {
-                margin-left: 0;
-                width: 100%;
-            }
-            .welcome-title {
-                font-size: 48px;
-            }
-            .stats-container {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            .alert-panel {
-                width: 300px;
-                right: 25px;
-                top: 90px;
-            }
+            /* Footer Styles */
             .footer {
-                height: 36px;
-                font-size: 11px;
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--bg-color);
+                color: var(--text-color);
+                font-weight: 700;
+                font-size: 12px;
+                z-index: 1100;
+                border-top: 2px solid rgba(0, 0, 0, 0.08);
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+                backdrop-filter: blur(10px);
             }
-        }
 
-        /* Pulsing Animations for Cards */
-        .alert-card-critical {
-            border: 3px solid rgba(239, 68, 68, 0.3);
-        }
-        .alert-card-warning {
-            border: 3px solid rgba(245, 158, 11, 0.3);
-        }
-        .alert-card-dataset {
-            border: 3px solid rgba(99, 102, 241, 0.3);
-        }
-        .alert-card-storage {
-            border: 3px solid rgba(59, 130, 246, 0.3);
-        }
-
-        .alert-card-critical:hover,
-        .alert-card-warning:hover,
-        .alert-card-dataset:hover,
-        .alert-card-storage:hover {
-            transform: translateY(-18px) scale(1.05);
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
-        }
-
-        .alert-pulse {
-            animation: alertPulse 2s infinite;
-        }
-        .warning-pulse {
-            animation: warningPulse 2s infinite;
-        }
-        .dataset-pulse {
-            animation: datasetPulse 2s infinite;
-        }
-        .storage-pulse {
-            animation: storagePulse 2s infinite;
-        }
-
-        @keyframes alertPulse {
-            0%, 100% {
-                box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3), 0 0 0 0 rgba(239, 68, 68, 0.4);
-                border-color: rgba(239, 68, 68, 0.4);
+            .footer-content {
+                display: flex;
+                align-items: center;
+                gap: 4px;
             }
-            50% {
-                box-shadow: 0 12px 36px rgba(239, 68, 68, 0.5), 0 0 0 12px rgba(239, 68, 68, 0.4);
-                border-color: rgba(239, 68, 68, 0.6);
-            }
-        }
 
-        @keyframes warningPulse {
-            0%, 100% {
-                box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3), 0 0 0 0 rgba(245, 158, 11, 0.4);
-                border-color: rgba(245, 158, 11, 0.4);
+            .footer-content span {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                border-radius: 50%;
+                border: 1.5px solid currentColor;
+                width: 20px;
+                height: 20px;
+                font-weight: 900;
             }
-            50% {
-                box-shadow: 0 12px 36px rgba(245, 158, 11, 0.5), 0 0 0 12px rgba(245, 158, 11, 0.4);
-                border-color: rgba(245, 158, 11, 0.6);
-            }
-        }
 
-        @keyframes datasetPulse {
-            0%, 100% {
-                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3), 0 0 0 0 rgba(99, 102, 241, 0.4);
-                border-color: rgba(99, 102, 241, 0.4);
-            }
-            50% {
-                box-shadow: 0 12px 36px rgba(99, 102, 241, 0.5), 0 0 0 12px rgba(99, 102, 241, 0.4);
-                border-color: rgba(99, 102, 241, 0.6);
-            }
-        }
+            /* Responsive Adjustments */
+            @media (max-width: 1280px) {
+                .stats-container {
+                    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                    gap: 25px;
+                }
 
-        @keyframes storagePulse {
-            0%, 100% {
-                box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3), 0 0 0 0 rgba(59, 130, 246, 0.4);
-                border-color: rgba(59, 130, 246, 0.4);
+                .alert-panel {
+                    width: 380px;
+                }
             }
-            50% {
-                box-shadow: 0 12px 36px rgba(59, 130, 246, 0.5), 0 0 0 12px rgba(59, 130, 246, 0.4);
-                border-color: rgba(59, 130, 246, 0.6);
+
+            @media (max-width: 1024px) {
+                .stats-container {
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 20px;
+                }
+
+                .alert-panel {
+                    width: 340px;
+                }
+
+                .main-content {
+                    padding: 30px;
+                }
             }
-        }
 
-        /* Usage Class Animations */
-        .usage-critical {
-            background: rgba(239, 68, 68, 0.15);
-            border-left: 6px solid #ef4444;
-        }
-        .usage-warning {
-            background: rgba(245, 158, 11, 0.15);
-            border-left: 6px solid #f59e0b;
-        }
-        .usage-normal {
-            background: rgba(59, 130, 246, 0.15);
-            border-left: 6px solid #3b82f6;
-        }
+            @media (max-width: 768px) {
+                .header {
+                    height: 70px;
+                    padding: 0 25px;
+                }
 
-        /* Scrollbar Styles */
-        .alert-section-content::-webkit-scrollbar {
-            width: 6px;
-        }
-        .alert-section-content::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 10px;
-        }
-        .alert-section-content::-webkit-scrollbar-thumb {
-            background: var(--primary-color);
-            border-radius: 10px;
-        }
-        .alert-section-content::-webkit-scrollbar-thumb:hover {
-            background: var(--secondary-color);
-        }
+                .header-title {
+                    font-size: 20px;
+                }
 
-        /* Detail Modal Scrollbar */
-        .alert-detail-body::-webkit-scrollbar {
-            width: 10px;
-        }
-        .alert-detail-body::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 10px;
-        }
-        .alert-detail-body::-webkit-scrollbar-thumb {
-            background: var(--primary-color);
-            border-radius: 10px;
-        }
-        .alert-detail-body::-webkit-scrollbar-thumb:hover {
-            background: var(--secondary-color);
-        }
+                .sidebar {
+                    width: 280px;
+                }
+
+                .sidebar.collapsed {
+                    transform: translateX(-280px);
+                }
+
+                .main-content {
+                    margin-left: 280px;
+                    width: calc(100% - 280px);
+                    padding: 30px;
+                }
+
+                .main-content.expanded {
+                    margin-left: 0;
+                    width: 100%;
+                }
+
+                .welcome-title {
+                    font-size: 48px;
+                }
+
+                .stats-container {
+                    grid-template-columns: 1fr;
+                    gap: 20px;
+                }
+
+                .alert-panel {
+                    width: 300px;
+                    right: 25px;
+                    top: 90px;
+                }
+
+                .footer {
+                    height: 36px;
+                    font-size: 11px;
+                }
+            }
+
+            /* Pulsing Animations for Cards */
+            .alert-card-critical {
+                border: 3px solid rgba(239, 68, 68, 0.3);
+            }
+
+            .alert-card-warning {
+                border: 3px solid rgba(245, 158, 11, 0.3);
+            }
+
+            .alert-card-dataset {
+                border: 3px solid rgba(99, 102, 241, 0.3);
+            }
+
+            .alert-card-storage {
+                border: 3px solid rgba(59, 130, 246, 0.3);
+            }
+
+            .alert-card-critical:hover,
+            .alert-card-warning:hover,
+            .alert-card-dataset:hover,
+            .alert-card-storage:hover {
+                transform: translateY(-18px) scale(1.05);
+                box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+            }
+
+            .alert-pulse {
+                animation: alertPulse 2s infinite;
+            }
+
+            .warning-pulse {
+                animation: warningPulse 2s infinite;
+            }
+
+            .dataset-pulse {
+                animation: datasetPulse 2s infinite;
+            }
+
+            .storage-pulse {
+                animation: storagePulse 2s infinite;
+            }
+
+            @keyframes alertPulse {
+
+                0%,
+                100% {
+                    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3), 0 0 0 0 rgba(239, 68, 68, 0.4);
+                    border-color: rgba(239, 68, 68, 0.4);
+                }
+
+                50% {
+                    box-shadow: 0 12px 36px rgba(239, 68, 68, 0.5), 0 0 0 12px rgba(239, 68, 68, 0.4);
+                    border-color: rgba(239, 68, 68, 0.6);
+                }
+            }
+
+            @keyframes warningPulse {
+
+                0%,
+                100% {
+                    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3), 0 0 0 0 rgba(245, 158, 11, 0.4);
+                    border-color: rgba(245, 158, 11, 0.4);
+                }
+
+                50% {
+                    box-shadow: 0 12px 36px rgba(245, 158, 11, 0.5), 0 0 0 12px rgba(245, 158, 11, 0.4);
+                    border-color: rgba(245, 158, 11, 0.6);
+                }
+            }
+
+            @keyframes datasetPulse {
+
+                0%,
+                100% {
+                    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3), 0 0 0 0 rgba(99, 102, 241, 0.4);
+                    border-color: rgba(99, 102, 241, 0.4);
+                }
+
+                50% {
+                    box-shadow: 0 12px 36px rgba(99, 102, 241, 0.5), 0 0 0 12px rgba(99, 102, 241, 0.4);
+                    border-color: rgba(99, 102, 241, 0.6);
+                }
+            }
+
+            @keyframes storagePulse {
+
+                0%,
+                100% {
+                    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3), 0 0 0 0 rgba(59, 130, 246, 0.4);
+                    border-color: rgba(59, 130, 246, 0.4);
+                }
+
+                50% {
+                    box-shadow: 0 12px 36px rgba(59, 130, 246, 0.5), 0 0 0 12px rgba(59, 130, 246, 0.4);
+                    border-color: rgba(59, 130, 246, 0.6);
+                }
+            }
+
+            /* Usage Class Animations */
+            .usage-critical {
+                background: rgba(239, 68, 68, 0.15);
+                border-left: 6px solid #ef4444;
+            }
+
+            .usage-warning {
+                background: rgba(245, 158, 11, 0.15);
+                border-left: 6px solid #f59e0b;
+            }
+
+            .usage-normal {
+                background: rgba(59, 130, 246, 0.15);
+                border-left: 6px solid #3b82f6;
+            }
+
+            /* Scrollbar Styles */
+            .alert-section-content::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .alert-section-content::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.05);
+                border-radius: 10px;
+            }
+
+            .alert-section-content::-webkit-scrollbar-thumb {
+                background: var(--primary-color);
+                border-radius: 10px;
+            }
+
+            .alert-section-content::-webkit-scrollbar-thumb:hover {
+                background: var(--secondary-color);
+            }
+
+            /* Detail Modal Scrollbar */
+            .alert-detail-body::-webkit-scrollbar {
+                width: 10px;
+            }
+
+            .alert-detail-body::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.05);
+                border-radius: 10px;
+            }
+
+            .alert-detail-body::-webkit-scrollbar-thumb {
+                background: var(--primary-color);
+                border-radius: 10px;
+            }
+
+            .alert-detail-body::-webkit-scrollbar-thumb:hover {
+                background: var(--secondary-color);
+            }
     </style>
 </head>
+
 <body>
     <div id="app">
         <!-- Header -->
@@ -2210,7 +2302,8 @@
             <h2 class="sidebar-title">Applications</h2>
             <div class="app-category">
                 <h3 class="category-title">Monitoring</h3>
-                <button v-for="app in monitoringApps" :key="app.id" class="nav-button" @click="setActive(app.id)" :class="{ active: currentPage === app.id }">
+                <button v-for="app in monitoringApps" :key="app.id" class="nav-button" @click="setActive(app.id)"
+                    :class="{ active: currentPage === app.id }">
                     <div class="nav-icon-wrapper">
                         <span class="nav-icon">{{ app.icon }}</span>
                     </div>
@@ -2223,7 +2316,8 @@
             </div>
             <div class="app-category">
                 <h3 class="category-title">Data</h3>
-                <button v-for="app in dataApps" :key="app.id" class="nav-button" @click="setActive(app.id)" :class="{ active: currentPage === app.id }">
+                <button v-for="app in dataApps" :key="app.id" class="nav-button" @click="setActive(app.id)"
+                    :class="{ active: currentPage === app.id }">
                     <div class="nav-icon-wrapper">
                         <span class="nav-icon">{{ app.icon }}</span>
                     </div>
@@ -2236,7 +2330,8 @@
             </div>
             <div class="app-category">
                 <h3 class="category-title">Tools</h3>
-                <button v-for="app in toolsApps" :key="app.id" class="nav-button" @click="setActive(app.id)" :class="{ active: currentPage === app.id }">
+                <button v-for="app in toolsApps" :key="app.id" class="nav-button" @click="setActive(app.id)"
+                    :class="{ active: currentPage === app.id }">
                     <div class="nav-icon-wrapper">
                         <span class="nav-icon">{{ app.icon }}</span>
                     </div>
@@ -2261,14 +2356,16 @@
                     </div>
                     <div class="logo-container">
                         <div class="logo">
-                            <img src="vedas-logo.png" alt="VEDAS Logo">
+                            <img src="vedas_logo.png" alt="VEDAS Logo">
                         </div>
                         <div class="decorative-line"></div>
                         <h1 class="welcome-title">VEDAS</h1>
                         <p class="welcome-subtitle">Management Information System</p>
                     </div>
                     <div class="stats-container">
-                        <div v-for="category in alertCategories" :key="'card-' + category" class="stat-card" :class="['alert-card-' + category, getCategoryCount(category) > 0 ? category + '-pulse' : '']" @click="openAlertModal(category)">
+                        <div v-for="category in alertCategories" :key="'card-' + category" class="stat-card"
+                            :class="['alert-card-' + category, getCategoryCount(category) > 0 ? category + '-pulse' : '']"
+                            @click="openAlertModal(category)">
                             <div class="stat-icon">{{ getCategoryIcon(category) }}</div>
                             <div class="stat-value">{{ getCategoryCount(category) }}</div>
                             <div class="stat-label">{{ getCategoryName(category) }}</div>
@@ -2283,12 +2380,14 @@
         </main>
 
         <!-- Alert Panel -->
-        <div v-if="!sidebarCollapsed" class="notification-indicator" :class="{ hidden: totalAlerts === 0 }" @click="expandAlertPanel">
+        <div v-if="!sidebarCollapsed" class="notification-indicator" :class="{ hidden: totalAlerts === 0 }"
+            @click="expandAlertPanel">
             <div class="notification-icon">🔔</div>
             <div class="notification-count">{{ totalAlerts }}</div>
         </div>
 
-        <div :class="['alert-panel', { 'collapsed-up': alertPanelCollapsedUp, 'collapsed-left': alertPanelCollapsedLeft }]">
+        <div
+            :class="['alert-panel', { 'collapsed-up': alertPanelCollapsedUp, 'collapsed-left': alertPanelCollapsedLeft }]">
             <div class="alert-header">
                 <div class="alert-header-title">
                     <span class="alert-header-icon">🔔</span>
@@ -2296,7 +2395,8 @@
                     <span class="alert-badge">{{ totalAlerts }}</span>
                 </div>
                 <div class="alert-controls">
-                    <button class="alert-control-btn" @click="collapseAllSections">{{ allSectionsCollapsed ? 'Expand' : 'Collapse' }} All</button>
+                    <button class="alert-control-btn" @click="collapseAllSections">{{ allSectionsCollapsed ? 'Expand' :
+                        'Collapse' }} All</button>
                     <button class="alert-control-btn" @click="clearAllAlerts">Clear All</button>
                 </div>
             </div>
@@ -2308,12 +2408,15 @@
                     <div v-for="category in alertCategories" :key="category" class="alert-section">
                         <div class="alert-section-header" @click="toggleSection(category)">
                             <div class="alert-section-title">
-                                {{ getCategoryIcon(category) }} {{ getCategoryName(category) }} ({{ getCategoryCount(category) }})
+                                {{ getCategoryIcon(category) }} {{ getCategoryName(category) }} ({{
+                                getCategoryCount(category) }})
                             </div>
                             <span class="collapse-icon" :class="{ collapsed: sectionCollapsed[category] }">▼</span>
                         </div>
-                        <div class="alert-section-content" :class="{ collapsed: sectionCollapsed[category], 'limit-height': !sectionCollapsed[category] && getCategoryCount(category) > 2 }">
-                            <div v-for="(alert, index) in getCategoryAlerts(category)" :key="category + '-' + index" class="alert-item" :class="'alert-' + alert.type.toLowerCase()">
+                        <div class="alert-section-content"
+                            :class="{ collapsed: sectionCollapsed[category], 'limit-height': !sectionCollapsed[category] && getCategoryCount(category) > 2 }">
+                            <div v-for="(alert, index) in getCategoryAlerts(category)" :key="category + '-' + index"
+                                class="alert-item" :class="'alert-' + alert.type.toLowerCase()">
                                 <div class="alert-content">
                                     <div class="alert-type">{{ alert.type }}</div>
                                     <div class="alert-message">{{ alert.message }}</div>
@@ -2370,7 +2473,8 @@
                         <div class="no-alerts-subtext">No alerts found for this category</div>
                     </div>
                     <div v-else>
-                        <div v-for="(alert, index) in filteredAlertsForModal" :key="index" class="alert-detail-item" :class="'alert-' + alert.type.toLowerCase()">
+                        <div v-for="(alert, index) in filteredAlertsForModal" :key="index" class="alert-detail-item"
+                            :class="'alert-' + alert.type.toLowerCase()">
                             <div class="alert-detail-item-header">
                                 <div class="alert-detail-type">{{ alert.type }}</div>
                                 <div class="alert-detail-source">{{ alert.source }}</div>
@@ -2420,637 +2524,640 @@
         </div>
     </div>
 
-   <script>
-    const { createApp } = Vue;
+    <script>
+        const { createApp } = Vue;
 
-    createApp({
-        data() {
-            return {
-                // Theme
-                currentTheme: 'theme-vedas',
-                autoThemeEnabled: false,
-                currentTime: '',
+        createApp({
+            data() {
+                return {
+                    // Theme
+                    currentTheme: 'theme-vedas',
+                    autoThemeEnabled: false,
+                    currentTime: '',
 
-                // UI State
-                sidebarCollapsed: false,
-                currentPage: 'home',
-                currentAppUrl: '',
-                alertPanelCollapsedUp: false,
-                alertPanelCollapsedLeft: false,
+                    // UI State
+                    sidebarCollapsed: false,
+                    currentPage: 'home',
+                    currentAppUrl: '',
+                    alertPanelCollapsedUp: false,
+                    alertPanelCollapsedLeft: false,
 
-                // DYNAMIC ALERT STORAGE - Automatically handles any category
-                alertsByCategory: {},  // { 'server': [...], 'dataset': [...], 'newapp': [...] }
-                sectionCollapsed: {},  // { 'server': false, 'dataset': false, ... }
-                categoryMetadata: {},  // { 'server': { icon: '🖥️', name: 'Server' }, ... }
-                
-                clearedAlerts: new Set(),
-                lastUpdated: '',
+                    // DYNAMIC ALERT STORAGE - Automatically handles any category
+                    alertsByCategory: {},  // { 'server': [...], 'dataset': [...], 'newapp': [...] }
+                    sectionCollapsed: {},  // { 'server': false, 'dataset': false, ... }
+                    categoryMetadata: {},  // { 'server': { icon: '🖥️', name: 'Server' }, ... }
 
-                // Stats (Dynamic from Socket)
-                totalServers: 20,
-                totalServices: 41,
+                    clearedAlerts: new Set(),
+                    lastUpdated: '',
 
-                // Loading State
-                isLoading: false,
-                isRefreshing: false,
+                    // Stats (Dynamic from Socket)
+                    totalServers: 20,
+                    totalServices: 41,
 
-                // History
-                showHistory: false,
-                alertHistory: [],
+                    // Loading State
+                    isLoading: false,
+                    isRefreshing: false,
 
-                // Break Notification
-                showBreakNotification: false,
-                breakNotification: {},
-                breakAutoCloseSeconds: 30,
-                breakAutoCloseInterval: null,
-                shownBreakTimes: new Set(),
+                    // History
+                    showHistory: false,
+                    alertHistory: [],
 
-                // Alert Detail Modal
-                showAlertModal: false,
-                currentAlertType: '',
+                    // Break Notification
+                    showBreakNotification: false,
+                    breakNotification: {},
+                    breakAutoCloseSeconds: 30,
+                    breakAutoCloseInterval: null,
+                    shownBreakTimes: new Set(),
 
-                // Socket.IO
-                socket: null,
-                socketConnected: false,
+                    // Alert Detail Modal
+                    showAlertModal: false,
+                    currentAlertType: '',
 
-                // Apps
-                monitoringApps: [
-                    { id: 'monitoringserver', name: 'Server Monitor', description: 'Infrastructure Health', icon: '🖥️', url: 'http://192.168.2.137:8080/monitoringserver/home' },
-                    { id: 'servicedatasets', name: 'Service Monitor', description: 'Data Pipeline Status', icon: '📊', url: 'http://192.168.2.137:8080/monitoringdatasets' },
-                    { id: 'processingscriptmonitoring', name: 'Processing Script Monitor', description: 'Service Health Check', icon: '⚙️', url: 'http://192.168.2.137:8080/processmonitoring' },
-                    { id: 'datachainsentinel', name: 'Data Chain Monitoring', description: 'Satellite Tracking', icon: '🛰️', url: 'http://192.168.2.137:8080/monitoringsentinel' },
-                    { id: 'publishmonitoring', name: 'Publish Monitoring', description: 'Browse & Search Data', icon: '🔍', url: 'http://192.168.2.137:8080/ridamdatasetpublisher' },
-                    { id: 'ridalpoolanalytics', name: 'Ridam Pool Analytics', description: 'Browse & Search Data', icon: '💾', url: 'http://192.168.2.137:8080/poolstoragemonitoring' },
-                    { id: 'poolgrouphealth', name: 'Pool Group Health Monitoring', description: 'Browse & Search Data', icon: '🏥', url: 'http://192.168.2.137:8080/monitoringhealth' },
-                    { id: 'geoentitymonitoring', name: 'Geoentity Monitoring', description: 'Browse & Search Data', icon: '🌍', url: 'http://192.168.2.137:8080/geoentitymonitoring' },
-                ],
-                dataApps: [
-                    { id: 'ridamregistration', name: 'RIDAM Registry', description: 'Data Registration', icon: '📝', url: 'http://192.168.2.137:8080/ridamregistration' },
-                ],
-                toolsApps: [
-                    { id: 'teamanalytics', name: 'Team Analytics', description: 'Performance Metrics', icon: '📈', url: 'http://192.168.2.137:8080/taskboard/dashboard' },
-                ]
-            };
-        },
-        computed: {
-            allApplications() {
-                return [...this.monitoringApps, ...this.dataApps, ...this.toolsApps];
+                    // Socket.IO
+                    socket: null,
+                    socketConnected: false,
+
+                    // Apps
+                    monitoringApps: [
+                        { id: 'monitoringserver', name: 'Server Monitor', description: 'Infrastructure Health', icon: '🖥️', url: 'http://192.168.2.137:8080/monitoring_server/home' },
+                        { id: 'servicedatasets', name: 'Service Monitor', description: 'Data Pipeline Status', icon: '📊', url: 'http://192.168.2.137:8080/monitoringdatasets' },
+                        { id: 'processingscriptmonitoring', name: 'Processing Script Monitor', description: 'Service Health Check', icon: '⚙️', url: 'http://192.168.2.137:8080/processmonitoring' },
+                        { id: 'datachainsentinel', name: 'Data Chain Monitoring', description: 'Satellite Tracking', icon: '🛰️', url: 'http://192.168.2.137:8080/monitoringsentinel' },
+                        { id: 'publishmonitoring', name: 'Publish Monitoring', description: 'Browse & Search Data', icon: '🔍', url: 'http://192.168.2.137:8080/ridamdatasetpublisher' },
+                        { id: 'ridalpoolanalytics', name: 'Ridam Pool Analytics', description: 'Browse & Search Data', icon: '💾', url: 'http://192.168.2.137:8080/poolstoragemonitoring' },
+                        { id: 'poolgrouphealth', name: 'Pool Group Health Monitoring', description: 'Browse & Search Data', icon: '🏥', url: 'http://192.168.2.137:8080/monitoringhealth' },
+                        { id: 'geoentitymonitoring', name: 'Geoentity Monitoring', description: 'Browse & Search Data', icon: '🌍', url: 'http://192.168.2.137:8080/geoentitymonitoring' },
+                    ],
+                    dataApps: [
+                        { id: 'ridamregistration', name: 'RIDAM Registry', description: 'Data Registration', icon: '📝', url: 'http://192.168.2.137:8080/ridamregistration' },
+                    ],
+                    toolsApps: [
+                        { id: 'teamanalytics', name: 'Team Analytics', description: 'Performance Metrics', icon: '📈', url: 'http://192.168.2.137:8080/taskboard/dashboard' },
+                    ]
+                };
             },
-            
-            // Dynamic total alerts across all categories
-            totalAlerts() {
-                return Object.values(this.alertsByCategory).reduce((sum, alerts) => sum + alerts.length, 0);
-            },
-            
-            isPanelCollapsed() {
-                return this.alertPanelCollapsedUp || this.alertPanelCollapsedLeft;
-            },
-            
-            allSectionsCollapsed() {
-                return Object.values(this.sectionCollapsed).every(collapsed => collapsed);
-            },
-            
-            // Dynamic alert categories (sorted by alert count)
-            alertCategories() {
-                return Object.keys(this.alertsByCategory)
-                    .filter(category => this.alertsByCategory[category].length > 0)
-                    .sort((a, b) => this.alertsByCategory[b].length - this.alertsByCategory[a].length);
-            },
-            
-            alertModalIcon() {
-                const metadata = this.categoryMetadata[this.currentAlertType];
-                return metadata?.icon || '🔔';
-            },
-            
-            alertModalTitle() {
-                const metadata = this.categoryMetadata[this.currentAlertType];
-                return metadata?.name || this.capitalizeFirst(this.currentAlertType);
-            },
-            
-            filteredAlertsForModal() {
-                return this.alertsByCategory[this.currentAlertType] || [];
-            },
-            
-            getCriticalCount() {
-                return this.filteredAlertsForModal.filter(alert => {
-                    const type = alert.type.toLowerCase();
-                    return (type === 'offline' || type === 'failed' || type === 'alert' || type === 'critical');
-                }).length;
-            },
-            
-            getWarningCount() {
-                return this.filteredAlertsForModal.filter(alert => {
-                    const type = alert.type.toLowerCase();
-                    return (type === 'warning' || type === 'memory' || type === 'cpu' || type === 'storage' || type === 'disk');
-                }).length;
-            }
-        },
-        methods: {
-            // ============= DYNAMIC CATEGORY MANAGEMENT =============
-            ensureCategory(category) {
-                if (!this.alertsByCategory[category]) {
-                    this.$set(this.alertsByCategory, category, []);
-                    this.$set(this.sectionCollapsed, category, false);
-                    
-                    // Set default metadata if not exists
-                    if (!this.categoryMetadata[category]) {
-                        this.$set(this.categoryMetadata, category, this.getDefaultCategoryMetadata(category));
-                    }
+            computed: {
+                allApplications() {
+                    return [...this.monitoringApps, ...this.dataApps, ...this.toolsApps];
+                },
+
+                // Dynamic total alerts across all categories
+                totalAlerts() {
+                    return Object.values(this.alertsByCategory).reduce((sum, alerts) => sum + alerts.length, 0);
+                },
+
+                isPanelCollapsed() {
+                    return this.alertPanelCollapsedUp || this.alertPanelCollapsedLeft;
+                },
+
+                allSectionsCollapsed() {
+                    return Object.values(this.sectionCollapsed).every(collapsed => collapsed);
+                },
+
+                // Dynamic alert categories (sorted by alert count)
+                alertCategories() {
+                    return Object.keys(this.alertsByCategory)
+                        .filter(category => this.alertsByCategory[category].length > 0)
+                        .sort((a, b) => this.alertsByCategory[b].length - this.alertsByCategory[a].length);
+                },
+
+                alertModalIcon() {
+                    const metadata = this.categoryMetadata[this.currentAlertType];
+                    return metadata?.icon || '🔔';
+                },
+
+                alertModalTitle() {
+                    const metadata = this.categoryMetadata[this.currentAlertType];
+                    return metadata?.name || this.capitalizeFirst(this.currentAlertType);
+                },
+
+                filteredAlertsForModal() {
+                    return this.alertsByCategory[this.currentAlertType] || [];
+                },
+
+                getCriticalCount() {
+                    return this.filteredAlertsForModal.filter(alert => {
+                        const type = alert.type.toLowerCase();
+                        return (type === 'offline' || type === 'failed' || type === 'alert' || type === 'critical');
+                    }).length;
+                },
+
+                getWarningCount() {
+                    return this.filteredAlertsForModal.filter(alert => {
+                        const type = alert.type.toLowerCase();
+                        return (type === 'warning' || type === 'memory' || type === 'cpu' || type === 'storage' || type === 'disk');
+                    }).length;
                 }
             },
-            
-            getDefaultCategoryMetadata(category) {
-                const defaults = {
-                    'server': { icon: '🖥️', name: 'Server Alerts', color: '#ef4444' },
-                    'dataset': { icon: '📊', name: 'Dataset Alerts', color: '#6366f1' },
-                    'process': { icon: '⚙️', name: 'Process Alerts', color: '#f59e0b' },
-                    'storage': { icon: '💾', name: 'Storage Alerts', color: '#3b82f6' },
-                    'network': { icon: '🌐', name: 'Network Alerts', color: '#10b981' },
-                    'database': { icon: '🗄️', name: 'Database Alerts', color: '#8b5cf6' },
-                    'application': { icon: '📱', name: 'Application Alerts', color: '#ec4899' }
-                };
-                
-                return defaults[category] || {
-                    icon: '🔔',
-                    name: `${this.capitalizeFirst(category)} Alerts`,
-                    color: '#6366f1'
-                };
-            },
-            
-            capitalizeFirst(str) {
-                return str.charAt(0).toUpperCase() + str.slice(1);
-            },
-            
-            getCategoryIcon(category) {
-                return this.categoryMetadata[category]?.icon || '🔔';
-            },
-            
-            getCategoryName(category) {
-                return this.categoryMetadata[category]?.name || this.capitalizeFirst(category);
-            },
-            
-            getCategoryAlerts(category) {
-                return this.alertsByCategory[category] || [];
-            },
-            
-            getCategoryCount(category) {
-                return this.getCategoryAlerts(category).length;
-            },
+            methods: {
+                // ============= DYNAMIC CATEGORY MANAGEMENT =============
+                ensureCategory(category) {
+                    if (!this.alertsByCategory[category]) {
+                        this.$set(this.alertsByCategory, category, []);
+                        this.$set(this.sectionCollapsed, category, false);
 
-            // ============= SOCKET.IO INITIALIZATION =============
-            initializeSocket() {
-                console.log('🔌 Initializing Socket.IO connection...');
-                
-                this.socket = io('http://192.168.2.137:5000', {
-                    transports: ['websocket', 'polling'],
-                    reconnection: true,
-                    reconnectionDelay: 1000,
-                    reconnectionAttempts: 10
-                });
-
-                // Connection Events
-                this.socket.on('connect', () => {
-                    console.log('✅ Socket.IO Connected');
-                    this.socketConnected = true;
-                    this.lastUpdated = `Connected at ${this.formatTime(new Date())}`;
-                });
-
-                this.socket.on('disconnect', () => {
-                    console.log('❌ Socket.IO Disconnected');
-                    this.socketConnected = false;
-                    this.lastUpdated = 'Disconnected';
-                });
-
-                this.socket.on('connect_error', (error) => {
-                    console.error('🔥 Socket.IO Connection Error:', error);
-                    this.socketConnected = false;
-                });
-
-                // ===== UNIVERSAL ALERT HANDLER =====
-                this.socket.on('alert', (data) => {
-                    console.log('🔔 Alert received:', data);
-                    this.handleDynamicAlert(data);
-                });
-
-                // Backward compatibility with specific events
-                this.socket.on('new_alert', (data) => this.handleDynamicAlert(data));
-                this.socket.on('server_alert', (data) => this.handleDynamicAlert({...data, category: 'server'}));
-                this.socket.on('dataset_alert', (data) => this.handleDynamicAlert({...data, category: 'dataset'}));
-                this.socket.on('process_alert', (data) => this.handleDynamicAlert({...data, category: 'process'}));
-                this.socket.on('storage_alert', (data) => this.handleDynamicAlert({...data, category: 'storage'}));
-
-                // Alert cleared event
-                this.socket.on('alert_cleared', (data) => {
-                    console.log('✅ Alert cleared:', data);
-                    this.handleAlertCleared(data);
-                });
-
-                // Clear alerts by category
-                this.socket.on('clear_alerts', (data) => {
-                    console.log('🗑️ Clear alerts:', data);
-                    if (data.category) {
-                        this.clearAlertsByCategory(data.category);
-                    } else {
-                        this.clearAllAlerts();
+                        // Set default metadata if not exists
+                        if (!this.categoryMetadata[category]) {
+                            this.$set(this.categoryMetadata, category, this.getDefaultCategoryMetadata(category));
+                        }
                     }
-                });
+                },
 
-                // Update stats dynamically
-                this.socket.on('update_stats', (data) => {
-                    console.log('📊 Stats updated:', data);
-                    if (data.totalServers !== undefined) this.totalServers = data.totalServers;
-                    if (data.totalServices !== undefined) this.totalServices = data.totalServices;
-                });
+                getDefaultCategoryMetadata(category) {
+                    const defaults = {
+                        'server': { icon: '🖥️', name: 'Server Alerts', color: '#ef4444' },
+                        'dataset': { icon: '📊', name: 'Dataset Alerts', color: '#6366f1' },
+                        'process': { icon: '⚙️', name: 'Process Alerts', color: '#f59e0b' },
+                        'storage': { icon: '💾', name: 'Storage Alerts', color: '#3b82f6' },
+                        'network': { icon: '🌐', name: 'Network Alerts', color: '#10b981' },
+                        'database': { icon: '🗄️', name: 'Database Alerts', color: '#8b5cf6' },
+                        'application': { icon: '📱', name: 'Application Alerts', color: '#ec4899' }
+                    };
 
-                // Category metadata update
-                this.socket.on('category_metadata', (data) => {
-                    console.log('📋 Category metadata received:', data);
-                    if (data.category && data.metadata) {
-                        this.$set(this.categoryMetadata, data.category, data.metadata);
-                    }
-                });
+                    return defaults[category] || {
+                        icon: '🔔',
+                        name: `${this.capitalizeFirst(category)} Alerts`,
+                        color: '#6366f1'
+                    };
+                },
 
-                // Initial data load
-                this.socket.on('initial_alerts', (data) => {
-                    console.log('📦 Initial alerts loaded:', data);
-                    Object.keys(data).forEach(category => {
-                        this.ensureCategory(category);
-                        this.alertsByCategory[category] = data[category] || [];
+                capitalizeFirst(str) {
+                    return str.charAt(0).toUpperCase() + str.slice(1);
+                },
+
+                getCategoryIcon(category) {
+                    return this.categoryMetadata[category]?.icon || '🔔';
+                },
+
+                getCategoryName(category) {
+                    return this.categoryMetadata[category]?.name || this.capitalizeFirst(category);
+                },
+
+                getCategoryAlerts(category) {
+                    return this.alertsByCategory[category] || [];
+                },
+
+                getCategoryCount(category) {
+                    return this.getCategoryAlerts(category).length;
+                },
+
+                // ============= SOCKET.IO INITIALIZATION =============
+                initializeSocket() {
+                    console.log('🔌 Initializing Socket.IO connection...');
+
+                    this.socket = io('http://192.168.2.137:8080', {
+                        transports: ['websocket', 'polling'],
+                        reconnection: true,
+                        reconnectionDelay: 1000,
+                        reconnectionAttempts: 10
                     });
+
+                    // Connection Events
+                    this.socket.on('connect', () => {
+                        console.log('✅ Socket.IO Connected');
+                        this.socketConnected = true;
+                        this.lastUpdated = `Connected at ${this.formatTime(new Date())}`;
+                    });
+
+                    this.socket.on('disconnect', () => {
+                        console.log('❌ Socket.IO Disconnected');
+                        this.socketConnected = false;
+                        this.lastUpdated = 'Disconnected';
+                    });
+
+                    this.socket.on('connect_error', (error) => {
+                        console.error('🔥 Socket.IO Connection Error:', error);
+                        this.socketConnected = false;
+                    });
+
+                    // ===== UNIVERSAL ALERT HANDLER =====
+                    this.socket.on('alert', (data) => {
+                        console.log('🔔 Alert received:', data);
+                        this.handleDynamicAlert(data);
+                    });
+
+                    // Backward compatibility with specific events
+                    this.socket.on('new_alert', (data) => this.handleDynamicAlert(data));
+                    this.socket.on('server_alert', (data) => this.handleDynamicAlert({ ...data, category: 'server' }));
+                    this.socket.on('dataset_alert', (data) => this.handleDynamicAlert({ ...data, category: 'dataset' }));
+                    this.socket.on('process_alert', (data) => this.handleDynamicAlert({ ...data, category: 'process' }));
+                    this.socket.on('storage_alert', (data) => this.handleDynamicAlert({ ...data, category: 'storage' }));
+
+                    // Alert cleared event
+                    this.socket.on('alert_cleared', (data) => {
+                        console.log('✅ Alert cleared:', data);
+                        this.handleAlertCleared(data);
+                    });
+
+                    // Clear alerts by category
+                    this.socket.on('clear_alerts', (data) => {
+                        console.log('🗑️ Clear alerts:', data);
+                        if (data.category) {
+                            this.clearAlertsByCategory(data.category);
+                        } else {
+                            this.clearAllAlerts();
+                        }
+                    });
+
+                    // Update stats dynamically
+                    this.socket.on('update_stats', (data) => {
+                        console.log('📊 Stats updated:', data);
+                        if (data.totalServers !== undefined) this.totalServers = data.totalServers;
+                        if (data.totalServices !== undefined) this.totalServices = data.totalServices;
+                    });
+
+                    // Category metadata update
+                    this.socket.on('category_metadata', (data) => {
+                        console.log('📋 Category metadata received:', data);
+                        if (data.category && data.metadata) {
+                            this.$set(this.categoryMetadata, data.category, data.metadata);
+                        }
+                    });
+
+                    // Initial data load
+                    this.socket.on('initial_alerts', (data) => {
+                        console.log('📦 Initial alerts loaded:', data);
+                        Object.keys(data).forEach(category => {
+                            this.ensureCategory(category);
+                            this.alertsByCategory[category] = data[category] || [];
+                        });
+                        this.lastUpdated = this.formatTime(new Date());
+                    });
+                },
+
+                // ============= DYNAMIC ALERT HANDLER =============
+                handleDynamicAlert(data) {
+                    console.log("recieved data", data);
+                    
+                    // Extract category from data
+                    const category = (data.category || data.source || 'general').toLowerCase();
+
+                    // Create alert object
+                    const alert = {
+                        type: data.type || 'alert',
+                        message: data.message || 'Unknown alert',
+                        server: data.server || 'Unknown',
+                        source: data.source || category,
+                        timestamp: data.timestamp || new Date().toISOString(),
+                        metadata: data.metadata || {},
+                        ...data
+                    };
+
+                    // Check if already cleared
+                    const key = this.getAlertKey(category, alert);
+                    if (this.clearedAlerts.has(key)) {
+                        console.log('⏭️ Ignoring cleared alert:', key);
+                        return;
+                    }
+
+                    // Ensure category exists
+                    this.ensureCategory(category);
+
+                    // Add alert if not duplicate
+                    const exists = this.alertsByCategory[category].some(a =>
+                        a.type === alert.type &&
+                        a.message === alert.message &&
+                        a.server === alert.server
+                    );
+
+                    if (!exists) {
+                        this.alertsByCategory[category].unshift(alert);
+                        console.log(`✅ Added ${category} alert:`, alert);
+                    }
+
                     this.lastUpdated = this.formatTime(new Date());
-                });
-            },
+                },
 
-            // ============= DYNAMIC ALERT HANDLER =============
-            handleDynamicAlert(data) {
-                // Extract category from data
-                const category = (data.category || data.source || 'general').toLowerCase();
-                
-                // Create alert object
-                const alert = {
-                    type: data.type || 'alert',
-                    message: data.message || 'Unknown alert',
-                    server: data.server || 'Unknown',
-                    source: data.source || category,
-                    timestamp: data.timestamp || new Date().toISOString(),
-                    metadata: data.metadata || {},
-                    ...data
-                };
+                handleAlertCleared(data) {
+                    const category = data.category;
+                    if (!category || !this.alertsByCategory[category]) return;
 
-                // Check if already cleared
-                const key = this.getAlertKey(category, alert);
-                if (this.clearedAlerts.has(key)) {
-                    console.log('⏭️ Ignoring cleared alert:', key);
-                    return;
-                }
+                    const alertKey = this.getAlertKey(category, data.alert);
+                    this.clearedAlerts.add(alertKey);
 
-                // Ensure category exists
-                this.ensureCategory(category);
+                    // Remove from active alerts
+                    this.alertsByCategory[category] = this.alertsByCategory[category].filter(a =>
+                        this.getAlertKey(category, a) !== alertKey
+                    );
 
-                // Add alert if not duplicate
-                const exists = this.alertsByCategory[category].some(a => 
-                    a.type === alert.type && 
-                    a.message === alert.message && 
-                    a.server === alert.server
-                );
+                    this.lastUpdated = this.formatTime(new Date());
+                },
 
-                if (!exists) {
-                    this.alertsByCategory[category].unshift(alert);
-                    console.log(`✅ Added ${category} alert:`, alert);
-                }
+                // ============= ALERT MANAGEMENT =============
+                getAlertKey(category, alert) {
+                    return `${category}-${alert.server}-${alert.type}-${alert.message}`;
+                },
 
-                this.lastUpdated = this.formatTime(new Date());
-            },
+                removeAlert(category, index) {
+                    if (!this.alertsByCategory[category]) return;
 
-            handleAlertCleared(data) {
-                const category = data.category;
-                if (!category || !this.alertsByCategory[category]) return;
+                    const now = new Date();
+                    const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-                const alertKey = this.getAlertKey(category, data.alert);
-                this.clearedAlerts.add(alertKey);
-                
-                // Remove from active alerts
-                this.alertsByCategory[category] = this.alertsByCategory[category].filter(a => 
-                    this.getAlertKey(category, a) !== alertKey
-                );
-                
-                this.lastUpdated = this.formatTime(new Date());
-            },
+                    const alert = this.alertsByCategory[category][index];
+                    if (!alert) return;
 
-            // ============= ALERT MANAGEMENT =============
-            getAlertKey(category, alert) {
-                return `${category}-${alert.server}-${alert.type}-${alert.message}`;
-            },
-
-            removeAlert(category, index) {
-                if (!this.alertsByCategory[category]) return;
-
-                const now = new Date();
-                const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                
-                const alert = this.alertsByCategory[category][index];
-                if (!alert) return;
-
-                // Add to history
-                this.alertHistory.unshift({ ...alert, category, clearedAt: timeStr });
-                this.clearedAlerts.add(this.getAlertKey(category, alert));
-                
-                // Remove from active alerts
-                this.alertsByCategory[category].splice(index, 1);
-
-                // Emit to socket
-                if (this.socket && this.socketConnected) {
-                    this.socket.emit('clear_alert', { category, alert });
-                }
-
-                // Limit history
-                if (this.alertHistory.length > 50) {
-                    this.alertHistory = this.alertHistory.slice(0, 50);
-                }
-            },
-
-            clearAlertsByCategory(category) {
-                if (!this.alertsByCategory[category]) return;
-
-                const now = new Date();
-                const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                
-                this.alertsByCategory[category].forEach(alert => {
+                    // Add to history
                     this.alertHistory.unshift({ ...alert, category, clearedAt: timeStr });
                     this.clearedAlerts.add(this.getAlertKey(category, alert));
-                });
 
-                this.alertsByCategory[category] = [];
+                    // Remove from active alerts
+                    this.alertsByCategory[category].splice(index, 1);
 
-                // Emit to socket
-                if (this.socket && this.socketConnected) {
-                    this.socket.emit('clear_alerts', { category });
-                }
+                    // Emit to socket
+                    if (this.socket && this.socketConnected) {
+                        this.socket.emit('clear_alert', { category, alert });
+                    }
 
-                if (this.alertHistory.length > 50) {
-                    this.alertHistory = this.alertHistory.slice(0, 50);
-                }
-            },
+                    // Limit history
+                    if (this.alertHistory.length > 50) {
+                        this.alertHistory = this.alertHistory.slice(0, 50);
+                    }
+                },
 
-            clearAllAlerts() {
-                const now = new Date();
-                const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                
-                Object.keys(this.alertsByCategory).forEach(category => {
+                clearAlertsByCategory(category) {
+                    if (!this.alertsByCategory[category]) return;
+
+                    const now = new Date();
+                    const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
                     this.alertsByCategory[category].forEach(alert => {
                         this.alertHistory.unshift({ ...alert, category, clearedAt: timeStr });
                         this.clearedAlerts.add(this.getAlertKey(category, alert));
                     });
+
                     this.alertsByCategory[category] = [];
-                });
 
-                // Emit to socket
-                if (this.socket && this.socketConnected) {
-                    this.socket.emit('clear_all_alerts');
-                }
-
-                if (this.alertHistory.length > 50) {
-                    this.alertHistory = this.alertHistory.slice(0, 50);
-                }
-            },
-
-            manualRefresh() {
-                this.isRefreshing = true;
-                
-                if (this.socket && this.socketConnected) {
-                    this.socket.emit('request_alerts');
-                    console.log('🔄 Requested latest alerts from server');
-                }
-                
-                setTimeout(() => {
-                    this.isRefreshing = false;
-                }, 1000);
-            },
-
-            // ============= UI CONTROLS =============
-            toggleSidebar() {
-                this.sidebarCollapsed = !this.sidebarCollapsed;
-            },
-
-            navigateTo(page) {
-                this.currentPage = page;
-                if (page === 'home') {
-                    this.currentAppUrl = '';
-                }
-            },
-
-            setActive(appId) {
-                this.isLoading = true;
-                this.currentPage = appId;
-                const app = this.allApplications.find(a => a.id === appId);
-                if (app) {
-                    this.currentAppUrl = app.url;
-                }
-            },
-
-            onIframeLoad() {
-                setTimeout(() => {
-                    this.isLoading = false;
-                }, 500);
-            },
-
-            expandAlertPanel() {
-                this.alertPanelCollapsedUp = false;
-                this.alertPanelCollapsedLeft = false;
-            },
-
-            closeAlertPanel() {
-                this.alertPanelCollapsedUp = false;
-                this.alertPanelCollapsedLeft = true;
-            },
-
-            toggleSection(category) {
-                if (this.sectionCollapsed[category] === undefined) {
-                    this.$set(this.sectionCollapsed, category, false);
-                }
-                this.$set(this.sectionCollapsed, category, !this.sectionCollapsed[category]);
-            },
-
-            collapseAllSections() {
-                const newState = !this.allSectionsCollapsed;
-                Object.keys(this.sectionCollapsed).forEach(category => {
-                    this.$set(this.sectionCollapsed, category, newState);
-                });
-            },
-
-            openAlertModal(category) {
-                this.currentAlertType = category;
-                this.showAlertModal = true;
-            },
-
-            closeAlertModal() {
-                this.showAlertModal = false;
-                this.currentAlertType = '';
-            },
-
-            // ============= THEME =============
-            handleThemeChange() {
-                if (this.currentTheme === 'auto') {
-                    this.autoThemeEnabled = true;
-                    this.applyAutoTheme();
-                } else {
-                    this.autoThemeEnabled = false;
-                    document.body.className = this.currentTheme;
-                }
-            },
-
-            applyAutoTheme() {
-                const hour = new Date().getHours();
-                let themeClass;
-                
-                if (hour >= 5 && hour < 12) themeClass = 'theme-auto-morning';
-                else if (hour >= 12 && hour < 17) themeClass = 'theme-auto-afternoon';
-                else if (hour >= 17 && hour < 21) themeClass = 'theme-auto-evening';
-                else themeClass = 'theme-auto-night';
-                
-                document.body.className = themeClass;
-            },
-
-            // ============= UTILITIES =============
-            updateTime() {
-                const now = new Date();
-                const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-                this.currentTime = now.toLocaleString('en-IN', options);
-                
-                if (this.autoThemeEnabled) {
-                    this.applyAutoTheme();
-                }
-                
-                if (now.getSeconds() === 0) {
-                    this.checkBreakTime();
-                }
-            },
-
-            formatTime(date) {
-                const d = new Date(date);
-                return d.toLocaleString('en-IN', { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-            },
-
-            getSeverity(type) {
-                const typeStr = type.toLowerCase();
-                if (typeStr === 'offline' || typeStr === 'failed' || typeStr === 'alert' || typeStr === 'critical') {
-                    return 'critical';
-                } else if (typeStr === 'warning' || typeStr === 'memory' || typeStr === 'cpu' || typeStr === 'storage' || typeStr === 'disk') {
-                    return 'warning';
-                } else if (typeStr === 'info') {
-                    return 'info';
-                }
-                return 'warning';
-            },
-
-            getSeverityLabel(type) {
-                const severity = this.getSeverity(type);
-                if (severity === 'critical') return 'Critical';
-                if (severity === 'warning') return 'Warning';
-                if (severity === 'info') return 'Info';
-                return 'Warning';
-            },
-
-            getUsageClass(usage) {
-                const usageNum = parseFloat(usage);
-                if (usageNum >= 90) return 'usage-critical';
-                if (usageNum >= 75) return 'usage-warning';
-                return 'usage-normal';
-            },
-
-            // ============= BREAK TIME NOTIFICATION =============
-            checkBreakTime() {
-                const now = new Date();
-                const hour = now.getHours();
-                const minute = now.getMinutes();
-                const timeKey = `${hour}${minute}`;
-
-                if (this.shownBreakTimes.has(timeKey)) return;
-
-                let breakInfo = null;
-                
-                if (hour === 10 && minute === 30) {
-                    breakInfo = { icon: '☕', title: 'Morning Tea Break!', message: 'Time to refresh! Grab a cup of tea and enjoy a short break.' };
-                } else if (hour === 12 && minute === 30) {
-                    breakInfo = { icon: '🍽️', title: 'Lunch Time!', message: 'Take a break and enjoy your delicious lunch!' };
-                } else if (hour === 15 && minute === 0) {
-                    breakInfo = { icon: '🍵', title: 'Afternoon Tea Break!', message: 'Time for some energy! Enjoy your tea and snacks.' };
-                } else if (hour === 17 && minute === 30) {
-                    breakInfo = { icon: '🏠', title: 'Office Time is Over!', message: 'Great work today! Time to head home and relax.' };
-                }
-
-                if (breakInfo) {
-                    this.breakNotification = breakInfo;
-                    this.showBreakNotification = true;
-                    this.shownBreakTimes.add(timeKey);
-                    
-                    this.breakAutoCloseSeconds = 150;
-                    this.breakAutoCloseInterval = setInterval(() => {
-                        this.breakAutoCloseSeconds--;
-                        if (this.breakAutoCloseSeconds <= 0) {
-                            this.closeBreakNotification();
-                        }
-                    }, 1000);
-                }
-            },
-
-            closeBreakNotification() {
-                this.showBreakNotification = false;
-                if (this.breakAutoCloseInterval) {
-                    clearInterval(this.breakAutoCloseInterval);
-                    this.breakAutoCloseInterval = null;
-                }
-            }
-        },
-
-        watch: {
-            currentTheme(newTheme) {
-                if (newTheme !== 'auto') {
-                    document.body.className = newTheme;
-                }
-            }
-        },
-
-        mounted() {
-            document.body.className = 'theme-vedas';
-            this.initializeSocket();
-
-            const now = new Date();
-            const midnight = new Date(now);
-            midnight.setHours(24, 0, 0, 0);
-            const msUntilMidnight = midnight - now;
-            setTimeout(() => {
-                this.shownBreakTimes.clear();
-                setInterval(() => this.shownBreakTimes.clear(), 24 * 60 * 60 * 1000);
-            }, msUntilMidnight);
-
-            this.updateTime();
-            setInterval(this.updateTime, 1000);
-
-            setInterval(() => {
-                const monitoringApps = this.monitoringApps.filter(app => app.id !== 'monitoringsentinel');
-                if (monitoringApps.length === 0) return;
-                
-                if (this.currentPage !== 'home') {
-                    let currentIndex = monitoringApps.findIndex(app => app.id === this.currentPage);
-                    if (currentIndex === -1) {
-                        this.setActive(monitoringApps[0].id);
-                    } else {
-                        let nextIndex = (currentIndex + 1) % monitoringApps.length;
-                        this.setActive(monitoringApps[nextIndex].id);
+                    // Emit to socket
+                    if (this.socket && this.socketConnected) {
+                        this.socket.emit('clear_alerts', { category });
                     }
-                } else {
-                    this.setActive(monitoringApps[0].id);
+
+                    if (this.alertHistory.length > 50) {
+                        this.alertHistory = this.alertHistory.slice(0, 50);
+                    }
+                },
+
+                clearAllAlerts() {
+                    const now = new Date();
+                    const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                    Object.keys(this.alertsByCategory).forEach(category => {
+                        this.alertsByCategory[category].forEach(alert => {
+                            this.alertHistory.unshift({ ...alert, category, clearedAt: timeStr });
+                            this.clearedAlerts.add(this.getAlertKey(category, alert));
+                        });
+                        this.alertsByCategory[category] = [];
+                    });
+
+                    // Emit to socket
+                    if (this.socket && this.socketConnected) {
+                        this.socket.emit('clear_all_alerts');
+                    }
+
+                    if (this.alertHistory.length > 50) {
+                        this.alertHistory = this.alertHistory.slice(0, 50);
+                    }
+                },
+
+                manualRefresh() {
+                    this.isRefreshing = true;
+
+                    if (this.socket && this.socketConnected) {
+                        this.socket.emit('request_alerts');
+                        console.log('🔄 Requested latest alerts from server');
+                    }
+
+                    setTimeout(() => {
+                        this.isRefreshing = false;
+                    }, 1000);
+                },
+
+                // ============= UI CONTROLS =============
+                toggleSidebar() {
+                    this.sidebarCollapsed = !this.sidebarCollapsed;
+                },
+
+                navigateTo(page) {
+                    this.currentPage = page;
+                    if (page === 'home') {
+                        this.currentAppUrl = '';
+                    }
+                },
+
+                setActive(appId) {
+                    this.isLoading = true;
+                    this.currentPage = appId;
+                    const app = this.allApplications.find(a => a.id === appId);
+                    if (app) {
+                        this.currentAppUrl = app.url;
+                    }
+                },
+
+                onIframeLoad() {
+                    setTimeout(() => {
+                        this.isLoading = false;
+                    }, 500);
+                },
+
+                expandAlertPanel() {
+                    this.alertPanelCollapsedUp = false;
+                    this.alertPanelCollapsedLeft = false;
+                },
+
+                closeAlertPanel() {
+                    this.alertPanelCollapsedUp = false;
+                    this.alertPanelCollapsedLeft = true;
+                },
+
+                toggleSection(category) {
+                    if (this.sectionCollapsed[category] === undefined) {
+                        this.$set(this.sectionCollapsed, category, false);
+                    }
+                    this.$set(this.sectionCollapsed, category, !this.sectionCollapsed[category]);
+                },
+
+                collapseAllSections() {
+                    const newState = !this.allSectionsCollapsed;
+                    Object.keys(this.sectionCollapsed).forEach(category => {
+                        this.$set(this.sectionCollapsed, category, newState);
+                    });
+                },
+
+                openAlertModal(category) {
+                    this.currentAlertType = category;
+                    this.showAlertModal = true;
+                },
+
+                closeAlertModal() {
+                    this.showAlertModal = false;
+                    this.currentAlertType = '';
+                },
+
+                // ============= THEME =============
+                handleThemeChange() {
+                    if (this.currentTheme === 'auto') {
+                        this.autoThemeEnabled = true;
+                        this.applyAutoTheme();
+                    } else {
+                        this.autoThemeEnabled = false;
+                        document.body.className = this.currentTheme;
+                    }
+                },
+
+                applyAutoTheme() {
+                    const hour = new Date().getHours();
+                    let themeClass;
+
+                    if (hour >= 5 && hour < 12) themeClass = 'theme-auto-morning';
+                    else if (hour >= 12 && hour < 17) themeClass = 'theme-auto-afternoon';
+                    else if (hour >= 17 && hour < 21) themeClass = 'theme-auto-evening';
+                    else themeClass = 'theme-auto-night';
+
+                    document.body.className = themeClass;
+                },
+
+                // ============= UTILITIES =============
+                updateTime() {
+                    const now = new Date();
+                    const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                    this.currentTime = now.toLocaleString('en-IN', options);
+
+                    if (this.autoThemeEnabled) {
+                        this.applyAutoTheme();
+                    }
+
+                    if (now.getSeconds() === 0) {
+                        this.checkBreakTime();
+                    }
+                },
+
+                formatTime(date) {
+                    const d = new Date(date);
+                    return d.toLocaleString('en-IN', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                },
+
+                getSeverity(type) {
+                    const typeStr = type.toLowerCase();
+                    if (typeStr === 'offline' || typeStr === 'failed' || typeStr === 'alert' || typeStr === 'critical') {
+                        return 'critical';
+                    } else if (typeStr === 'warning' || typeStr === 'memory' || typeStr === 'cpu' || typeStr === 'storage' || typeStr === 'disk') {
+                        return 'warning';
+                    } else if (typeStr === 'info') {
+                        return 'info';
+                    }
+                    return 'warning';
+                },
+
+                getSeverityLabel(type) {
+                    const severity = this.getSeverity(type);
+                    if (severity === 'critical') return 'Critical';
+                    if (severity === 'warning') return 'Warning';
+                    if (severity === 'info') return 'Info';
+                    return 'Warning';
+                },
+
+                getUsageClass(usage) {
+                    const usageNum = parseFloat(usage);
+                    if (usageNum >= 90) return 'usage-critical';
+                    if (usageNum >= 75) return 'usage-warning';
+                    return 'usage-normal';
+                },
+
+                // ============= BREAK TIME NOTIFICATION =============
+                checkBreakTime() {
+                    const now = new Date();
+                    const hour = now.getHours();
+                    const minute = now.getMinutes();
+                    const timeKey = `${hour}${minute}`;
+
+                    if (this.shownBreakTimes.has(timeKey)) return;
+
+                    let breakInfo = null;
+
+                    if (hour === 10 && minute === 30) {
+                        breakInfo = { icon: '☕', title: 'Morning Tea Break!', message: 'Time to refresh! Grab a cup of tea and enjoy a short break.' };
+                    } else if (hour === 12 && minute === 30) {
+                        breakInfo = { icon: '🍽️', title: 'Lunch Time!', message: 'Take a break and enjoy your delicious lunch!' };
+                    } else if (hour === 15 && minute === 0) {
+                        breakInfo = { icon: '🍵', title: 'Afternoon Tea Break!', message: 'Time for some energy! Enjoy your tea and snacks.' };
+                    } else if (hour === 17 && minute === 30) {
+                        breakInfo = { icon: '🏠', title: 'Office Time is Over!', message: 'Great work today! Time to head home and relax.' };
+                    }
+
+                    if (breakInfo) {
+                        this.breakNotification = breakInfo;
+                        this.showBreakNotification = true;
+                        this.shownBreakTimes.add(timeKey);
+
+                        this.breakAutoCloseSeconds = 150;
+                        this.breakAutoCloseInterval = setInterval(() => {
+                            this.breakAutoCloseSeconds--;
+                            if (this.breakAutoCloseSeconds <= 0) {
+                                this.closeBreakNotification();
+                            }
+                        }, 1000);
+                    }
+                },
+
+                closeBreakNotification() {
+                    this.showBreakNotification = false;
+                    if (this.breakAutoCloseInterval) {
+                        clearInterval(this.breakAutoCloseInterval);
+                        this.breakAutoCloseInterval = null;
+                    }
                 }
-            }, 600000);
-        }
-    }).mount('#app');
-</script>
+            },
+
+            watch: {
+                currentTheme(newTheme) {
+                    if (newTheme !== 'auto') {
+                        document.body.className = newTheme;
+                    }
+                }
+            },
+
+            mounted() {
+                document.body.className = 'theme-vedas';
+                this.initializeSocket();
+
+                const now = new Date();
+                const midnight = new Date(now);
+                midnight.setHours(24, 0, 0, 0);
+                const msUntilMidnight = midnight - now;
+                setTimeout(() => {
+                    this.shownBreakTimes.clear();
+                    setInterval(() => this.shownBreakTimes.clear(), 24 * 60 * 60 * 1000);
+                }, msUntilMidnight);
+
+                this.updateTime();
+                setInterval(this.updateTime, 1000);
+
+                setInterval(() => {
+                    const monitoringApps = this.monitoringApps.filter(app => app.id !== 'monitoringsentinel');
+                    if (monitoringApps.length === 0) return;
+
+                    if (this.currentPage !== 'home') {
+                        let currentIndex = monitoringApps.findIndex(app => app.id === this.currentPage);
+                        if (currentIndex === -1) {
+                            this.setActive(monitoringApps[0].id);
+                        } else {
+                            let nextIndex = (currentIndex + 1) % monitoringApps.length;
+                            this.setActive(monitoringApps[nextIndex].id);
+                        }
+                    } else {
+                        this.setActive(monitoringApps[0].id);
+                    }
+                }, 600000);
+            }
+        }).mount('#app');
+    </script>
 
 </body>
+
 </html>
