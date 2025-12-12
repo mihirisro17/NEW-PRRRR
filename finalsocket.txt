@@ -829,8 +829,8 @@
             margin-top: 80px;
             width: calc(100% - 320px);
             height: calc(100vh - 80px);
-            padding: 0;  /* ✅ No padding for iframe mode */
-            overflow: hidden;  /* ✅ Changed from auto */
+            padding: 0;
+            overflow: hidden;
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             background: var(--bg-color);
             position: relative;
@@ -850,9 +850,9 @@
             height: 100%;
             text-align: center;
             position: relative;
-            padding: 45px;  /* ✅ Padding only for home */
+            padding: 45px;
             padding-bottom: 80px;
-            overflow-y: auto;  /* ✅ Scrolling for home page */
+            overflow-y: auto;
         }
 
         .particles {
@@ -1275,7 +1275,7 @@
             width: 100%;
             height: 100%;
             border: none;
-            display: block;  /* ✅ Prevents extra spacing */
+            display: block;
         }
 
         /* ✅ NOTIFICATION BELL INDICATOR */
@@ -1604,7 +1604,6 @@
             backdrop-filter: blur(20px);
         }
 
-        /* API ERROR ALERT */
         .alert-api-error {
             background: rgba(168, 85, 247, 0.12) !important;
             border-left: 6px solid #a855f7 !important;
@@ -1748,7 +1747,6 @@
             opacity: 0.6;
         }
 
-        /* ✅ FIX #2: REMOVE ALERT BUTTON */
         .alert-delete-btn {
             background: rgba(239, 68, 68, 0.15);
             border: 1px solid rgba(239, 68, 68, 0.3);
@@ -2073,7 +2071,7 @@
         <aside :class="['sidebar', { collapsed: sidebarCollapsed }]">
             <h2 class="sidebar-title">Applications</h2>
 
-            <!-- ✅ FIX #3: HOME BUTTON -->
+            <!-- Home Button -->
             <button class="nav-button" @click="setActive('home')" :class="{ active: currentPage === 'home' }">
                 <div class="nav-icon-wrapper">
                     <span class="nav-icon">🏠</span>
@@ -2180,8 +2178,7 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- ✅ FIX #1: IFRAME CONTAINER -->
+
                 <div v-else class="iframe-container">
                     <iframe :src="currentAppUrl" class="app-frame" @load="onIframeLoad"></iframe>
                 </div>
@@ -2194,14 +2191,14 @@
             </transition>
         </main>
 
-        <!-- ✅ FIX #2: NOTIFICATION BELL (SHOWS WHEN PANEL IS CLOSED) -->
+        <!-- ✅ NOTIFICATION BELL (SHOWS WHEN PANEL IS CLOSED) -->
         <div v-if="totalAlerts > 0 && alertPanelCollapsedLeft" class="notification-indicator"
-            @click="alertPanelCollapsedLeft = false">
+            @click="openAlertPanel">
             <div class="notification-icon">🔔</div>
             <div class="notification-count">{{ totalAlerts }}</div>
         </div>
 
-        <!-- Alert Panel -->
+        <!-- ✅ ALERT PANEL WITH COLLAPSE/CLEAR BUTTONS -->
         <div :class="['alert-panel', { 'collapsed-up': alertPanelCollapsedUp, 'collapsed-left': alertPanelCollapsedLeft }]">
             <div class="alert-header">
                 <div class="alert-header-title">
@@ -2210,10 +2207,13 @@
                     <span v-if="totalAlerts > 0" class="alert-badge">{{ totalAlerts }}</span>
                 </div>
                 <div class="alert-controls">
+                    <!-- ✅ COLLAPSE ALL BUTTON -->
                     <button class="alert-control-btn" @click="collapseAllSections" v-if="totalAlerts > 0">
-                        {{ allSectionsCollapsed ? 'Expand All' : 'Collapse All' }}
+                        {{ allSectionsCollapsed ? 'Expand' : 'Collapse' }}
                     </button>
-                    <button class="alert-control-btn" @click="clearAllAlerts" v-if="totalAlerts > 0">Clear</button>
+                    <!-- ✅ CLEAR ALL BUTTON -->
+                    <button class="alert-control-btn" @click="clearAllAlerts" v-if="totalAlerts > 0">Clear All</button>
+                    <!-- ✅ CLOSE BUTTON (X) -->
                     <button class="alert-control-btn" @click="closeAlertPanel">✕</button>
                 </div>
             </div>
@@ -2224,13 +2224,11 @@
                 </div>
 
                 <div v-else>
-                    <!-- ✅ ALL ALERT CATEGORIES WITH REMOVE BUTTONS -->
-                    
                     <!-- SERVER ALERTS -->
                     <div class="alert-section" v-if="alertsByCategory.server && alertsByCategory.server.length > 0">
                         <div class="alert-section-header" @click="toggleServerSection">
                             <div class="alert-section-title">
-                                🖥️ Server ({{ alertsByCategory.server.length }})
+                                🖥️ Server Alerts ({{ alertsByCategory.server.length }})
                             </div>
                             <span class="collapse-icon" :class="{ collapsed: serverSectionCollapsed }">▼</span>
                         </div>
@@ -2243,7 +2241,7 @@
                                     <div class="alert-message">{{ alert.message }}</div>
                                     <div class="alert-server">{{ alert.server }}</div>
                                 </div>
-                                <button class="alert-delete-btn" @click="removeAlert('server', index)">✕</button>
+                                <button class="alert-delete-btn" @click="removeAlert('server', index)" title="Remove alert">✕</button>
                             </div>
                         </div>
                     </div>
@@ -2252,7 +2250,7 @@
                     <div class="alert-section" v-if="alertsByCategory.system && alertsByCategory.system.length > 0">
                         <div class="alert-section-header" @click="toggleSystemSection">
                             <div class="alert-section-title">
-                                ⚠️ System ({{ alertsByCategory.system.length }})
+                                ⚠️ System Alerts ({{ alertsByCategory.system.length }})
                             </div>
                             <span class="collapse-icon" :class="{ collapsed: systemSectionCollapsed }">▼</span>
                         </div>
@@ -2265,14 +2263,14 @@
                                     <div class="alert-message">{{ alert.message }}</div>
                                     <div class="alert-server">{{ alert.server }}</div>
                                 </div>
-                                <button class="alert-delete-btn" @click="removeAlert('system', index)">✕</button>
+                                <button class="alert-delete-btn" @click="removeAlert('system', index)" title="Remove alert">✕</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="last-updated" v-if="lastUpdated">{{ lastUpdated }}</div>
+            <div class="last-updated" v-if="lastUpdated">Last updated: {{ lastUpdated }}</div>
         </div>
 
         <!-- History Modal -->
@@ -2291,10 +2289,10 @@
                             <div v-for="(item, index) in alertHistory" :key="index" class="history-item">
                                 <div class="history-item-header">
                                     <span class="history-item-type">{{ item.type }}</span>
-                                    <span class="history-item-time">{{ item.clearedAt }}</span>
+                                    <span class="history-item-time">Cleared: {{ item.clearedAt }}</span>
                                 </div>
                                 <div class="history-item-message">{{ item.message }}</div>
-                                <div class="history-item-server">{{ item.server }}</div>
+                                <div class="history-item-server">{{ item.server }} · {{ item.category }}</div>
                             </div>
                         </div>
                     </div>
@@ -2325,35 +2323,30 @@
                     autoThemeEnabled: false,
                     showHistory: false,
 
-                    // ✅ FIX #2: ALERTS DATA
                     alertsByCategory: {
                         server: [],
                         system: []
                     },
                     clearedAlerts: new Set(),
-                    processedAlerts: new Set(),  // ✅ TRACK PROCESSED ALERTS
+                    processedAlerts: new Set(),
                     alertHistory: [],
                     lastUpdated: '',
 
-                    // Panel states
                     alertPanelCollapsedUp: false,
                     alertPanelCollapsedLeft: false,
                     serverSectionCollapsed: false,
                     systemSectionCollapsed: false,
                     allSectionsCollapsed: false,
 
-                    // Stats
                     totalServers: 0,
                     totalServices: 0,
 
-                    // Break notification
                     showBreakNotification: false,
                     breakNotification: {},
                     breakAutoCloseSeconds: 150,
                     breakAutoCloseInterval: null,
                     shownBreakTimes: new Set(),
 
-                    // Socket.io
                     socket: null,
                     socketConnected: false,
 
@@ -2391,7 +2384,6 @@
                     this.sidebarCollapsed = !this.sidebarCollapsed;
                 },
 
-                // ✅ FIX #3: SET ACTIVE WITH HOME HANDLING
                 setActive(appId) {
                     this.isLoading = true;
                     this.currentPage = appId;
@@ -2499,7 +2491,6 @@
                     }, 1000);
                 },
 
-                // ✅ FIX #2: SOCKET.IO INITIALIZATION
                 initializeSocket() {
                     console.log('🔌 Initializing Socket.IO connection...');
                     this.socket = io('http://localhost:5009', {
@@ -2525,7 +2516,6 @@
                     });
                 },
 
-                // ✅ FIX #2: HANDLE INCOMING ALERTS (NO DUPLICATES)
                 handleIncomingAlert(notification) {
                     console.log('🔔 [handleIncomingAlert] Processing:', notification);
 
@@ -2546,25 +2536,20 @@
                         metadata: notification.metadata || {}
                     };
 
-                    // ✅ CREATE UNIQUE ALERT KEY
                     const alertKey = this.getAlertKey(category, alert);
 
-                    // ✅ CHECK IF ALREADY PROCESSED
                     if (this.processedAlerts.has(alertKey)) {
                         console.log('⏭️ Alert already processed, ignoring duplicate:', alertKey);
                         return;
                     }
 
-                    // ✅ CHECK IF ALREADY CLEARED
                     if (this.clearedAlerts.has(alertKey)) {
                         console.log('⏭️ Alert was previously cleared, ignoring:', alertKey);
                         return;
                     }
 
-                    // Ensure category exists
                     this.ensureCategory(category);
 
-                    // ✅ CHECK FOR EXACT DUPLICATES
                     const exists = this.alertsByCategory[category].some(a =>
                         a.type === alert.type &&
                         a.message === alert.message &&
@@ -2573,7 +2558,7 @@
 
                     if (!exists) {
                         this.alertsByCategory[category].unshift(alert);
-                        this.processedAlerts.add(alertKey);  // ✅ MARK AS PROCESSED
+                        this.processedAlerts.add(alertKey);
                         console.log(`✅ Alert added to "${category}". Total:`, this.alertsByCategory[category].length);
                     } else {
                         console.log('⚠️ Duplicate alert detected in category, skipping');
@@ -2596,7 +2581,6 @@
                     return date.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                 },
 
-                // ✅ FIX #2: REMOVE INDIVIDUAL ALERT
                 removeAlert(category, index) {
                     if (!this.alertsByCategory[category]) return;
 
@@ -2606,18 +2590,14 @@
                     const alert = this.alertsByCategory[category][index];
                     if (!alert) return;
 
-                    // Add to history
                     this.alertHistory.unshift({ ...alert, category, clearedAt: timeStr });
 
-                    // Mark as cleared
                     const alertKey = this.getAlertKey(category, alert);
                     this.clearedAlerts.add(alertKey);
-                    this.processedAlerts.delete(alertKey);  // ✅ REMOVE FROM PROCESSED
+                    this.processedAlerts.delete(alertKey);
 
-                    // Remove from category
                     this.alertsByCategory[category].splice(index, 1);
 
-                    // Limit history
                     if (this.alertHistory.length > 50) {
                         this.alertHistory = this.alertHistory.slice(0, 50);
                     }
@@ -2634,7 +2614,7 @@
                             this.alertHistory.unshift({ ...alert, category, clearedAt: timeStr });
                             const alertKey = this.getAlertKey(category, alert);
                             this.clearedAlerts.add(alertKey);
-                            this.processedAlerts.delete(alertKey);  // ✅ REMOVE FROM PROCESSED
+                            this.processedAlerts.delete(alertKey);
                         });
                         this.alertsByCategory[category] = [];
                     });
@@ -2646,6 +2626,13 @@
                     console.log('🧹 All alerts cleared');
                 },
 
+                // ✅ OPEN ALERT PANEL (WHEN CLICKING BELL)
+                openAlertPanel() {
+                    this.alertPanelCollapsedLeft = false;
+                    this.alertPanelCollapsedUp = false;
+                },
+
+                // ✅ CLOSE ALERT PANEL (SLIDES TO RIGHT)
                 closeAlertPanel() {
                     this.alertPanelCollapsedUp = false;
                     this.alertPanelCollapsedLeft = true;
@@ -2659,6 +2646,7 @@
                     this.systemSectionCollapsed = !this.systemSectionCollapsed;
                 },
 
+                // ✅ COLLAPSE/EXPAND ALL SECTIONS
                 collapseAllSections() {
                     this.allSectionsCollapsed = !this.allSectionsCollapsed;
                     this.serverSectionCollapsed = this.allSectionsCollapsed;
@@ -2666,7 +2654,6 @@
                 },
 
                 async fetchAlertsFromSocket() {
-                    // Placeholder for manual refresh
                     console.log('🔄 Manual refresh triggered');
                 }
             },
@@ -2675,10 +2662,8 @@
                 console.log('🚀 VEDAS MIS Vue app mounted');
                 document.body.className = 'theme-vedas';
 
-                // Initialize Socket.IO
                 this.initializeSocket();
 
-                // Reset break times at midnight
                 const now = new Date();
                 const midnight = new Date(now);
                 midnight.setHours(24, 0, 0, 0);
@@ -2688,11 +2673,9 @@
                     setInterval(() => this.shownBreakTimes.clear(), 24 * 60 * 60 * 1000);
                 }, msUntilMidnight);
 
-                // Start time updates
                 this.updateTime();
                 setInterval(this.updateTime, 1000);
 
-                // Auto-rotation (every 10 minutes)
                 setInterval(() => {
                     const monitoringApps = this.monitoringApps.filter(app => app.id !== 'monitoringsentinel');
                     if (monitoringApps.length === 0) return;
