@@ -1,57 +1,671 @@
-You are running a development build of Vue.
-Make sure to use the production build (*.prod.js) when deploying for production.
-Vedas_MIS_S/:3193 🚀 Vue app mounted
-Vedas_MIS_S/:2744 🔌 Initializing Socket.IO connection...
-Vedas_MIS_S/:2745 📍 Connecting to: http://192.168.2.137:8080
-Vedas_MIS_S/:2847 ✅ All Socket.IO event listeners registered
-Vedas_MIS_S/:2757 ✅ Socket.IO Connected - ID: Wvr9otTkzXJp13NZAAAb
-Vedas_MIS_S/:3206 🧪 Testing manual alert injection...
-Vedas_MIS_S/:2852 🔔 [handleDynamicAlert] Processing: Object
-Vedas_MIS_S/:2856 📂 Category identified: test
-Vedas_MIS_S/:2878 ✅ Category "test" ready, current alerts: 0
-Vedas_MIS_S/:2891 ✅ Alert added to "test". Total: 1
-Vedas_MIS_S/:2892 🔢 Total alerts across all categories: 1
-vue.js:2348 [Vue warn]: Unhandled error during execution of native event handler 
-  at <App>
-warn$1 @ vue.js:2348
-logError @ vue.js:2559
-handleError @ vue.js:2551
-callWithErrorHandling @ vue.js:2497
-callWithAsyncErrorHandling @ vue.js:2502
-invoker @ vue.js:11407Understand this warning
-vue.js:2564 Uncaught TypeError: this.$set is not a function
-    at Proxy.toggleSection (Vedas_MIS_S/:3044:30)
-    at onClick (eval at compileToFunction (vue.js:1:1), <anonymous>:376:43)
-    at callWithErrorHandling (vue.js:2495:21)
-    at callWithAsyncErrorHandling (vue.js:2502:19)
-    at HTMLDivElement.invoker (vue.js:11407:7)
-toggleSection @ Vedas_MIS_S/:3044
-onClick @ VM5187:376
-callWithErrorHandling @ vue.js:2495
-callWithAsyncErrorHandling @ vue.js:2502
-invoker @ vue.js:11407Understand this error
-vue.js:2348 [Vue warn]: Unhandled error during execution of native event handler 
-  at <App>
-warn$1 @ vue.js:2348
-logError @ vue.js:2559
-handleError @ vue.js:2551
-callWithErrorHandling @ vue.js:2497
-callWithAsyncErrorHandling @ vue.js:2502
-invoker @ vue.js:11407Understand this warning
-vue.js:2564 Uncaught TypeError: Vue.set is not a function
-    at Vedas_MIS_S/:2976:33
-    at Array.forEach (<anonymous>)
-    at Proxy.clearAllAlerts (Vedas_MIS_S/:2971:60)
-    at callWithErrorHandling (vue.js:2495:21)
-    at callWithAsyncErrorHandling (vue.js:2502:19)
-    at HTMLButtonElement.invoker (vue.js:11407:7)
-(anonymous) @ Vedas_MIS_S/:2976
-clearAllAlerts @ Vedas_MIS_S/:2971
-callWithErrorHandling @ vue.js:2495
-callWithAsyncErrorHandling @ vue.js:2502
-invoker @ vue.js:11407Understand this error
-vue.js:2348 [Vue warn]: Unhandled error during execution of native event handler 
-  at <App>
-warn$1 @ vue.js:2348Understand this warning
-vue.js:2564 Uncaught TypeError: Vue.set is not a function
-    at Proxy.clearAlertsByCategory (Vedas_MIS_S/:2954:29)
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                // Theme
+                currentTheme: 'theme-vedas',
+                autoThemeEnabled: false,
+                currentTime: '',
+
+                // UI State
+                sidebarCollapsed: false,
+                currentPage: 'home',
+                currentAppUrl: '',
+                alertPanelCollapsedUp: false,
+                alertPanelCollapsedLeft: false,
+
+                // DYNAMIC ALERT STORAGE
+                alertsByCategory: {},
+                sectionCollapsed: {},
+                categoryMetadata: {},
+                
+                clearedAlerts: new Set(),
+                lastUpdated: 'Initializing...',
+
+                // Stats
+                totalServers: 20,
+                totalServices: 41,
+
+                // Loading State
+                isLoading: false,
+                isRefreshing: false,
+
+                // History
+                showHistory: false,
+                alertHistory: [],
+
+                // Break Notification
+                showBreakNotification: false,
+                breakNotification: {},
+                breakAutoCloseSeconds: 30,
+                breakAutoCloseInterval: null,
+                shownBreakTimes: new Set(),
+
+                // Alert Detail Modal
+                showAlertModal: false,
+                currentAlertType: '',
+
+                // Socket.IO
+                socket: null,
+                socketConnected: false,
+
+                // Apps
+                monitoringApps: [
+                    { id: 'monitoringserver', name: 'Server Monitor', description: 'Infrastructure Health', icon: '🖥️', url: 'http://192.168.2.137:8080/monitoringserver/home' },
+                    { id: 'servicedatasets', name: 'Service Monitor', description: 'Data Pipeline Status', icon: '📊', url: 'http://192.168.2.137:8080/monitoringdatasets' },
+                    { id: 'processingscriptmonitoring', name: 'Processing Script Monitor', description: 'Service Health Check', icon: '⚙️', url: 'http://192.168.2.137:8080/processmonitoring' },
+                    { id: 'datachainsentinel', name: 'Data Chain Monitoring', description: 'Satellite Tracking', icon: '🛰️', url: 'http://192.168.2.137:8080/monitoringsentinel' },
+                    { id: 'publishmonitoring', name: 'Publish Monitoring', description: 'Browse & Search Data', icon: '🔍', url: 'http://192.168.2.137:8080/ridamdatasetpublisher' },
+                    { id: 'ridalpoolanalytics', name: 'Ridam Pool Analytics', description: 'Browse & Search Data', icon: '💾', url: 'http://192.168.2.137:8080/poolstoragemonitoring' },
+                    { id: 'poolgrouphealth', name: 'Pool Group Health Monitoring', description: 'Browse & Search Data', icon: '🏥', url: 'http://192.168.2.137:8080/monitoringhealth' },
+                    { id: 'geoentitymonitoring', name: 'Geoentity Monitoring', description: 'Browse & Search Data', icon: '🌍', url: 'http://192.168.2.137:8080/geoentitymonitoring' },
+                ],
+                dataApps: [
+                    { id: 'ridamregistration', name: 'RIDAM Registry', description: 'Data Registration', icon: '📝', url: 'http://192.168.2.137:8080/ridamregistration' },
+                ],
+                toolsApps: [
+                    { id: 'teamanalytics', name: 'Team Analytics', description: 'Performance Metrics', icon: '📈', url: 'http://192.168.2.137:8080/taskboard/dashboard' },
+                ]
+            };
+        },
+        computed: {
+            allApplications() {
+                return [...this.monitoringApps, ...this.dataApps, ...this.toolsApps];
+            },
+            
+            totalAlerts() {
+                return Object.values(this.alertsByCategory).reduce((sum, alerts) => sum + alerts.length, 0);
+            },
+            
+            isPanelCollapsed() {
+                return this.alertPanelCollapsedUp || this.alertPanelCollapsedLeft;
+            },
+            
+            allSectionsCollapsed() {
+                return Object.values(this.sectionCollapsed).every(collapsed => collapsed);
+            },
+            
+            alertCategories() {
+                return Object.keys(this.alertsByCategory)
+                    .filter(category => this.alertsByCategory[category].length > 0)
+                    .sort((a, b) => this.alertsByCategory[b].length - this.alertsByCategory[a].length);
+            },
+            
+            alertModalIcon() {
+                const metadata = this.categoryMetadata[this.currentAlertType];
+                return metadata?.icon || '🔔';
+            },
+            
+            alertModalTitle() {
+                const metadata = this.categoryMetadata[this.currentAlertType];
+                return metadata?.name || this.capitalizeFirst(this.currentAlertType);
+            },
+            
+            filteredAlertsForModal() {
+                return this.alertsByCategory[this.currentAlertType] || [];
+            },
+            
+            getCriticalCount() {
+                return this.filteredAlertsForModal.filter(alert => {
+                    const type = alert.type.toLowerCase();
+                    return (type === 'offline' || type === 'failed' || type === 'alert' || type === 'critical');
+                }).length;
+            },
+            
+            getWarningCount() {
+                return this.filteredAlertsForModal.filter(alert => {
+                    const type = alert.type.toLowerCase();
+                    return (type === 'warning' || type === 'memory' || type === 'cpu' || type === 'storage' || type === 'disk');
+                }).length;
+            }
+        },
+        methods: {
+            // ============= DYNAMIC CATEGORY MANAGEMENT (VUE 3 FIX) =============
+            ensureCategory(category) {
+                if (!this.alertsByCategory[category]) {
+                    // ✅ Vue 3: Direct assignment works!
+                    this.alertsByCategory[category] = [];
+                    this.sectionCollapsed[category] = false;
+                    
+                    if (!this.categoryMetadata[category]) {
+                        this.categoryMetadata[category] = this.getDefaultCategoryMetadata(category);
+                    }
+                }
+            },
+
+            getDefaultCategoryMetadata(category) {
+                const defaults = {
+                    'server': { icon: '🖥️', name: 'Server Alerts', color: '#ef4444' },
+                    'dataset': { icon: '📊', name: 'Dataset Alerts', color: '#6366f1' },
+                    'process': { icon: '⚙️', name: 'Process Alerts', color: '#f59e0b' },
+                    'storage': { icon: '💾', name: 'Storage Alerts', color: '#3b82f6' },
+                    'network': { icon: '🌐', name: 'Network Alerts', color: '#10b981' },
+                    'database': { icon: '🗄️', name: 'Database Alerts', color: '#8b5cf6' },
+                    'application': { icon: '📱', name: 'Application Alerts', color: '#ec4899' }
+                };
+                
+                return defaults[category] || {
+                    icon: '🔔',
+                    name: `${this.capitalizeFirst(category)} Alerts`,
+                    color: '#6366f1'
+                };
+            },
+
+            capitalizeFirst(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            },
+
+            getCategoryIcon(category) {
+                return this.categoryMetadata[category]?.icon || '🔔';
+            },
+
+            getCategoryName(category) {
+                return this.categoryMetadata[category]?.name || this.capitalizeFirst(category);
+            },
+
+            getCategoryAlerts(category) {
+                return this.alertsByCategory[category] || [];
+            },
+
+            getCategoryCount(category) {
+                return this.getCategoryAlerts(category).length;
+            },
+
+            // ============= SOCKET.IO INITIALIZATION =============
+            initializeSocket() {
+                console.log('🔌 Initializing Socket.IO connection...');
+                console.log('📍 Connecting to: http://192.168.2.137:8080');
+                
+                this.socket = io('http://192.168.2.137:8080', {
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionAttempts: 10,
+                    timeout: 20000
+                });
+
+                // Connection Events
+                this.socket.on('connect', () => {
+                    console.log('✅ Socket.IO Connected - ID:', this.socket.id);
+                    this.socketConnected = true;
+                    this.lastUpdated = `Connected at ${this.formatTime(new Date())}`;
+                });
+
+                this.socket.on('disconnect', (reason) => {
+                    console.log('❌ Socket.IO Disconnected - Reason:', reason);
+                    this.socketConnected = false;
+                    this.lastUpdated = `Disconnected: ${reason}`;
+                });
+
+                this.socket.on('connect_error', (error) => {
+                    console.error('🔥 Socket.IO Connection Error:', error.message);
+                    this.socketConnected = false;
+                    this.lastUpdated = 'Connection Error';
+                });
+
+                // ===== UNIVERSAL ALERT HANDLER =====
+                this.socket.on('alert', (data) => {
+                    console.log('🔔 [ALERT EVENT] Raw data:', JSON.stringify(data, null, 2));
+                    this.handleDynamicAlert(data);
+                });
+
+                // Backward compatibility
+                this.socket.on('new_alert', (data) => {
+                    console.log('🔔 [NEW_ALERT EVENT]:', data);
+                    this.handleDynamicAlert(data);
+                });
+                
+                this.socket.on('server_alert', (data) => {
+                    console.log('🖥️ [SERVER_ALERT EVENT]:', data);
+                    this.handleDynamicAlert({ ...data, category: 'server' });
+                });
+                
+                this.socket.on('dataset_alert', (data) => {
+                    console.log('📊 [DATASET_ALERT EVENT]:', data);
+                    this.handleDynamicAlert({ ...data, category: 'dataset' });
+                });
+                
+                this.socket.on('process_alert', (data) => {
+                    console.log('⚙️ [PROCESS_ALERT EVENT]:', data);
+                    this.handleDynamicAlert({ ...data, category: 'process' });
+                });
+                
+                this.socket.on('storage_alert', (data) => {
+                    console.log('💾 [STORAGE_ALERT EVENT]:', data);
+                    this.handleDynamicAlert({ ...data, category: 'storage' });
+                });
+
+                // Alert cleared
+                this.socket.on('alert_cleared', (data) => {
+                    console.log('✅ [ALERT_CLEARED EVENT]:', data);
+                    this.handleAlertCleared(data);
+                });
+
+                // Clear alerts
+                this.socket.on('clear_alerts', (data) => {
+                    console.log('🗑️ [CLEAR_ALERTS EVENT]:', data);
+                    if (data.category) {
+                        this.clearAlertsByCategory(data.category);
+                    } else {
+                        this.clearAllAlerts();
+                    }
+                });
+
+                // Stats update
+                this.socket.on('update_stats', (data) => {
+                    console.log('📊 [UPDATE_STATS EVENT]:', data);
+                    if (data.totalServers !== undefined) this.totalServers = data.totalServers;
+                    if (data.totalServices !== undefined) this.totalServices = data.totalServices;
+                });
+
+                // Category metadata
+                this.socket.on('category_metadata', (data) => {
+                    console.log('📋 [CATEGORY_METADATA EVENT]:', data);
+                    if (data.category && data.metadata) {
+                        // ✅ Vue 3: Direct assignment
+                        this.categoryMetadata[data.category] = data.metadata;
+                    }
+                });
+
+                // Initial alerts load
+                this.socket.on('initial_alerts', (data) => {
+                    console.log('📦 [INITIAL_ALERTS EVENT]:', data);
+                    Object.keys(data).forEach(category => {
+                        this.ensureCategory(category);
+                        // ✅ Vue 3: Direct assignment
+                        this.alertsByCategory[category] = data[category] || [];
+                    });
+                    this.lastUpdated = this.formatTime(new Date());
+                });
+
+                console.log('✅ All Socket.IO event listeners registered');
+            },
+
+            // ============= DYNAMIC ALERT HANDLER (VUE 3 FIX) =============
+            handleDynamicAlert(data) {
+                console.log('🔔 [handleDynamicAlert] Processing:', data);
+                
+                const category = (data.category || data.source || 'general').toLowerCase();
+                console.log(`📂 Category identified: ${category}`);
+
+                const alert = {
+                    type: data.type || 'alert',
+                    message: data.message || 'Unknown alert',
+                    server: data.server || 'Unknown',
+                    source: data.source || category,
+                    timestamp: data.timestamp || new Date().toISOString(),
+                    metadata: data.metadata || {},
+                    ...data
+                };
+
+                const key = this.getAlertKey(category, alert);
+                if (this.clearedAlerts.has(key)) {
+                    console.log('⏭️ Alert already cleared, skipping:', key);
+                    return;
+                }
+
+                this.ensureCategory(category);
+                console.log(`✅ Category "${category}" ready, current alerts:`, this.alertsByCategory[category].length);
+
+                const exists = this.alertsByCategory[category].some(a =>
+                    a.type === alert.type &&
+                    a.message === alert.message &&
+                    a.server === alert.server
+                );
+
+                if (!exists) {
+                    // ✅ Vue 3: Direct array manipulation works!
+                    this.alertsByCategory[category].unshift(alert);
+                    console.log(`✅ Alert added to "${category}". Total:`, this.alertsByCategory[category].length);
+                    console.log(`🔢 Total alerts across all categories:`, this.totalAlerts);
+                } else {
+                    console.log('⚠️ Duplicate alert detected, skipping');
+                }
+
+                this.lastUpdated = this.formatTime(new Date());
+            },
+
+            handleAlertCleared(data) {
+                const category = data.category;
+                if (!category || !this.alertsByCategory[category]) return;
+
+                const alertKey = this.getAlertKey(category, data.alert);
+                this.clearedAlerts.add(alertKey);
+                
+                // ✅ Vue 3: Direct assignment
+                this.alertsByCategory[category] = this.alertsByCategory[category].filter(a =>
+                    this.getAlertKey(category, a) !== alertKey
+                );
+                
+                this.lastUpdated = this.formatTime(new Date());
+            },
+
+            getAlertKey(category, alert) {
+                return `${category}-${alert.server}-${alert.type}-${alert.message}`;
+            },
+
+            removeAlert(category, index) {
+                if (!this.alertsByCategory[category]) return;
+
+                const now = new Date();
+                const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                
+                const alert = this.alertsByCategory[category][index];
+                if (!alert) return;
+
+                this.alertHistory.unshift({ ...alert, category, clearedAt: timeStr });
+                this.clearedAlerts.add(this.getAlertKey(category, alert));
+                
+                // ✅ Vue 3: Direct array manipulation
+                this.alertsByCategory[category].splice(index, 1);
+
+                if (this.socket && this.socketConnected) {
+                    this.socket.emit('clear_alert', { category, alert });
+                }
+
+                if (this.alertHistory.length > 50) {
+                    this.alertHistory = this.alertHistory.slice(0, 50);
+                }
+            },
+
+            clearAlertsByCategory(category) {
+                if (!this.alertsByCategory[category]) return;
+
+                const now = new Date();
+                const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                
+                this.alertsByCategory[category].forEach(alert => {
+                    this.alertHistory.unshift({ ...alert, category, clearedAt: timeStr });
+                    this.clearedAlerts.add(this.getAlertKey(category, alert));
+                });
+
+                // ✅ Vue 3: Direct assignment
+                this.alertsByCategory[category] = [];
+
+                if (this.socket && this.socketConnected) {
+                    this.socket.emit('clear_alerts', { category });
+                }
+
+                if (this.alertHistory.length > 50) {
+                    this.alertHistory = this.alertHistory.slice(0, 50);
+                }
+                
+                this.closeAlertModal();
+            },
+
+            clearAllAlerts() {
+                const now = new Date();
+                const timeStr = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                
+                Object.keys(this.alertsByCategory).forEach(category => {
+                    this.alertsByCategory[category].forEach(alert => {
+                        this.alertHistory.unshift({ ...alert, category, clearedAt: timeStr });
+                        this.clearedAlerts.add(this.getAlertKey(category, alert));
+                    });
+                    // ✅ Vue 3: Direct assignment
+                    this.alertsByCategory[category] = [];
+                });
+
+                if (this.socket && this.socketConnected) {
+                    this.socket.emit('clear_all_alerts');
+                }
+
+                if (this.alertHistory.length > 50) {
+                    this.alertHistory = this.alertHistory.slice(0, 50);
+                }
+            },
+
+            manualRefresh() {
+                this.isRefreshing = true;
+                
+                if (this.socket && this.socketConnected) {
+                    this.socket.emit('request_alerts');
+                    console.log('🔄 Requested latest alerts from server');
+                } else {
+                    console.warn('⚠️ Socket not connected, cannot refresh');
+                }
+                
+                setTimeout(() => {
+                    this.isRefreshing = false;
+                }, 1000);
+            },
+
+            // ============= UI CONTROLS =============
+            toggleSidebar() {
+                this.sidebarCollapsed = !this.sidebarCollapsed;
+            },
+
+            navigateTo(page) {
+                this.currentPage = page;
+                if (page === 'home') {
+                    this.currentAppUrl = '';
+                }
+            },
+
+            setActive(appId) {
+                this.isLoading = true;
+                this.currentPage = appId;
+                const app = this.allApplications.find(a => a.id === appId);
+                if (app) {
+                    this.currentAppUrl = app.url;
+                }
+            },
+
+            onIframeLoad() {
+                setTimeout(() => {
+                    this.isLoading = false;
+                }, 500);
+            },
+
+            expandAlertPanel() {
+                this.alertPanelCollapsedUp = false;
+                this.alertPanelCollapsedLeft = false;
+            },
+
+            closeAlertPanel() {
+                this.alertPanelCollapsedUp = false;
+                this.alertPanelCollapsedLeft = true;
+            },
+
+            toggleSection(category) {
+                // ✅ Vue 3: Direct assignment (no $set needed!)
+                if (this.sectionCollapsed[category] === undefined) {
+                    this.sectionCollapsed[category] = false;
+                }
+                this.sectionCollapsed[category] = !this.sectionCollapsed[category];
+            },
+
+            collapseAllSections() {
+                const newState = !this.allSectionsCollapsed;
+                Object.keys(this.sectionCollapsed).forEach(category => {
+                    // ✅ Vue 3: Direct assignment
+                    this.sectionCollapsed[category] = newState;
+                });
+            },
+
+            openAlertModal(category) {
+                this.currentAlertType = category;
+                this.showAlertModal = true;
+            },
+
+            closeAlertModal() {
+                this.showAlertModal = false;
+                this.currentAlertType = '';
+            },
+
+            // ============= THEME =============
+            handleThemeChange() {
+                if (this.currentTheme === 'auto') {
+                    this.autoThemeEnabled = true;
+                    this.applyAutoTheme();
+                } else {
+                    this.autoThemeEnabled = false;
+                    document.body.className = this.currentTheme;
+                }
+            },
+
+            applyAutoTheme() {
+                const hour = new Date().getHours();
+                let themeClass;
+                
+                if (hour >= 5 && hour < 12) themeClass = 'theme-auto-morning';
+                else if (hour >= 12 && hour < 17) themeClass = 'theme-auto-afternoon';
+                else if (hour >= 17 && hour < 21) themeClass = 'theme-auto-evening';
+                else themeClass = 'theme-auto-night';
+                
+                document.body.className = themeClass;
+            },
+
+            // ============= UTILITIES =============
+            updateTime() {
+                const now = new Date();
+                const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                this.currentTime = now.toLocaleString('en-IN', options);
+                
+                if (this.autoThemeEnabled) {
+                    this.applyAutoTheme();
+                }
+                
+                if (now.getSeconds() === 0) {
+                    this.checkBreakTime();
+                }
+            },
+
+            formatTime(date) {
+                const d = new Date(date);
+                return d.toLocaleString('en-IN', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            },
+
+            getSeverity(type) {
+                const typeStr = type.toLowerCase();
+                if (typeStr === 'offline' || typeStr === 'failed' || typeStr === 'alert' || typeStr === 'critical') {
+                    return 'critical';
+                } else if (typeStr === 'warning' || typeStr === 'memory' || typeStr === 'cpu' || typeStr === 'storage' || typeStr === 'disk') {
+                    return 'warning';
+                } else if (typeStr === 'info') {
+                    return 'info';
+                }
+                return 'warning';
+            },
+
+            getSeverityLabel(type) {
+                const severity = this.getSeverity(type);
+                if (severity === 'critical') return 'Critical';
+                if (severity === 'warning') return 'Warning';
+                if (severity === 'info') return 'Info';
+                return 'Warning';
+            },
+
+            // ============= BREAK TIME NOTIFICATION =============
+            checkBreakTime() {
+                const now = new Date();
+                const hour = now.getHours();
+                const minute = now.getMinutes();
+                const timeKey = `${hour}${minute}`;
+
+                if (this.shownBreakTimes.has(timeKey)) return;
+
+                let breakInfo = null;
+                
+                if (hour === 10 && minute === 30) {
+                    breakInfo = { icon: '☕', title: 'Morning Tea Break!', message: 'Time to refresh! Grab a cup of tea and enjoy a short break.' };
+                } else if (hour === 12 && minute === 30) {
+                    breakInfo = { icon: '🍽️', title: 'Lunch Time!', message: 'Take a break and enjoy your delicious lunch!' };
+                } else if (hour === 15 && minute === 0) {
+                    breakInfo = { icon: '🍵', title: 'Afternoon Tea Break!', message: 'Time for some energy! Enjoy your tea and snacks.' };
+                } else if (hour === 17 && minute === 30) {
+                    breakInfo = { icon: '🏠', title: 'Office Time is Over!', message: 'Great work today! Time to head home and relax.' };
+                }
+
+                if (breakInfo) {
+                    this.breakNotification = breakInfo;
+                    this.showBreakNotification = true;
+                    this.shownBreakTimes.add(timeKey);
+                    
+                    this.breakAutoCloseSeconds = 150;
+                    this.breakAutoCloseInterval = setInterval(() => {
+                        this.breakAutoCloseSeconds--;
+                        if (this.breakAutoCloseSeconds <= 0) {
+                            this.closeBreakNotification();
+                        }
+                    }, 1000);
+                }
+            },
+
+            closeBreakNotification() {
+                this.showBreakNotification = false;
+                if (this.breakAutoCloseInterval) {
+                    clearInterval(this.breakAutoCloseInterval);
+                    this.breakAutoCloseInterval = null;
+                }
+            }
+        },
+
+        watch: {
+            currentTheme(newTheme) {
+                if (newTheme !== 'auto') {
+                    document.body.className = newTheme;
+                }
+            }
+        },
+
+        mounted() {
+            console.log('🚀 Vue app mounted');
+            document.body.className = 'theme-vedas';
+            
+            // Initialize Socket.IO
+            this.initializeSocket();
+
+            // Test alert after 5 seconds
+            setTimeout(() => {
+                console.log('🧪 Testing manual alert injection...');
+                this.handleDynamicAlert({
+                    category: 'test',
+                    type: 'info',
+                    message: 'Test alert - Vue 3 is working!',
+                    server: 'Frontend Test',
+                    timestamp: new Date().toISOString()
+                });
+            }, 5000);
+
+            // Reset break times at midnight
+            const now = new Date();
+            const midnight = new Date(now);
+            midnight.setHours(24, 0, 0, 0);
+            const msUntilMidnight = midnight - now;
+            setTimeout(() => {
+                this.shownBreakTimes.clear();
+                setInterval(() => this.shownBreakTimes.clear(), 24 * 60 * 60 * 1000);
+            }, msUntilMidnight);
+
+            // Update time
+            this.updateTime();
+            setInterval(this.updateTime, 1000);
+
+            // Auto-rotate through monitoring apps
+            setInterval(() => {
+                const monitoringApps = this.monitoringApps.filter(app => app.id !== 'monitoringsentinel');
+                if (monitoringApps.length === 0) return;
+                
+                if (this.currentPage !== 'home') {
+                    let currentIndex = monitoringApps.findIndex(app => app.id === this.currentPage);
+                    if (currentIndex === -1) {
+                        this.setActive(monitoringApps[0].id);
+                    } else {
+                        let nextIndex = (currentIndex + 1) % monitoringApps.length;
+                        this.setActive(monitoringApps[nextIndex].id);
+                    }
+                } else {
+                    this.setActive(monitoringApps[0].id);
+                }
+            }, 600000); // 10 minutes
+        }
+    }).mount('#app');
+</script>
