@@ -1,17 +1,266 @@
-// ✅ FIX: Remove $set (Vue 3 doesn't need it)
-toggleSection(category) {
-    // Initialize if doesn't exist
-    if (this.collapsedSections[category] === undefined) {
-        this.collapsedSections[category] = false;
-    }
-    // Toggle
-    this.collapsedSections[category] = !this.collapsedSections[category];
-},
-
-// ✅ FIX: collapseAllSections without $set
-collapseAllSections() {
-    this.allSectionsCollapsed = !this.allSectionsCollapsed;
-    Object.keys(this.alertsByCategory).forEach(category => {
-        this.collapsedSections[category] = this.allSectionsCollapsed;
-    });
-},
+You are running a development build of Vue.
+Make sure to use the production build (*.prod.js) when deploying for production.
+Vedas_MIS_S/:2769 🚀 VEDAS MIS Vue app mounted
+Vedas_MIS_S/:2477 🔌 Initializing Socket.IO connection...
+Vedas_MIS_S/:2478 📍 Connecting to: http://192.168.2.137:8080
+Vedas_MIS_S/:2590 ✅ All Socket.IO event listeners registered
+Vedas_MIS_S/:2803 ✅ VEDAS MIS ready - Listening for alerts via Socket.IO
+Vedas_MIS_S/:2511 📩 [MESSAGE EVENT] Received: {category: 'system', type: 'info', message: 'Connected to VEDAS Alert WebSocket', source: 'alert_ws_server', timestamp: '2025-12-12T10:50:50.190623Z', …}
+Vedas_MIS_S/:2627 🔔 [handleIncomingAlert] Processing: {category: 'system', type: 'info', message: 'Connected to VEDAS Alert WebSocket', source: 'alert_ws_server', timestamp: '2025-12-12T10:50:50.190623Z', …}
+Vedas_MIS_S/:2635 📂 Category identified: system
+Vedas_MIS_S/:2669 ✅ Alert added to "system". Total: 1
+Vedas_MIS_S/:2490 ✅ Socket.IO Connected - ID: lL-WOz9oAcGVBCqGAACL
+vue.js:2348 [Vue warn]: Property "alerts" was accessed during render but is not defined on instance. 
+  at <App>
+warn$1 @ vue.js:2348
+get @ vue.js:5470
+get @ vue.js:5537
+render @ VM15404:426
+renderComponentRoot @ vue.js:6734
+componentUpdateFn @ vue.js:8313
+run @ vue.js:618
+runIfDirty @ vue.js:656
+callWithErrorHandling @ vue.js:2495
+flushJobs @ vue.js:2700
+Promise.then
+queueFlush @ vue.js:2614
+queueJob @ vue.js:2609
+effect.scheduler @ vue.js:8364
+trigger @ vue.js:646
+endBatch @ vue.js:704
+noTracking @ vue.js:1310
+unshift @ vue.js:1235
+handleIncomingAlert @ Vedas_MIS_S/:2667
+(anonymous) @ Vedas_MIS_S/:2512
+I.emit @ index.js:136
+o.emitEvent @ socket.js:538
+(anonymous) @ socket.js:602
+o.emitBuffered @ socket.js:602
+o.onconnect @ socket.js:592
+o.onpacket @ socket.js:487
+I.emit @ index.js:136
+(anonymous) @ manager.js:209
+Promise.then
+R @ globals.js:4
+i.ondecoded @ manager.js:208
+I.emit @ index.js:136
+i.add @ index.js:142
+i.ondata @ manager.js:195
+I.emit @ index.js:136
+i.H @ socket.js:259
+I.emit @ index.js:136
+i.onPacket @ transport.js:99
+i.onData @ transport.js:91
+ws.onmessage @ websocket.js:48Understand this warning
+7vue.js:2348 [Vue warn]: Property "alerts" was accessed during render but is not defined on instance. 
+  at <App>
+warn$1 @ vue.js:2348
+get @ vue.js:5470
+get @ vue.js:5537
+render @ VM15404:426
+renderComponentRoot @ vue.js:6734
+componentUpdateFn @ vue.js:8313
+run @ vue.js:618
+runIfDirty @ vue.js:656
+callWithErrorHandling @ vue.js:2495
+flushJobs @ vue.js:2700
+Promise.then
+queueFlush @ vue.js:2614
+queueJob @ vue.js:2609
+effect.scheduler @ vue.js:8364
+trigger @ vue.js:646
+endBatch @ vue.js:704
+trigger @ vue.js:1105
+set @ vue.js:1423
+set @ vue.js:5485
+updateTime @ Vedas_MIS_S/:2419
+setInterval
+mounted @ Vedas_MIS_S/:2784
+(anonymous) @ vue.js:5155
+callWithErrorHandling @ vue.js:2495
+callWithAsyncErrorHandling @ vue.js:2502
+hook.__weh.hook.__weh @ vue.js:5135
+flushPostFlushCbs @ vue.js:2677
+render @ vue.js:8921
+mount @ vue.js:6271
+app.mount @ vue.js:12457
+(anonymous) @ Vedas_MIS_S/:2805Understand this warning
+Vedas_MIS_S/:2511 📩 [MESSAGE EVENT] Received: {category: 'server', type: 'offline', message: "Server '2.38 - V1C7' is offline", source: 'vedas-logging', server: '2.38 - V1C7', …}
+Vedas_MIS_S/:2627 🔔 [handleIncomingAlert] Processing: {category: 'server', type: 'offline', message: "Server '2.38 - V1C7' is offline", source: 'vedas-logging', server: '2.38 - V1C7', …}
+Vedas_MIS_S/:2635 📂 Category identified: server
+Vedas_MIS_S/:2669 ✅ Alert added to "server". Total: 1
+vue.js:2348 [Vue warn]: Property "alerts" was accessed during render but is not defined on instance. 
+  at <App>
+warn$1 @ vue.js:2348
+get @ vue.js:5470
+get @ vue.js:5537
+render @ VM15404:426
+renderComponentRoot @ vue.js:6734
+componentUpdateFn @ vue.js:8313
+run @ vue.js:618
+runIfDirty @ vue.js:656
+callWithErrorHandling @ vue.js:2495
+flushJobs @ vue.js:2700
+Promise.then
+queueFlush @ vue.js:2614
+queueJob @ vue.js:2609
+effect.scheduler @ vue.js:8364
+trigger @ vue.js:646
+endBatch @ vue.js:704
+noTracking @ vue.js:1310
+unshift @ vue.js:1235
+handleIncomingAlert @ Vedas_MIS_S/:2667
+(anonymous) @ Vedas_MIS_S/:2512
+I.emit @ index.js:136
+o.emitEvent @ socket.js:538
+o.onevent @ socket.js:525
+o.onpacket @ socket.js:495
+I.emit @ index.js:136
+(anonymous) @ manager.js:209
+Promise.then
+R @ globals.js:4
+i.ondecoded @ manager.js:208
+I.emit @ index.js:136
+i.add @ index.js:142
+i.ondata @ manager.js:195
+I.emit @ index.js:136
+i.H @ socket.js:259
+I.emit @ index.js:136
+i.onPacket @ transport.js:99
+i.onData @ transport.js:91
+ws.onmessage @ websocket.js:48Understand this warning
+Vedas_MIS_S/:2511 📩 [MESSAGE EVENT] Received: {category: 'server', type: 'storage_high', message: 'Root storage usage is high (87.0%)', source: 'vedas-logging', server: '231 - H100 - V1G1', …}
+Vedas_MIS_S/:2627 🔔 [handleIncomingAlert] Processing: {category: 'server', type: 'storage_high', message: 'Root storage usage is high (87.0%)', source: 'vedas-logging', server: '231 - H100 - V1G1', …}
+Vedas_MIS_S/:2635 📂 Category identified: server
+Vedas_MIS_S/:2669 ✅ Alert added to "server". Total: 2
+vue.js:2348 [Vue warn]: Property "alerts" was accessed during render but is not defined on instance. 
+  at <App>
+warn$1 @ vue.js:2348
+get @ vue.js:5470
+get @ vue.js:5537
+render @ VM15404:426
+renderComponentRoot @ vue.js:6734
+componentUpdateFn @ vue.js:8313
+run @ vue.js:618
+runIfDirty @ vue.js:656
+callWithErrorHandling @ vue.js:2495
+flushJobs @ vue.js:2700
+Promise.then
+queueFlush @ vue.js:2614
+queueJob @ vue.js:2609
+effect.scheduler @ vue.js:8364
+trigger @ vue.js:646
+endBatch @ vue.js:704
+noTracking @ vue.js:1310
+unshift @ vue.js:1235
+handleIncomingAlert @ Vedas_MIS_S/:2667
+(anonymous) @ Vedas_MIS_S/:2512
+I.emit @ index.js:136
+o.emitEvent @ socket.js:538
+o.onevent @ socket.js:525
+o.onpacket @ socket.js:495
+I.emit @ index.js:136
+(anonymous) @ manager.js:209
+Promise.then
+R @ globals.js:4
+i.ondecoded @ manager.js:208
+I.emit @ index.js:136
+i.add @ index.js:142
+i.ondata @ manager.js:195
+I.emit @ index.js:136
+i.H @ socket.js:259
+I.emit @ index.js:136
+i.onPacket @ transport.js:99
+i.onData @ transport.js:91
+ws.onmessage @ websocket.js:48Understand this warning
+Vedas_MIS_S/:2511 📩 [MESSAGE EVENT] Received: {category: 'server', type: 'storage_high', message: 'Root storage usage is high (87.77675775312703%)', source: 'vedas-logging', server: '2.136 - V1C2', …}
+Vedas_MIS_S/:2627 🔔 [handleIncomingAlert] Processing: {category: 'server', type: 'storage_high', message: 'Root storage usage is high (87.77675775312703%)', source: 'vedas-logging', server: '2.136 - V1C2', …}
+Vedas_MIS_S/:2635 📂 Category identified: server
+Vedas_MIS_S/:2669 ✅ Alert added to "server". Total: 3
+vue.js:2348 [Vue warn]: Property "alerts" was accessed during render but is not defined on instance. 
+  at <App>
+warn$1 @ vue.js:2348
+get @ vue.js:5470
+get @ vue.js:5537
+render @ VM15404:426
+renderComponentRoot @ vue.js:6734
+componentUpdateFn @ vue.js:8313
+run @ vue.js:618
+runIfDirty @ vue.js:656
+callWithErrorHandling @ vue.js:2495
+flushJobs @ vue.js:2700
+Promise.then
+queueFlush @ vue.js:2614
+queueJob @ vue.js:2609
+effect.scheduler @ vue.js:8364
+trigger @ vue.js:646
+endBatch @ vue.js:704
+noTracking @ vue.js:1310
+unshift @ vue.js:1235
+handleIncomingAlert @ Vedas_MIS_S/:2667
+(anonymous) @ Vedas_MIS_S/:2512
+I.emit @ index.js:136
+o.emitEvent @ socket.js:538
+o.onevent @ socket.js:525
+o.onpacket @ socket.js:495
+I.emit @ index.js:136
+(anonymous) @ manager.js:209
+Promise.then
+R @ globals.js:4
+i.ondecoded @ manager.js:208
+I.emit @ index.js:136
+i.add @ index.js:142
+i.ondata @ manager.js:195
+I.emit @ index.js:136
+i.H @ socket.js:259
+I.emit @ index.js:136
+i.onPacket @ transport.js:99
+i.onData @ transport.js:91
+ws.onmessage @ websocket.js:48Understand this warning
+vue.js:2348 [Vue warn]: Property "alerts" was accessed during render but is not defined on instance. 
+  at <App>
+warn$1 @ vue.js:2348
+get @ vue.js:5470
+get @ vue.js:5537
+render @ VM15404:426
+renderComponentRoot @ vue.js:6734
+componentUpdateFn @ vue.js:8313
+run @ vue.js:618
+runIfDirty @ vue.js:656
+callWithErrorHandling @ vue.js:2495
+flushJobs @ vue.js:2700
+Promise.then
+queueFlush @ vue.js:2614
+queueJob @ vue.js:2609
+effect.scheduler @ vue.js:8364
+trigger @ vue.js:646
+endBatch @ vue.js:704
+trigger @ vue.js:1105
+set @ vue.js:1423
+set @ vue.js:5485
+updateTime @ Vedas_MIS_S/:2419
+setInterval
+mounted @ Vedas_MIS_S/:2784
+(anonymous) @ vue.js:5155
+callWithErrorHandling @ vue.js:2495
+callWithAsyncErrorHandling @ vue.js:2502
+hook.__weh.hook.__weh @ vue.js:5135
+flushPostFlushCbs @ vue.js:2677
+render @ vue.js:8921
+mount @ vue.js:6271
+app.mount @ vue.js:12457
+(anonymous) @ Vedas_MIS_S/:2805Understand this warning
+Vedas_MIS_S/:2511 📩 [MESSAGE EVENT] Received: {category: 'server', type: 'offline', message: "Server '2.38 - V1C7' is offline", source: 'vedas-logging', server: '2.38 - V1C7', …}
+Vedas_MIS_S/:2627 🔔 [handleIncomingAlert] Processing: {category: 'server', type: 'offline', message: "Server '2.38 - V1C7' is offline", source: 'vedas-logging', server: '2.38 - V1C7', …}
+Vedas_MIS_S/:2635 📂 Category identified: server
+Vedas_MIS_S/:2649 ⏭️ Alert already processed, ignoring duplicate: server-2.38 - V1C7-offline-Server '2.38 - V1C7' is offline
+Vedas_MIS_S/:2511 📩 [MESSAGE EVENT] Received: {category: 'server', type: 'storage_high', message: 'Root storage usage is high (87.0%)', source: 'vedas-logging', server: '231 - H100 - V1G1', …}
+Vedas_MIS_S/:2627 🔔 [handleIncomingAlert] Processing: {category: 'server', type: 'storage_high', message: 'Root storage usage is high (87.0%)', source: 'vedas-logging', server: '231 - H100 - V1G1', …}
+Vedas_MIS_S/:2635 📂 Category identified: server
+Vedas_MIS_S/:2649 ⏭️ Alert already processed, ignoring duplicate: server-231 - H100 - V1G1-storage_high-Root storage usage is high (87.0%)
+Vedas_MIS_S/:2511 📩 [MESSAGE EVENT] Received: {category: 'server', type: 'storage_high', message: 'Root storage usage is high (87.77675775312703%)', source: 'vedas-logging', server: '2.136 - V1C2', …}
+Vedas_MIS_S/:2627 🔔 [handleIncomingAlert] Processing: {category: 'server', type: 'storage_high', message: 'Root storage usage is high (87.77675775312703%)', source: 'vedas-logging', server: '2.136 - V1C2', …}
+Vedas_MIS_S/:2635 📂 Category identified: server
+Vedas_MIS_S/:2649 ⏭️ Alert already processed, ignoring duplicate: server-2.136 - V1C2-storage_high-Root storage usage is high (87.77675775312703%)
+3vue.js:2348 [Vue warn]: Property "alerts" was accessed during render but is not defined on instance. 
+  at <App>
