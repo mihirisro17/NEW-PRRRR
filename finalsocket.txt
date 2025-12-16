@@ -1,37 +1,71 @@
- mounted() {
-                console.log('🚀 VEDAS MIS Vue app mounted');
-                document.body.className = 'theme-vedas';
+mounted() {
+    console.log('🚀 VEDAS MIS Vue app mounted');
+    document.body.className = 'theme-vedas';
 
-                this.initializeSocket();
+    this.initializeSocket();
 
-                const now = new Date();
-                const midnight = new Date(now);
-                midnight.setHours(24, 0, 0, 0);
-                const msUntilMidnight = midnight - now;
-                setTimeout(() => {
-                    this.shownBreakTimes.clear();
-                    setInterval(() => this.shownBreakTimes.clear(), 24 * 60 * 60 * 1000);
-                }, msUntilMidnight);
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const msUntilMidnight = midnight - now;
+    setTimeout(() => {
+        this.shownBreakTimes.clear();
+        setInterval(() => this.shownBreakTimes.clear(), 24 * 60 * 60 * 1000);
+    }, msUntilMidnight);
 
-                this.updateTime();
-                setInterval(this.updateTime, 1000);
+    this.updateTime();
+    setInterval(this.updateTime, 1000);
 
-                setInterval(() => {
-                    const monitoringApps = this.monitoringApps.filter(app => app.id !== 'monitoringsentinel');
-                    if (monitoringApps.length === 0) return;
+    // ✅ Simple user activity tracking
+    const updateActivity = () => {
+        this.lastUserActivity = Date.now();
+    };
+    
+    // Track user interactions (throttled to avoid performance issues)
+    let activityTimeout;
+    const throttledActivity = () => {
+        if (!activityTimeout) {
+            updateActivity();
+            activityTimeout = setTimeout(() => {
+                activityTimeout = null;
+            }, 1000); // Update at most once per second
+        }
+    };
+    
+    document.addEventListener('mousemove', throttledActivity);
+    document.addEventListener('keydown', throttledActivity);
+    document.addEventListener('click', throttledActivity);
 
-                    if (this.currentPage !== 'home') {
-                        let currentIndex = monitoringApps.findIndex(app => app.id === this.currentPage);
-                        if (currentIndex === -1) {
-                            this.setActive(monitoringApps[0].id);
-                        } else {
-                            let nextIndex = (currentIndex + 1) % monitoringApps.length;
-                            this.setActive(monitoringApps[nextIndex].id);
-                        }
-                    } else {
-                        this.setActive(monitoringApps[0].id);
-                    }
-                }, 600000);
+    // ✅ Auto-change with user activity check
+    setInterval(() => {
+        // Check if user was active in last 5 minutes
+        const timeSinceActivity = Date.now() - this.lastUserActivity;
+        if (timeSinceActivity < 300000) { // 5 minutes = 300000ms
+            console.log('⏸️ Auto-change delayed - user is active');
+            return; // Skip this cycle
+        }
 
-                console.log('✅ VEDAS MIS ready - Listening for alerts via Socket.IO');
+        const monitoringApps = this.monitoringApps.filter(app => app.id !== 'monitoringsentinel');
+        if (monitoringApps.length === 0) return;
+
+        if (this.currentPage !== 'home') {
+            let currentIndex = monitoringApps.findIndex(app => app.id === this.currentPage);
+            if (currentIndex === -1) {
+                this.setActive(monitoringApps[0].id);
+            } else {
+                let nextIndex = (currentIndex + 1) % monitoringApps.length;
+                this.setActive(monitoringApps[nextIndex].id);
             }
+        } else {
+            this.setActive(monitoringApps[0].id);
+        }
+    }, 600000); // Check every 10 minutes
+
+    console.log('✅ VEDAS MIS ready - Listening for alerts via Socket.IO');
+}
+
+
+
+
+
+lastUserActivity: Date.now(),
