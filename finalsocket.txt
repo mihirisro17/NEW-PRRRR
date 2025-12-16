@@ -1,326 +1,82 @@
-handleIncomingAlert(notification) {
-    console.log('🔔 [handleIncomingAlert] Processing:', notification);
-
-    if (!notification.category || !notification.type || !notification.message) {
-        console.warn('⚠️ Invalid notification format:', notification);
-        return;
-    }
-
-    const category = notification.category.toLowerCase();
-    console.log(`📂 Category identified: ${category}`);
-
-    const alert = {
-        type: notification.type,
-        message: notification.message,
-        server: notification.server || 'Unknown',
-        source: notification.source || category,
-        timestamp: notification.timestamp || new Date().toISOString(),
-        metadata: notification.metadata || {}
-    };
-
-    // ✅ FIX: Create unique key and check FIRST
-    const alertKey = this.getAlertKey(category, alert);
-
-    // Check if already processed OR if already exists in current alerts
-    if (this.processedAlerts.has(alertKey)) {
-        console.log('⏭️ Alert already processed, ignoring duplicate:', alertKey);
-        return;
-    }
-
-    if (this.clearedAlerts.has(alertKey)) {
-        console.log('⏭️ Alert was previously cleared, ignoring:', alertKey);
-        return;
-    }
-
-    this.ensureCategory(category);
-
-    // ✅ FIX: More robust duplicate check
-    const exists = this.alertsByCategory[category].some(a => {
-        const existingKey = this.getAlertKey(category, a);
-        return existingKey === alertKey;
-    });
-
-    if (!exists) {
-        this.alertsByCategory[category].unshift(alert);
-        this.processedAlerts.add(alertKey);
-        console.log(`✅ Alert added to "${category}". Total:`, this.alertsByCategory[category].length);
-    } else {
-        console.log('⚠️ Duplicate alert detected in category, skipping');
-        this.processedAlerts.add(alertKey); // Mark as processed even if duplicate
-    }
-
-    this.lastUpdated = this.formatTime(new Date());
-},
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- Replace the particles and floating-elements divs in home-container with: -->
-<div v-if="currentPage === 'home'" class="home-container">
-    <!-- Animated Solar System -->
-    <div class="solar-system">
-        <div class="sun">☀️</div>
-        <div class="orbit orbit-mercury">
-            <div class="planet mercury">☿️</div>
-        </div>
-        <div class="orbit orbit-venus">
-            <div class="planet venus">♀️</div>
-        </div>
-        <div class="orbit orbit-earth">
-            <div class="planet earth">🌍</div>
-        </div>
-        <div class="orbit orbit-mars">
-            <div class="planet mars">♂️</div>
-        </div>
-        <div class="orbit orbit-jupiter">
-            <div class="planet jupiter">♃</div>
-        </div>
-        <div class="orbit orbit-saturn">
-            <div class="planet saturn">♄</div>
-        </div>
-        <div class="rocket">🚀</div>
-    </div>
-
-    <!-- Rest of your home content... -->
-    <div class="logo-container">
-        <!-- ... -->
-    </div>
-</div>
-
-
-
-
-
-
-
-
-/* Solar System Animation */
-.solar-system {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    overflow: hidden;
-    z-index: 0;
-}
-
-.sun {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 80px;
-    animation: sun-pulse 4s ease-in-out infinite;
-    filter: drop-shadow(0 0 40px rgba(255, 200, 0, 0.6));
-    z-index: 1;
-}
-
-@keyframes sun-pulse {
-    0%, 100% {
-        transform: translate(-50%, -50%) scale(1);
-        filter: drop-shadow(0 0 40px rgba(255, 200, 0, 0.6));
-    }
-    50% {
-        transform: translate(-50%, -50%) scale(1.1);
-        filter: drop-shadow(0 0 60px rgba(255, 200, 0, 0.8));
-    }
-}
-
-.orbit {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    border: 2px dashed rgba(99, 102, 241, 0.2);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.orbit-mercury { width: 150px; height: 150px; }
-.orbit-venus { width: 220px; height: 220px; }
-.orbit-earth { width: 300px; height: 300px; }
-.orbit-mars { width: 380px; height: 380px; }
-.orbit-jupiter { width: 480px; height: 480px; }
-.orbit-saturn { width: 580px; height: 580px; }
-
-.planet {
-    position: absolute;
-    font-size: 28px;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
-}
-
-.mercury {
-    top: 0;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: orbit-mercury 8s linear infinite;
-}
-
-.venus {
-    top: 0;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: orbit-venus 12s linear infinite;
-}
-
-.earth {
-    top: 0;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: orbit-earth 18s linear infinite;
-    font-size: 32px;
-}
-
-.mars {
-    top: 0;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: orbit-mars 24s linear infinite;
-}
-
-.jupiter {
-    top: 0;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: orbit-jupiter 32s linear infinite;
-    font-size: 40px;
-}
-
-.saturn {
-    top: 0;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: orbit-saturn 40s linear infinite;
-    font-size: 36px;
-}
-
-@keyframes orbit-mercury {
-    from { transform: translate(-50%, -50%) rotate(0deg) translateX(75px) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg) translateX(75px) rotate(-360deg); }
-}
-
-@keyframes orbit-venus {
-    from { transform: translate(-50%, -50%) rotate(0deg) translateX(110px) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg) translateX(110px) rotate(-360deg); }
-}
-
-@keyframes orbit-earth {
-    from { transform: translate(-50%, -50%) rotate(0deg) translateX(150px) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg) translateX(150px) rotate(-360deg); }
-}
-
-@keyframes orbit-mars {
-    from { transform: translate(-50%, -50%) rotate(0deg) translateX(190px) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg) translateX(190px) rotate(-360deg); }
-}
-
-@keyframes orbit-jupiter {
-    from { transform: translate(-50%, -50%) rotate(0deg) translateX(240px) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg) translateX(240px) rotate(-360deg); }
-}
-
-@keyframes orbit-saturn {
-    from { transform: translate(-50%, -50%) rotate(0deg) translateX(290px) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg) translateX(290px) rotate(-360deg); }
-}
-
-.rocket {
-    position: absolute;
-    font-size: 40px;
-    animation: rocket-fly 30s linear infinite;
-    filter: drop-shadow(0 4px 12px rgba(255, 100, 0, 0.6));
-    z-index: 2;
-}
-
-@keyframes rocket-fly {
-    0% {
-        top: 10%;
-        left: -5%;
-        transform: rotate(-45deg);
-    }
-    25% {
-        top: 50%;
-        left: 25%;
-        transform: rotate(0deg);
-    }
-    50% {
-        top: 90%;
-        left: 50%;
-        transform: rotate(45deg);
-    }
-    75% {
-        top: 50%;
-        left: 75%;
-        transform: rotate(90deg);
-    }
-    100% {
-        top: 10%;
-        left: 105%;
-        transform: rotate(135deg);
-    }
-}
-
-
-
-
-
 mounted() {
-    // ... existing mounted code
-
-    // ✅ FIX: User activity tracking
+    console.log('✅ VEDAS MIS Vue app mounted');
+    
+    // Set initial theme
+    document.body.className = 'theme-vedas';
+    
+    // Initialize Socket.IO connection
+    this.initializeSocket();
+    
+    // Reset shown break times at midnight
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const msUntilMidnight = midnight - now;
+    setTimeout(() => {
+        this.shownBreakTimes.clear();
+        setInterval(() => {
+            this.shownBreakTimes.clear();
+        }, 24 * 60 * 60 * 1000);
+    }, msUntilMidnight);
+    
+    // Update time every second
+    this.updateTime();
+    setInterval(() => {
+        this.updateTime();
+    }, 1000);
+    
+    // ✅ FIX: User activity tracking for auto-change delay
     const resetActivityTimer = () => {
         this.lastUserActivity = Date.now();
         console.log('👆 User activity detected, resetting auto-change timer');
     };
-
+    
     // Track mouse and keyboard activity
     document.addEventListener('mousemove', resetActivityTimer);
     document.addEventListener('keydown', resetActivityTimer);
     document.addEventListener('click', resetActivityTimer);
-
+    document.addEventListener('scroll', resetActivityTimer);
+    document.addEventListener('touchstart', resetActivityTimer);
+    
     // ✅ FIX: Improved auto-change with user activity detection
     const startAutoChange = () => {
         if (this.autoChangeTimer) {
             clearInterval(this.autoChangeTimer);
         }
-
+        
         this.autoChangeTimer = setInterval(() => {
             const timeSinceActivity = Date.now() - this.lastUserActivity;
             
             // If user was active in last 5 minutes, delay the change
             if (timeSinceActivity < this.userActivityDelay) {
                 console.log('⏸️ Auto-change delayed due to recent user activity');
+                console.log(`⏰ Time since last activity: ${Math.floor(timeSinceActivity / 1000)}s`);
                 return;
             }
-
+            
             const monitoringApps = this.monitoringApps.filter(app => app.id !== 'monitoringsentinel');
             if (monitoringApps.length === 0) return;
-
+            
             if (this.currentPage !== 'home') {
                 let currentIndex = monitoringApps.findIndex(app => app.id === this.currentPage);
                 if (currentIndex === -1) {
                     this.setActive(monitoringApps[0].id);
+                    console.log(`🔄 Auto-switched to: ${monitoringApps[0].name}`);
                 } else {
                     let nextIndex = (currentIndex + 1) % monitoringApps.length;
                     this.setActive(monitoringApps[nextIndex].id);
+                    console.log(`🔄 Auto-switched to: ${monitoringApps[nextIndex].name}`);
                 }
             } else {
                 this.setActive(monitoringApps[0].id);
+                console.log(`🔄 Auto-switched from home to: ${monitoringApps[0].name}`);
             }
         }, this.autoChangeDelay); // Check every 10 minutes
     };
-
+    
     startAutoChange();
-
+    
     console.log('✅ VEDAS MIS ready - Listening for alerts via Socket.IO');
+    console.log('⏱️ Auto-change interval: 10 minutes');
+    console.log('⏱️ User activity delay: 5 minutes');
 }
