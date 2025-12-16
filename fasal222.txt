@@ -1,0 +1,313 @@
+# import sys
+# import os
+# import concurrent.futures
+
+# os.environ['GEOENTITY_SERVICE_URL'] = 'http://192.168.2.149:7000/'
+# sys.path.append('/opt/vedas_env/lib/geoentity_stats_system/pygs_wrapper')
+
+# from pygs import PyGS
+
+# def fetch_date_data(pygs_instance, date, planting_param_id, apar_param_id):
+#     """Helper function to fetch data for a single date (to be used in parallel)."""
+#     try:
+#         current_unixtimestamp = pygs_instance.yyyymmdd_to_timestamp(date)
+        
+#         # Fetch APAR
+#         apar_sum_data = pygs_instance.get_geoentity_source_param_values_otf(
+#             apar_param_id, [date], print_url=False
+#         )
+        
+#         # Fetch Planting
+#         planting_data = pygs_instance.get_geoentity_source_param_values(
+#             params=planting_param_id,
+#             from_time=current_unixtimestamp,
+#             print_url=False
+#         )
+        
+#         return date, apar_sum_data, planting_data
+#     except Exception as e:
+#         print(f"Error fetching data for {date}: {e}")
+#         return date, {}, {}
+
+# def derive_param_values(geoentity_source_id, geoentity_prefix, param_id, *args, **kwargs):
+#     pygs = PyGS(geoentity_source_id=geoentity_source_id, prefix=geoentity_prefix, **kwargs)
+    
+#     # --- 1. Determine Mode ---
+#     static_mode = False
+#     year = args[0]
+#     if len(args) > 1 and args[1] == "static":
+#         static_mode = True
+
+#     static_ts_str = f"{year}0626"
+#     static_ts = pygs.yyyymmdd_to_timestamp(static_ts_str)
+
+#     Weighted_APARSum_Response = {}
+#     APAR_param_id = "60002"
+#     planting_param_id = "119"
+
+#     # --- 2. Date Mapping ---
+#     if year == "2021":
+#         date_dict = {"20210610": "161", "20210626": "177", "20210712": "193"}
+#     elif year == "2025":
+#         date_dict = {
+#             "20250509": "145", "20250525": "161", "20250626": "193", "20250728": "209"
+#         }
+#     elif year == "2024":
+#         date_dict = {
+#             "20240610": "161", "20240626": "177", "20240712": "193", 
+#             "20240727": "209", "20240812": "225"
+#         }
+#     else:
+#         date_dict = {year + "0610": "161", year + "0626": "177"}
+
+#     sum_val = {}
+
+#     # --- 3. Parallel Processing ---
+#     # We use ThreadPoolExecutor to make all API calls at the same time
+#     # This prevents the Gunicorn timeout by drastically reducing total execution time.
+#     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+#         # Create a list of tasks
+#         futures = [
+#             executor.submit(fetch_date_data, pygs, date, planting_param_id, APAR_param_id) 
+#             for date in date_dict.keys()
+#         ]
+        
+#         # Process results as they complete
+#         for future in concurrent.futures.as_completed(futures):
+#             date, apar_sum_data, planting_data = future.result()
+#             sd_value = date_dict[date] # Get the mapping value (e.g., "161")
+
+#             # --- Logic from previous version starts here ---
+#             CP = {}
+#             for geo_id, geo_info in planting_data.items():
+#                 if not geo_info.get("param_values") or not geo_info["param_values"].get(planting_param_id):
+#                     CP[geo_id] = {}
+#                     continue
+                    
+#                 ts_key = list(geo_info["param_values"][planting_param_id].keys())[0]
+#                 values_dict = geo_info["param_values"][planting_param_id][ts_key]["value"]
+#                 vals = {k: v for k, v in values_dict.items() if k != "nodata" and v is not None}
+#                 total = sum(vals.values())
+#                 if total > 0:
+#                     CP[geo_id] = {k: v / total for k, v in vals.items()}
+#                 else:
+#                     CP[geo_id] = {k: None for k in vals}
+
+#             for geoentity_id, geo_info in apar_sum_data.items():
+#                 param_values = geo_info.get("param_values", {}).get(APAR_param_id)
+#                 if not param_values: continue
+
+#                 timestamp = list(param_values.keys())[0]
+#                 value = param_values[timestamp]["value"]
+
+#                 if geoentity_id not in sum_val:
+#                     sum_val[geoentity_id] = 0
+
+#                 if value is not None and sd_value in CP.get(geoentity_id, {}):
+#                     cp_val = CP[geoentity_id][sd_value]
+#                     if cp_val is not None:
+#                         sum_val[geoentity_id] += value * cp_val
+
+#                 # Construction Logic
+#                 if geoentity_id not in Weighted_APARSum_Response:
+#                     Weighted_APARSum_Response[geoentity_id] = {
+#                         "name": geo_info["name"],
+#                         "param_values": {str(param_id): {}}
+#                     }
+
+#                 output_ts_key = str(static_ts) if static_mode else str(timestamp)
+
+#                 Weighted_APARSum_Response[geoentity_id]["param_values"][str(param_id)][output_ts_key] = {
+#                     "value": sum_val[geoentity_id]
+#                 }
+
+#     return Weighted_APARSum_Response
+
+# if __name__ == "__main__":
+#     # Test
+#     print(derive_param_values(3, 'C91', '60006', '2025', 'static'))
+
+this is my final working code and i have after changes make this 
+import sys
+import os
+import concurrent.futures
+from datetime import datetime, timedelta
+
+
+# os.environ['GEOENTITY_SERVICE_URL'] = 'http://192.168.2.149:7000/'
+
+sys.path.append('/opt/vedas_env/lib/geoentity_stats_system/pygs_wrapper')
+from pygs import PyGS
+
+
+# -------------------------
+# Utilities
+# -------------------------
+
+def yyyymmdd_to_ts(date_str):
+    return int(datetime.strptime(date_str, "%Y%m%d").timestamp())
+
+
+def nearest_ts_leq(ts_list, target_ts):
+    """Return nearest timestamp <= target_ts"""
+    valid = [ts for ts in ts_list if ts <= target_ts]
+    return max(valid) if valid else None
+
+
+def doy_to_yyyymmdd(year, doy):
+    return (datetime(year, 1, 1) + timedelta(days=doy - 1)).strftime("%Y%m%d")
+
+
+STAGE_OFFSETS = [0, 16, 48, 64]
+
+
+# -------------------------
+# APAR fetch (thread-safe)
+# -------------------------
+
+def fetch_apar(geoentity_source_id, prefix, date, apar_param_id):
+    try:
+        pygs = PyGS(geoentity_source_id=geoentity_source_id, prefix=prefix)
+        data = pygs.get_geoentity_source_param_values_otf(
+            apar_param_id, [date], print_url=False
+        )
+        return date, data
+    except Exception as e:
+        print("APAR fetch error:", e)
+        return date, {}
+
+
+# -------------------------
+# Main function
+# -------------------------
+
+def derive_param_values(geoentity_source_id, geoentity_prefix, param_id, *args):
+    pygs = PyGS(geoentity_source_id=geoentity_source_id, prefix=geoentity_prefix)
+
+    year = int(args[0])
+    static_mode = len(args) > 1 and args[1] == "static"
+
+    APAR_param_id = "60002"
+    planting_param_id = "119"
+
+    # -------------------------
+    # 1. Fetch planting once
+    # -------------------------
+    planting_data = pygs.get_geoentity_source_param_values(
+        params=planting_param_id,
+        print_url=False
+    )
+
+    # Collect all planting timestamps
+    planting_ts_list = set()
+    for g in planting_data.values():
+        pv = g.get("param_values", {}).get(planting_param_id, {})
+        planting_ts_list.update(map(int, pv.keys()))
+
+    if not planting_ts_list:
+        raise RuntimeError("No planting timestamps found")
+
+    min_ts = min(planting_ts_list)
+    planting_year = datetime.utcfromtimestamp(min_ts).year
+    planting_doy = datetime.utcfromtimestamp(min_ts).timetuple().tm_yday
+
+    # -------------------------
+    # 2. Build APAR dates
+    # -------------------------
+    date_list = [
+        doy_to_yyyymmdd(planting_year, planting_doy + off)
+        for off in STAGE_OFFSETS
+    ]
+
+    static_ts = pygs.yyyymmdd_to_timestamp(
+        doy_to_yyyymmdd(planting_year, planting_doy)
+    )
+
+    Weighted_APARSum_Response = {}
+    sum_val = {}
+
+    # -------------------------
+    # 3. Parallel APAR fetch
+    # -------------------------
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [
+            executor.submit(
+                fetch_apar,
+                geoentity_source_id,
+                geoentity_prefix,
+                date,
+                APAR_param_id
+            )
+            for date in date_list
+        ]
+
+        for future in concurrent.futures.as_completed(futures):
+            date, apar_data = future.result()
+            apar_ts = yyyymmdd_to_ts(date)
+
+            for geo_id, geo_info in apar_data.items():
+                apar_pv = geo_info.get("param_values", {}).get(APAR_param_id)
+                if not apar_pv:
+                    continue
+
+                apar_val = next(iter(apar_pv.values()))["value"]
+
+                # -------------------------
+                # Find nearest planting TS
+                # -------------------------
+                plant_pv = planting_data.get(geo_id, {}) \
+                    .get("param_values", {}) \
+                    .get(planting_param_id, {})
+
+                nearest_ts = nearest_ts_leq(
+                    list(map(int, plant_pv.keys())),
+                    apar_ts
+                )
+
+                if nearest_ts is None:
+                    continue
+
+                plant_vals = plant_pv[str(nearest_ts)]["value"]
+
+                vals = {
+                    k: v for k, v in plant_vals.items()
+                    if k != "nodata" and v is not None
+                }
+
+                total = sum(vals.values())
+                if total == 0:
+                    continue
+
+                CP = {k: v / total for k, v in vals.items()}
+
+                # -------------------------
+                # Weighted sum
+                # -------------------------
+                if geo_id not in sum_val:
+                    sum_val[geo_id] = 0
+
+                # for stage_key, cp in CP.items():
+                #     if stage_key in apar_val:
+                #         sum_val[geo_id] += apar_val * cp
+                sum_val[geo_id] += apar_val
+
+                if geo_id not in Weighted_APARSum_Response:
+                    Weighted_APARSum_Response[geo_id] = {
+                        "name": geo_info["name"],
+                        "param_values": {str(param_id): {}}
+                    }
+
+                out_ts = str(static_ts) if static_mode else str(apar_ts)
+
+                Weighted_APARSum_Response[geo_id]["param_values"][str(param_id)][out_ts] = {
+                    "value": sum_val[geo_id]
+                }
+
+    return Weighted_APARSum_Response
+
+
+# -------------------------
+# Test
+# -------------------------
+if __name__ == "__main__":
+    print(derive_param_values(3, "C91S20", "60006", "2025", "static"))
