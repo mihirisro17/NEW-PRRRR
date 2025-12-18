@@ -1,208 +1,87 @@
-import sys
-import os
-import concurrent.futures
-from datetime import datetime, timedelta
-
-
-# os.environ['GEOENTITY_SERVICE_URL'] = 'http://192.168.2.149:7000/'
-
-sys.path.append('/opt/vedas_env/lib/geoentity_stats_system/pygs_wrapper')
-from pygs import PyGS
-
-
-# -------------------------
-# Utilities
-# -------------------------
-
-def yyyymmdd_to_ts(date_str):
-    """Convert YYYYMMDD string to Unix timestamp"""
-    return int(datetime.strptime(date_str, "%Y%m%d").timestamp())
-
-
-def yyyymmdd_to_doy(date_str):
-    """Convert YYYYMMDD string to Day of Year (DOY) as string"""
-    dt = datetime.strptime(date_str, "%Y%m%d")
-    return str(dt.timetuple().tm_yday)
-
-
-def doy_to_yyyymmdd(year, doy):
-    """Convert year and DOY to YYYYMMDD string"""
-    return (datetime(year, 1, 1) + timedelta(days=doy - 1)).strftime("%Y%m%d")
-
-
-def nearest_ts_leq(ts_list, target_ts):
-    """Return nearest timestamp <= target_ts"""
-    valid = [ts for ts in ts_list if ts <= target_ts]
-    return max(valid) if valid else None
-
-
-# Stage offsets in days from planting date
-STAGE_OFFSETS = [0, 16, 48, 64]
-
-
-# -------------------------
-# APAR fetch (thread-safe)
-# -------------------------
-
-def fetch_apar(geoentity_source_id, prefix, date, apar_param_id):
-    """Fetch APAR data for a single date in parallel"""
-    try:
-        pygs = PyGS(geoentity_source_id=geoentity_source_id, prefix=prefix)
-        data = pygs.get_geoentity_source_param_values_otf(
-            apar_param_id, [date], print_url=False
-        )
-        return date, data
-    except Exception as e:
-        print(f"APAR fetch error for {date}: {e}")
-        return date, {}
-
-
-# -------------------------
-# Main function
-# -------------------------
-
-def derive_param_values(geoentity_source_id, geoentity_prefix, param_id, *args):
-    pygs = PyGS(geoentity_source_id=geoentity_source_id, prefix=geoentity_prefix)
-
-    year = int(args[0])
-    static_mode = len(args) > 1 and args[1] == "static"
-
-    APAR_param_id = "60002"
-    planting_param_id = "119"
-
-    # -------------------------
-    # 1. Fetch planting data once
-    # -------------------------
-    planting_data = pygs.get_geoentity_source_param_values(
-        params=planting_param_id,
-        print_url=False
-    )
-
-    # Collect all planting timestamps
-    planting_ts_list = set()
-    for g in planting_data.values():
-        pv = g.get("param_values", {}).get(planting_param_id, {})
-        planting_ts_list.update(map(int, pv.keys()))
-
-    if not planting_ts_list:
-        raise RuntimeError("No planting timestamps found")
-
-    # Use the minimum planting timestamp to determine base date
-    min_ts = min(planting_ts_list)
-    planting_year = datetime.utcfromtimestamp(min_ts).year
-    planting_doy = datetime.utcfromtimestamp(min_ts).timetuple().tm_yday
-
-    # -------------------------
-    # 2. Build APAR dates and create date-to-stage mapping
-    # -------------------------
-    date_list = []
-    date_to_stage_map = {}  # Maps "YYYYMMDD" -> "DOY" (stage identifier)
-    
-    for offset in STAGE_OFFSETS:
-        date_str = doy_to_yyyymmdd(planting_year, planting_doy + offset)
-        stage_doy = yyyymmdd_to_doy(date_str)
-        date_list.append(date_str)
-        date_to_stage_map[date_str] = stage_doy
-
-    # Static timestamp for static mode
-    static_ts = pygs.yyyymmdd_to_timestamp(
-        doy_to_yyyymmdd(planting_year, planting_doy)
-    )
-
-    # -------------------------
-    # 3. Pre-calculate CP (Crop Proportions) for all geoentities
-    # -------------------------
-    CP = {}  # CP[geo_id][stage_doy] = proportion
-    
-    for geo_id, geo_info in planting_data.items():
-        if not geo_info.get("param_values") or not geo_info["param_values"].get(planting_param_id):
-            CP[geo_id] = {}
-            continue
-            
-        # Get the first timestamp's planting data
-        ts_key = list(geo_info["param_values"][planting_param_id].keys())[0]
-        values_dict = geo_info["param_values"][planting_param_id][ts_key]["value"]
-        
-        # Filter out nodata and None values
-        vals = {k: v for k, v in values_dict.items() if k != "nodata" and v is not None}
-        
-        # Calculate proportions
-        total = sum(vals.values())
-        if total > 0:
-            CP[geo_id] = {k: v / total for k, v in vals.items()}
-        else:
-            CP[geo_id] = {}
-
-    # -------------------------
-    # 4. Parallel APAR fetch and weighted sum calculation
-    # -------------------------
-    Weighted_APARSum_Response = {}
-    sum_val = {}
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        # Submit all APAR fetch tasks
-        futures = [
-            executor.submit(
-                fetch_apar,
-                geoentity_source_id,
-                geoentity_prefix,
-                date,
-                APAR_param_id
-            )
-            for date in date_list
-        ]
-
-        # Process results as they complete
-        for future in concurrent.futures.as_completed(futures):
-            date, apar_data = future.result()
-            
-            # Get the stage DOY for this date
-            stage_doy = date_to_stage_map[date]
-            apar_ts = yyyymmdd_to_ts(date)
-
-            # Process each geoentity's APAR value
-            for geo_id, geo_info in apar_data.items():
-                apar_pv = geo_info.get("param_values", {}).get(APAR_param_id)
-                if not apar_pv:
-                    continue
-
-                # Get APAR value
-                apar_val = next(iter(apar_pv.values()))["value"]
-                
-                if apar_val is None:
-                    continue
-
-                # Initialize sum_val for this geoentity if needed
-                if geo_id not in sum_val:
-                    sum_val[geo_id] = 0
-
-                # Get crop proportion for this stage
-                if stage_doy in CP.get(geo_id, {}):
-                    cp_val = CP[geo_id][stage_doy]
-                    if cp_val is not None:
-                        # Apply weighted sum
-                        sum_val[geo_id] += apar_val * cp_val
-
-                # Initialize response structure for this geoentity
-                if geo_id not in Weighted_APARSum_Response:
-                    Weighted_APARSum_Response[geo_id] = {
-                        "name": geo_info["name"],
-                        "param_values": {str(param_id): {}}
-                    }
-
-                # Choose output timestamp based on mode
-                out_ts = str(static_ts) if static_mode else str(apar_ts)
-
-                # Store the cumulative weighted sum
-                Weighted_APARSum_Response[geo_id]["param_values"][str(param_id)][out_ts] = {
-                    "value": sum_val[geo_id]
-                }
-
-    return Weighted_APARSum_Response
-
-
-# -------------------------
-# Test
-# -------------------------
-if __name__ == "__main__":
-    print(derive_param_values(3, "C91S20", "60006", "2025", "static"))
+{
+  "C91S20D322": {
+    "name": "Bokaro",
+    "param_values": {
+      "119": {
+        "1630175400": {
+          "value": {
+            "145": 5250,
+            "nodata": 112815
+          }
+        },
+        "1661711400": {
+          "value": {
+            "145": 145,
+            "161": 2339,
+            "209": 359,
+            "225": 454,
+            "nodata": 114768
+          }
+        },
+        "1693247400": {
+          "value": {
+            "161": 1147,
+            "177": 142,
+            "193": 151,
+            "nodata": 116625
+          }
+        },
+        "1724783400": {
+          "value": {
+            "177": 9923,
+            "nodata": 108141
+          }
+        },
+        "1756405800": {
+          "value": {
+            "129": 10882,
+            "nodata": 107176
+          }
+        }
+      }
+    },
+    "parent_name": "Jharkhand"
+  },
+  "C91S20D323": {
+    "name": "Chatra",
+    "param_values": {
+      "119": {
+        "1630175400": {
+          "value": {
+            "145": 7152,
+            "nodata": 149389
+          }
+        },
+        "1661711400": {
+          "value": {
+            "145": 583,
+            "161": 2364,
+            "209": 313,
+            "225": 1167,
+            "nodata": 152114
+          }
+        },
+        "1693247400": {
+          "value": {
+            "161": 1047,
+            "177": 288,
+            "193": 35,
+            "nodata": 155171
+          }
+        },
+        "1724783400": {
+          "value": {
+            "177": 12375,
+            "nodata": 144167
+          }
+        },
+        "1756405800": {
+          "value": {
+            "129": 10800,
+            "nodata": 145737
+          }
+        }
+      }
+    },
+    "parent_name": "Jharkhand"
+  },
