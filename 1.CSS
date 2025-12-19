@@ -1,2944 +1,717 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Server Monitoring Dashboard</title>
-
-    <!-- CSS -->
-    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> -->
-    <link rel="stylesheet" href="{{ url_prefix }}/static/css/style.css">
-    <link rel="stylesheet" href="{{ url_prefix }}/static/css/fontawesome.min.css">
-
-    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/fontawesome.min.css') }}"> -->
-
-    <!-- Chart.js for Memory Pie Chart -->
-    <script src="{{ url_prefix }}/static/js/lib/chart.min.js"></script>
-    <script src="{{ url_prefix }}/static/js/lib/chart.js"></script>
-    <script src="{{ url_prefix }}/static/js/lib/highcharts.js"></script>
-    <script src="{{ url_prefix }}/static/js/lib/exporting.js"></script>
-    <script src="{{ url_prefix }}/static/js/lib/boost.js"></script>
-
-    <!-- Highcharts for Analytics Charts -->
-    <!-- <script src="{{ url_for('static', filename='js/lib/chart.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/lib/chart.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/lib/highcharts.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/lib/exporting.js') }}"></script>
-    <script src="/home/sac/Mihir/server_monitoring_new/app/static/js/lib/boost.js"></script> -->
+    <title>GeoEntity Services Monitor - SAC VEDAS</title>
+    <link rel="stylesheet" href="/geoentity_monitoring/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
+<body>
+    <div class="background-animation">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+    </div>
 
-<body class="theme-dark">
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <i class="fas fa-server"></i>
-            <h2>Server Monitor</h2>
-        </div>
-
-        <nav class="sidebar-nav">
-            <a href="#" class="nav-item active" data-page="dashboard">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="#" class="nav-item" data-page="servers">
-                <i class="fas fa-server"></i>
-                <span>All Servers</span>
-            </a>
-            <a href="#" class="nav-item" data-page="alerts">
-                <i class="fas fa-bell"></i>
-                <span>Alerts</span>
-                <span class="badge" id="alert-badge">0</span>
-            </a>
-            <a href="#" class="nav-item" data-page="analytics">
-                <i class="fas fa-chart-line"></i>
-                <span>Analytics</span>
-            </a>
-            <a href="#" class="nav-item" data-page="user-tracking">
-                <i class="fas fa-users"></i>
-                <span>User Tracking</span>
-            </a>
-            <a href="#" class="nav-item" data-page="settings">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <i class="far fa-user-circle"></i>
-                <span>{{ user }}</span>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="title-section">
+                    <div class="logo">🛰️</div>
+                    <div>
+                        <h1>GeoEntity Services Monitor</h1>
+                        <p>Real-time monitoring of SAC VEDAS GeoEntity API endpoints</p>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="runCheck()">
+                        <span class="btn-icon">🔄</span>
+                        <span>Run Check Now</span>
+                    </button>
+                    <div class="auto-refresh">
+                        <label class="switch">
+                            <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="refresh-label">Auto-refresh</span>
+                        <select id="refreshInterval">
+                            <option value="30">30s</option>
+                            <option value="60" selected>1 min</option>
+                            <option value="300">5 min</option>
+                            <option value="600">10 min</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
-    </aside>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Header -->
-        <header class="header">
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <i class="fas fa-bars"></i>
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('basic')">
+                <span>📊</span> Basic Monitoring
             </button>
+            <button class="tab-btn" onclick="switchTab('filter')">
+                <span>🔍</span> Filter Checking
+                <span class="badge-small" id="filterCheckBadge" style="display:none;">Running</span>
+            </button>
+        </div>
 
-            <div class="header-center">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="serverSearch" placeholder="Search servers...">
-                </div>
-            </div>
-
-            <div class="header-right">
-                <div class="theme-switcher">
-                    <button class="theme-btn" data-theme="dark" title="Dark Theme">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                    <button class="theme-btn" data-theme="light" title="Light Theme">
-                        <i class="fas fa-sun"></i>
-                    </button>
-                    <button class="theme-btn" data-theme="blue" title="Blue Theme">
-                        <i class="fas fa-water"></i>
-                    </button>
-                    <button class="theme-btn" data-theme="purple" title="Purple Theme">
-                        <i class="fas fa-gem"></i>
-                    </button>
-                    <button class="theme-btn" data-theme="green" title="Green Theme">
-                        <i class="fas fa-leaf"></i>
-                    </button>
-                </div>
-
-                <div class="time-display">
-                    <i class="far fa-clock"></i>
-                    <span id="current-time">Loading...</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Dashboard Page -->
-        <div class="page-content active" id="dashboard-page">
-            <!-- Stats Overview -->
-            <div class="stats-overview">
+        <div id="basicTab" class="tab-content active">
+            <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-icon online">
-                        <i class="fas fa-server"></i>
-                    </div>
+                    <div class="stat-icon">📊</div>
                     <div class="stat-content">
-                        <h3 id="total-servers">0</h3>
-                        <p>Total Servers</p>
+                        <div class="stat-value" id="totalEndpoints">-</div>
+                        <div class="stat-label">Total Endpoints</div>
                     </div>
                 </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon success">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">✓</div>
                     <div class="stat-content">
-                        <h3 id="online-servers">0</h3>
-                        <p>Online</p>
+                        <div class="stat-value" id="successCount">-</div>
+                        <div class="stat-label">Success</div>
                     </div>
                 </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon danger">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
+                <div class="stat-card stat-error">
+                    <div class="stat-icon">✗</div>
                     <div class="stat-content">
-                        <h3 id="alert-servers">0</h3>
-                        <p>Alerts</p>
+                        <div class="stat-value" id="failedCount">-</div>
+                        <div class="stat-label">Failed</div>
                     </div>
                 </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon info">
-                        <i class="fas fa-microchip"></i>
-                    </div>
+                <div class="stat-card stat-rate">
+                    <div class="stat-icon">📈</div>
                     <div class="stat-content">
-                        <h3 id="avg-cpu">0%</h3>
-                        <p>Avg CPU</p>
+                        <div class="stat-value" id="successRate">-</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="avgResponse">-</div>
+                        <div class="stat-label">Avg Response (ms)</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Server Groups Container -->
-            <div id="servers-container"></div>
+            <div class="main-status">
+                <div class="section-header">
+                    <h2>
+                        <span class="status-indicator loading" id="mainStatus"></span>
+                        Main API Endpoint Status
+                    </h2>
+                </div>
+                <div id="mainApiStatus" class="api-status-content">
+                    <p class="placeholder-text">Click "Run Check Now" to start monitoring</p>
+                </div>
+            </div>
+
+            <div class="main-status">
+                <div class="section-header">
+                    <h2>GeoEntity Endpoints</h2>
+                </div>
+                <div class="filter-controls">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchBox" placeholder="Search by name, category, or project..." onkeyup="filterEndpoints()">
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">
+                            <span>All</span>
+                        </button>
+                        <button class="filter-btn" data-filter="success" onclick="setFilter('success')">
+                            <span>✓ Success</span>
+                        </button>
+                        <button class="filter-btn" data-filter="error" onclick="setFilter('error')">
+                            <span>✗ Failed</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="endpoints-grid" id="endpointsGrid">
+                    <p class="placeholder-text">Waiting for data...</p>
+                </div>
+            </div>
         </div>
 
-        <!-- Servers Page -->
-        <div class="page-content" id="servers-page">
-            <h2 class="page-title">All Servers</h2>
-            <div id="all-servers-list"></div>
-        </div>
-        <!-- Alerts Page -->
-        <div class="page-content" id="alerts-page">
-            <h2 class="page-title">System Alerts</h2>
-            <div id="alerts-container"></div>
-        </div>
-
-        <!-- Analytics Page with Date Range -->
-        <!-- Analytics Page with Date Range -->
-        <div class="page-content" id="analytics-page">
-            <div class="analytics-header">
-                <h2 class="page-title">System Analytics</h2>
-                <div class="date-range-picker">
-                    <label>From:</label>
-                    <input type="date" id="date-from" />
-                    <label>To:</label>
-                    <input type="date" id="date-to" />
-                    <button class="btn-primary" onclick="loadAnalyticsByDateRange()">
-                        <i class="fas fa-search"></i> Apply Filter
+        <div id="filterTab" class="tab-content">
+            <div class="main-status">
+                <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <h2>🔍 Detailed Filter Checking</h2>
+                        <p style="color: #718096; font-size: 14px; margin-top: 8px;">
+                            Check each geoentity with prefix parameter or bbox for specific sources
+                        </p>
+                        <p style="color: #718096; font-size: 13px; margin-top: 4px;" id="lastDailyCheck">
+                            Last auto-check: Loading...
+                        </p>
+                    </div>
+                    <button class="btn btn-primary" onclick="runAllFilterChecks()" id="runAllBtn">
+                        <span>🚀</span> Run All Sources
                     </button>
                 </div>
-            </div>
-            <div class="analytics-grid">
-                <div class="chart-container">
-                    <h3><i class="fas fa-microchip"></i> CPU Usage Trend</h3>
-                    <div id="cpuChart"></div>
-                </div>
-                <div class="chart-container">
-                    <h3><i class="fas fa-memory"></i> Memory Usage Trend</h3>
-                    <div id="memoryChart"></div>
-                </div>
-            </div>
-        </div>
 
-        <!-- User Tracking Page -->
-        <div class="page-content" id="user-tracking-page">
-            <div class="analytics-header">
-                <h2 class="page-title">User SSH Activity Tracking</h2>
-                <button class="btn-primary" onclick="loadUserTracking()">
-                    <i class="fas fa-sync"></i> Refresh
-                </button>
-            </div>
-            <div id="user-tracking-container"></div>
-        </div>
-
-        <!-- Settings Page -->
-        <div class="page-content" id="settings-page">
-            <h2 class="page-title">Settings</h2>
-            <div class="settings-container">
-                <div class="setting-group">
-                    <h3>Refresh Interval</h3>
-                    <select id="refresh-interval">
-                        <option value="5">5 seconds</option>
-                        <option value="10">10 seconds</option>
-                        <option value="30">30 seconds</option>
-                        <option value="60">1 minute</option>
-                    </select>
-                </div>
-
-                <div class="setting-group">
-                    <h3>Alert Thresholds</h3>
-                    <div class="threshold-inputs">
-                        <label>
-                            CPU Warning (%):
-                            <input type="number" id="cpu-warning" value="70" min="0" max="100">
-                        </label>
-                        <label>
-                            CPU Critical (%):
-                            <input type="number" id="cpu-critical" value="90" min="0" max="100">
-                        </label>
-                        <label>
-                            Memory Warning (%):
-                            <input type="number" id="mem-warning" value="75" min="0" max="100">
-                        </label>
-                        <label>
-                            Memory Critical (%):
-                            <input type="number" id="mem-critical" value="90" min="0" max="100">
-                        </label>
+                <div id="filterCheckStatus" class="filter-status-box" style="display:none;">
+                    <div class="progress-container">
+                        <div class="progress-info">
+                            <span id="filterStatusText">Initializing...</span>
+                            <span id="filterProgress">0/0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="filterProgressBar"></div>
+                        </div>
+                        <div class="current-check" id="currentCheckInfo"></div>
                     </div>
                 </div>
 
-                <div class="setting-group">
-                    <h3>Display Options</h3>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="show-offline" checked>
-                        Show offline servers
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="compact-view">
-                        Compact view
-                    </label>
+                <div id="filterSummaryGrid" class="stats-grid" style="margin-top: 20px;">
+                    <p class="placeholder-text">Loading summary...</p>
                 </div>
-
-                <button class="btn-primary" onclick="saveSettings()">
-                    <i class="fas fa-save"></i> Save Settings
-                </button>
             </div>
         </div>
-    </main>
 
-    <!-- Server Detail Modal -->
-    <div id="server-modal" class="modal">
-        <div class="modal-content large">
+        <div class="last-updated" id="lastUpdated">
+            <span class="update-icon">🕐</span>
+            <span id="lastUpdateText">Not checked yet</span>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Checking endpoints...</p>
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal" style="display: none;">
+        <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modal-server-name">Server Details</h2>
-                <button class="close-btn" onclick="closeModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h3 id="modalTitle">Source Details</h3>
+                <button class="btn-close" onclick="closeDetailModal()">✕</button>
             </div>
-
-            <div class="tabs">
-                <div class="tab active" data-tab="overview">
-                    <i class="fas fa-eye"></i> Overview
-                </div>
-                <div class="tab" data-tab="storage">
-                    <i class="fas fa-hdd"></i> Storage
-                </div>
-                <div class="tab" data-tab="processes">
-                    <i class="fas fa-list"></i> Processes
-                </div>
-                <div class="tab" data-tab="services">
-                    <i class="fas fa-cogs"></i> Services
-                </div>
-                <div class="tab" data-tab="ssh">
-                    <i class="fas fa-terminal"></i> SSH Sessions
-                </div>
+            <div class="modal-body" id="modalBody">
+                Loading...
             </div>
-
-            <div id="overview-tab" class="tab-content active"></div>
-            <div id="storage-tab" class="tab-content"></div>
-            <div id="processes-tab" class="tab-content"></div>
-            <div id="services-tab" class="tab-content"></div>
-            <div id="ssh-tab" class="tab-content"></div>
+            <div class="modal-footer">
+                <div id="paginationControls"></div>
+                <button class="btn btn-secondary" onclick="closeDetailModal()">Close</button>
+            </div>
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loading" class="loading-overlay">
-        <div class="loading-spinner"></div>
-        <p>Loading...</p>
-    </div>
-
-    <!-- Monitor Script -->
-    <!-- <script src="{{ url_for('static', filename='js/monitor.js') }}"></script> -->
-    <script src="{{ url_prefix }}/static/js/monitor.js"></script>
+    <script src="/geoentity_monitoring/static/js/dashboard.js"></script>
 </body>
-
 </html>
 
 
 
+let autoRefreshInterval = null;
+let filterCheckInterval = null;
+let currentFilter = 'all';
+let allEndpoints = [];
+let currentTab = 'basic';
+let currentDetailPage = 1;
+let currentDetailSourceId = null;
 
-
-
-
-// ==================== Global Variables ====================
-let currentServer = null;
-let refreshInterval = 5000;
-let liveCPUChart = null;
-let liveCPUData = [];
-let liveCPUInterval = null;
-let isCompactView = false;
-let showOfflineServers = true;
-
-const API_BASE = "/monitoring_server";
-
-const IP_NAME_MAP = {
-  "192.168.2.202": "Mihir",
-  "192.168.2.220": "Harish",
-  "192.168.2.141": "Vikrant",
-  "192.168.2.221": "Karnav",
-  "192.168.2.205": "Vidit",
-  "192.168.2.210": "Arpan",
-};
-
-// ==================== Settings Management ====================
-function loadSettings() {
-  const settings = localStorage.getItem("monitorSettings");
-  if (settings) {
-    const parsed = JSON.parse(settings);
-    refreshInterval = parsed.refreshInterval * 1000 || 5000;
-    isCompactView = parsed.compactView || false;
-    showOfflineServers = parsed.showOffline !== false;
-
-    document.getElementById("refresh-interval").value =
-      parsed.refreshInterval || 5;
-    document.getElementById("cpu-warning").value = parsed.cpuWarning || 70;
-    document.getElementById("cpu-critical").value = parsed.cpuCritical || 90;
-    document.getElementById("mem-warning").value = parsed.memWarning || 75;
-    document.getElementById("mem-critical").value = parsed.memCritical || 90;
-    document.getElementById("show-offline").checked = showOfflineServers;
-    document.getElementById("compact-view").checked = isCompactView;
-
-    applyCompactView();
-  }
-}
-
-function saveSettings() {
-  const settings = {
-    refreshInterval: parseInt(
-      document.getElementById("refresh-interval").value
-    ),
-    cpuWarning: parseInt(document.getElementById("cpu-warning").value),
-    cpuCritical: parseInt(document.getElementById("cpu-critical").value),
-    memWarning: parseInt(document.getElementById("mem-warning").value),
-    memCritical: parseInt(document.getElementById("mem-critical").value),
-    showOffline: document.getElementById("show-offline").checked,
-    compactView: document.getElementById("compact-view").checked,
-  };
-
-  localStorage.setItem("monitorSettings", JSON.stringify(settings));
-  refreshInterval = settings.refreshInterval * 1000;
-  isCompactView = settings.compactView;
-  showOfflineServers = settings.showOffline;
-
-  applyCompactView();
-  alert("Settings saved successfully!");
-
-  clearInterval(window.refreshTimer);
-  window.refreshTimer = setInterval(updateServers, refreshInterval);
-}
-
-function applyCompactView() {
-  if (isCompactView) {
-    document.body.classList.add("compact-view");
-  } else {
-    document.body.classList.remove("compact-view");
-  }
-}
-
-// ==================== Helper Functions ====================
-function getCPUStatus(cpuPercent) {
-  if (cpuPercent === null || cpuPercent === undefined) return "";
-  const cpu = parseFloat(cpuPercent);
-  if (isNaN(cpu)) return "";
-  if (cpu >= 90) return "critical";
-  if (cpu >= 70) return "warning";
-  if (cpu >= 50) return "moderate";
-  return "normal";
-}
-
-function calculateMemoryPercent(used, total) {
-  if (!used || !total || isNaN(used) || isNaN(total) || total === 0) return 0;
-  used = Math.max(0, parseFloat(used));
-  total = Math.max(0, parseFloat(total));
-  const percent = (used / total) * 100;
-  return Math.max(0, Math.min(100, percent));
-}
-
-function formatBytes(bytes, decimals = 2) {
-  if (bytes === null || bytes === undefined || isNaN(bytes)) return "N/A";
-  bytes = Number(bytes);
-  if (isNaN(bytes) || bytes === 0) return "N/A";
-
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ["B", "KB", "MB", "GB", "TB", "PB"];
-
-  if (bytes < 1) return "0 B";
-
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const sizeIndex = Math.min(i, sizes.length - 1);
-
-  return (
-    parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(dm)) +
-    " " +
-    sizes[sizeIndex]
-  );
-}
-
-function getStorageBarColor(status) {
-  switch (status) {
-    case "critical":
-      return "#ef4444";
-    case "warning":
-      return "#f59e0b";
-    case "moderate":
-      return "#3b82f6";
-    case "normal":
-      return "#10b981";
-    default:
-      return "#9ca3af";
-  }
-}
-
-function validateMemoryData(memory) {
-  if (!memory) return null;
-  return {
-    total: Number(memory.total) || 0,
-    used: Number(memory.used) || 0,
-    free: Number(memory.free) || 0,
-    buffers: Number(memory.buffers) || 0,
-    cached: Number(memory.cached) || 0,
-    status: memory.status || "normal",
-  };
-}
-
-function drawMemoryPieChart(canvas, memoryData) {
-  if (!canvas || !memoryData) return;
-
-  const existingChart = Chart.getChart(canvas);
-  if (existingChart) existingChart.destroy();
-
-  const ctx = canvas.getContext("2d");
-  const total = Math.abs(parseFloat(memoryData.total)) || 0;
-  const used = Math.max(0, parseFloat(memoryData.used));
-  const cached = Math.max(0, parseFloat(memoryData.cached));
-  const buffers = Math.max(0, parseFloat(memoryData.buffers));
-  const free = Math.max(0, parseFloat(memoryData.free));
-
-  const data = [
-    Math.max(0, Math.min(used, total)),
-    Math.max(0, Math.min(cached, total)),
-    Math.max(0, Math.min(buffers, total)),
-    Math.max(0, Math.min(free, total)),
-  ];
-
-  new Chart(ctx, {
-    type: "doughnut",
-    data: {
-      labels: ["Used", "Cached", "Buffers", "Free"],
-      datasets: [
-        {
-          data: data,
-          backgroundColor: ["#ef4444", "#3b82f6", "#f59e0b", "#10b981"],
-          borderWidth: 0,
-          borderColor: "transparent",
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      cutout: "65%",
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          enabled: true,
-          callbacks: {
-            label: (context) => {
-              const value = context.raw;
-              const percentage = calculateMemoryPercent(value, total);
-              return `${context.label}: ${formatBytes(
-                value
-              )} (${percentage.toFixed(1)}%)`;
-            },
-          },
-        },
-      },
-      animation: {
-        animateRotate: true,
-        animateScale: false,
-      },
-    },
-  });
-}
-
-// ==================== Navigation ====================
-function initNavigation() {
-  const navItems = document.querySelectorAll(".nav-item");
-  const pages = document.querySelectorAll(".page-content");
-
-  navItems.forEach((item) => {
-    item.addEventListener("click", (e) => {
-      e.preventDefault();
-      const page = item.getAttribute("data-page");
-
-      navItems.forEach((nav) => nav.classList.remove("active"));
-      item.classList.add("active");
-
-      pages.forEach((p) => p.classList.remove("active"));
-      document.getElementById(`${page}-page`).classList.add("active");
-
-      if (page === "alerts") loadAlerts();
-      if (page === "analytics") loadAnalytics();
-      if (page === "servers") loadAllServers();
-      if (page === "user-tracking") loadUserTracking();
-    });
-  });
-}
-
-// ==================== Sidebar Toggle ====================
-function initSidebarToggle() {
-  const toggle = document.getElementById("sidebarToggle");
-  const sidebar = document.getElementById("sidebar");
-
-  toggle.addEventListener("click", () => {
-    sidebar.classList.toggle("show");
-  });
-
-  document.addEventListener("click", (e) => {
-    if (window.innerWidth <= 1024) {
-      if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
-        sidebar.classList.remove("show");
-      }
+// Tab switching
+function switchTab(tabName) {
+    currentTab = tabName;
+    
+    var tabButtons = document.querySelectorAll('.tab-btn');
+    for (var i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].classList.remove('active');
     }
-  });
-}
-
-// ==================== Theme Switcher ====================
-function initThemeSwitcher() {
-  const themeButtons = document.querySelectorAll(".theme-btn");
-  const savedTheme = localStorage.getItem("theme") || "dark";
-
-  document.body.className = `theme-${savedTheme}`;
-  themeButtons.forEach((btn) => {
-    if (btn.getAttribute("data-theme") === savedTheme) {
-      btn.classList.add("active");
-    }
-  });
-
-  themeButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const theme = btn.getAttribute("data-theme");
-      document.body.className = `theme-${theme}`;
-      localStorage.setItem("theme", theme);
-
-      themeButtons.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-    });
-  });
-}
-
-// ==================== Time Display ====================
-function updateTimeDisplay() {
-  fetch(`${API_BASE}/api/time`)
-    .then((response) => response.json())
-    .then((data) => {
-      const timeElement = document.getElementById("current-time");
-      if (timeElement && data.timestamp) {
-        const [dateStr, timeStr] = data.timestamp.split(" ");
-        const [year, month, day] = dateStr.split("-").map(Number);
-        const [hour, minute, second] = timeStr.split(":").map(Number);
-
-        const utcDate = new Date(
-          Date.UTC(year, month - 1, day, hour, minute, second)
-        );
-
-        const options = {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-          timeZone: "Asia/Kolkata",
-        };
-
-        const istDateTime = utcDate.toLocaleString("en-GB", options);
-        const [d, m, y] = istDateTime.split(",")[0].split("/");
-        const t = istDateTime.split(",")[1].trim();
-
-        timeElement.textContent = `${y}-${m}-${d} ${t}`;
-      }
-    })
-    .catch((error) => console.error("Error updating time:", error));
-}
-
-// ==================== Update Servers ====================
-function updateServers() {
-  fetch(`${API_BASE}/api/status`)
-    .then((response) => response.json())
-    .then((data) => {
-      updateStats(data.servers);
-
-      const groups = {};
-      data.servers.forEach((server) => {
-        if (!showOfflineServers && server.status === "offline") return;
-        const group = server.group || "default";
-        if (!groups[group]) groups[group] = [];
-        groups[group].push(server);
-      });
-
-      const container = document.getElementById("servers-container");
-      container.innerHTML = "";
-
-      Object.keys(groups).forEach((groupName) => {
-        const groupSection = createGroupSection(groupName, groups[groupName]);
-        container.appendChild(groupSection);
-      });
-    })
-    .catch((error) => {
-      console.error("Error fetching servers:", error);
-    });
-}
-
-function updateStats(servers) {
-  const total = servers.length;
-  const online = servers.filter((s) => s.status === "online").length;
-
-  let totalCPU = 0;
-  let cpuCount = 0;
-  const alertServersSet = new Set();
-
-  servers.forEach((server) => {
-    let hasAlert = false;
-
-    if (server.status === "online") {
-      if (server.cpu !== null && server.cpu !== undefined) {
-        totalCPU += server.cpu;
-        cpuCount++;
-
-        if (server.cpu > 75) {
-          hasAlert = true;
-        }
-      }
-
-      if (server.memory && server.memory.usage_percent > 75) {
-        hasAlert = true;
-      }
-
-      if (server.storage) {
-        for (let storage of server.storage) {
-          if (storage.mountpoint === "/" && storage.percent > 75) {
-            hasAlert = true;
-            break;
-          }
-        }
-      }
+    event.target.closest('.tab-btn').classList.add('active');
+    
+    document.getElementById('basicTab').classList.remove('active');
+    document.getElementById('filterTab').classList.remove('active');
+    
+    if (tabName === 'basic') {
+        document.getElementById('basicTab').classList.add('active');
     } else {
-      hasAlert = true;
+        document.getElementById('filterTab').classList.add('active');
+        loadAllFilterResults();
+    }
+}
+
+// Basic monitoring functions
+async function runCheck() {
+    document.getElementById('loadingOverlay').classList.add('active');
+    
+    try {
+        const response = await fetch('/geoentity_monitoring/api/check');
+        const data = await response.json();
+        updateDashboard(data);
+    } catch (error) {
+        console.error('Error:', error);
+        showError('Failed to fetch data. Please check your connection.');
+    } finally {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    }
+}
+
+function showError(message) {
+    const mainStatusDiv = document.getElementById('mainApiStatus');
+    mainStatusDiv.innerHTML = '<div class="error-message">❌ ' + message + '</div>';
+}
+
+function updateDashboard(data) {
+    const mainStatus = data.sources;
+    const mainStatusDiv = document.getElementById('mainApiStatus');
+    const mainIndicator = document.getElementById('mainStatus');
+    
+    if (mainStatus.status === 'success') {
+        mainIndicator.className = 'status-indicator success';
+        mainStatusDiv.innerHTML = 
+            '<div class="endpoint-stats">' +
+                '<span><strong>Status:</strong> ✓ 200 OK</span>' +
+                '<span><strong>Response Time:</strong> ' + mainStatus.response_time + 'ms</span>' +
+                '<span><strong>Total Sources:</strong> ' + mainStatus.data.count + '</span>' +
+                '<span><strong>Timestamp:</strong> ' + mainStatus.timestamp + '</span>' +
+            '</div>';
+    } else {
+        mainIndicator.className = 'status-indicator error';
+        mainStatusDiv.innerHTML = 
+            '<div class="error-message">' +
+                '❌ <strong>Status:</strong> Failed<br>' +
+                '<strong>Error:</strong> ' + (mainStatus.error || 'Unknown error') +
+            '</div>';
     }
 
-    if (hasAlert) {
-      alertServersSet.add(server.name);
-    }
-  });
-
-  const alertCount = alertServersSet.size;
-
-  document.getElementById("total-servers").textContent = total;
-  document.getElementById("online-servers").textContent = online;
-  document.getElementById("alert-servers").textContent = alertCount;
-  document.getElementById("avg-cpu").textContent =
-    cpuCount > 0 ? (totalCPU / cpuCount).toFixed(1) + "%" : "0%";
-  document.getElementById("alert-badge").textContent = alertCount;
+    allEndpoints = data.geoentities || [];
+    updateStats();
+    displayEndpoints(allEndpoints);
+    document.getElementById('lastUpdateText').textContent = 'Last updated: ' + data.last_check;
 }
 
-function createGroupSection(groupName, servers) {
-  const section = document.createElement("div");
-  section.className = "server-group";
+function updateStats() {
+    const total = allEndpoints.length;
+    const success = allEndpoints.filter(function(e) {
+        return e.status === 'success';
+    }).length;
+    const failed = total - success;
+    const successRate = total > 0 ? ((success / total) * 100).toFixed(1) : 0;
+    const avgResponse = total > 0 
+        ? (allEndpoints.reduce(function(sum, e) {
+            return sum + e.response_time;
+        }, 0) / total).toFixed(1)
+        : 0;
 
-  const groupIcons = {
-    data: "fa-database",
-    deployment: "fa-rocket",
-    stagging: "fa-flask",
-    gpus: "fa-brain",
-    nginx: "fa-server",
-    development: "fa-code",
-  };
-
-  section.innerHTML = `
-        <div class="group-header">
-            <i class="fas ${groupIcons[groupName] || "fa-server"}"></i>
-            <h2>${groupName.charAt(0).toUpperCase() + groupName.slice(1)}</h2>
-            <span class="server-count">${servers.length} server${
-    servers.length !== 1 ? "s" : ""
-  }</span>
-        </div>
-        <div class="servers-grid" id="group-${groupName}"></div>
-    `;
-
-  const grid = section.querySelector(".servers-grid");
-  servers.forEach((server) => {
-    const card = createServerCard(server);
-    grid.appendChild(card);
-  });
-
-  return section;
+    animateValue('totalEndpoints', parseInt(document.getElementById('totalEndpoints').textContent) || 0, total, 500);
+    animateValue('successCount', parseInt(document.getElementById('successCount').textContent) || 0, success, 500);
+    animateValue('failedCount', parseInt(document.getElementById('failedCount').textContent) || 0, failed, 500);
+    
+    document.getElementById('successRate').textContent = successRate + '%';
+    document.getElementById('avgResponse').textContent = avgResponse;
 }
 
-function createServerCard(server) {
-  const card = document.createElement("div");
-  card.className = `server-card ${server.status} slide-up`;
-  card.onclick = () => showServerDetails(server.name);
-
-  const memory = validateMemoryData(server.memory);
-  const cpuStatus = getCPUStatus(server.cpu);
-
-  // Safe CPU value
-  const cpuValue =
-    server.cpu !== null && server.cpu !== undefined
-      ? server.cpu.toFixed(1) + "%"
-      : "N/A";
-  const cpuPercent = server.cpu || 0;
-
-  // Safe memory value
-  const memValue = memory
-    ? calculateMemoryPercent(memory.used, memory.total).toFixed(1) + "%"
-    : "N/A";
-  const memPercent = memory
-    ? calculateMemoryPercent(memory.used, memory.total)
-    : 0;
-  const memStatus = memory ? memory.status : "";
-
-  // Get ROOT storage (/ or /root) - THIS IS THE FIX!
-  let storageValue = "N/A";
-  let storagePercent = 0;
-  let storageStatus = "";
-
-  if (server.storage && server.storage.length > 0) {
-    // Find root partition (mountpoint = '/' or '/root')
-    const rootStorage = server.storage.find(
-      (s) => s.mountpoint === "/" || s.mountpoint === "/root"
-    );
-
-    if (
-      rootStorage &&
-      rootStorage.percent !== null &&
-      rootStorage.percent !== undefined
-    ) {
-      storagePercent = rootStorage.percent;
-      storageValue = storagePercent.toFixed(1) + "%";
-      storageStatus = rootStorage.status || "";
-    }
-  }
-
-  // Determine blink classes
-  const cpuBlinkClass =
-    cpuPercent >= 90
-      ? "blink-critical"
-      : cpuPercent >= 70
-      ? "blink-warning"
-      : "";
-  const memBlinkClass =
-    memPercent >= 90
-      ? "blink-critical"
-      : memPercent >= 75
-      ? "blink-warning"
-      : "";
-  const storageBlinkClass =
-    storagePercent >= 90
-      ? "blink-critical"
-      : storagePercent >= 80
-      ? "blink-warning"
-      : "";
-
-  card.innerHTML = `
-        <div class="server-header">
-            <h3>${server.name}</h3>
-            <span class="status-badge ${server.status}">${server.status}</span>
-        </div>
-        <div class="server-stats">
-            <div class="stat ${cpuBlinkClass}">
-                <span class="stat-label">CPU</span>
-                <span class="stat-value ${cpuStatus}">${cpuValue}</span>
-            </div>
-            <div class="stat ${memBlinkClass}">
-                <span class="stat-label">Memory</span>
-                <span class="stat-value ${memStatus}">${memValue}</span>
-            </div>
-            <div class="stat ${storageBlinkClass}">
-                <span class="stat-label">Storage</span>
-                <span class="stat-value ${storageStatus}">${storageValue}</span>
-            </div>
-        </div>
-    `;
-
-  return card;
-}
-
-// ==================== Live CPU Chart Functions ====================
-function initLiveCPUChart(serverName, initialCPU) {
-  liveCPUData = [];
-  const now = new Date().getTime();
-  liveCPUData.push([now, initialCPU]);
-
-  liveCPUChart = Highcharts.chart("live-cpu-chart", {
-    chart: {
-      type: "areaspline",
-      backgroundColor: "transparent",
-      height: 280,
-      animation: Highcharts.svg,
-    },
-    title: { text: null },
-    xAxis: {
-      type: "datetime",
-      tickPixelInterval: 150,
-      gridLineColor: "rgba(255, 255, 255, 0.05)",
-      labels: {
-        style: {
-          color: getComputedStyle(document.body).getPropertyValue(
-            "--text-secondary"
-          ),
-        },
-      },
-    },
-    yAxis: {
-      title: {
-        text: "CPU Usage (%)",
-        style: {
-          color: getComputedStyle(document.body).getPropertyValue(
-            "--text-primary"
-          ),
-        },
-      },
-      min: 0,
-      max: 100,
-      gridLineColor: "rgba(255, 255, 255, 0.05)",
-      labels: {
-        style: {
-          color: getComputedStyle(document.body).getPropertyValue(
-            "--text-secondary"
-          ),
-        },
-      },
-      plotLines: [
-        {
-          value: 70,
-          color: "#f59e0b",
-          dashStyle: "shortdash",
-          width: 2,
-          label: {
-            text: "Warning",
-            style: { color: "#f59e0b" },
-          },
-        },
-        {
-          value: 90,
-          color: "#ef4444",
-          dashStyle: "shortdash",
-          width: 2,
-          label: {
-            text: "Critical",
-            style: { color: "#ef4444" },
-          },
-        },
-      ],
-    },
-    legend: { enabled: false },
-    credits: { enabled: false },
-    exporting: { enabled: false },
-    tooltip: {
-      formatter: function () {
-        return (
-          "<b>" +
-          Highcharts.dateFormat("%H:%M:%S", this.x) +
-          "</b><br/>" +
-          "CPU: " +
-          this.y.toFixed(1) +
-          "%"
-        );
-      },
-      backgroundColor: "rgba(0, 0, 0, 0.8)",
-      style: { color: "#fff" },
-    },
-    series: [
-      {
-        name: "CPU Usage",
-        data: liveCPUData,
-        color: {
-          linearGradient: { x1: 0, x2: 0, y1: 0, y2: 1 },
-          stops: [
-            [0, "#667eea"],
-            [1, "rgba(102, 126, 234, 0.1)"],
-          ],
-        },
-        fillOpacity: 0.3,
-        lineWidth: 2,
-        marker: {
-          enabled: false,
-          states: {
-            hover: {
-              enabled: true,
-              radius: 5,
-            },
-          },
-        },
-      },
-    ],
-  });
-
-  startLiveCPUUpdates(serverName);
-}
-
-function startLiveCPUUpdates(serverName) {
-  if (liveCPUInterval) {
-    clearInterval(liveCPUInterval);
-  }
-
-  liveCPUInterval = setInterval(() => {
-    fetch(`${API_BASE}/api/status`)
-      .then((response) => response.json())
-      .then((data) => {
-        const server = data.servers.find((s) => s.name === serverName);
-        if (server && server.cpu !== null && server.cpu !== undefined) {
-          updateLiveCPUChart(server.cpu);
-
-          const displayElement = document.querySelector(".cpu-value-large");
-          if (displayElement) {
-            displayElement.textContent = server.cpu.toFixed(1) + "%";
-            displayElement.className =
-              "cpu-value-large " + getCPUStatus(server.cpu);
-          }
+function animateValue(id, start, end, duration) {
+    const element = document.getElementById(id);
+    const range = end - start;
+    const increment = range / (duration / 16);
+    let current = start;
+    
+    const timer = setInterval(function() {
+        current += increment;
+        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+            current = end;
+            clearInterval(timer);
         }
-      })
-      .catch((error) => console.error("Error updating live CPU:", error));
-  }, 2000);
+        element.textContent = Math.round(current);
+    }, 16);
 }
 
-function updateLiveCPUChart(cpuValue) {
-  if (!liveCPUChart) return;
-
-  const now = new Date().getTime();
-  const series = liveCPUChart.series[0];
-
-  series.addPoint([now, cpuValue], true, liveCPUData.length > 30);
-
-  if (liveCPUData.length > 30) {
-    liveCPUData.shift();
-  }
-  liveCPUData.push([now, cpuValue]);
-}
-
-function stopLiveCPUUpdates() {
-  if (liveCPUInterval) {
-    clearInterval(liveCPUInterval);
-    liveCPUInterval = null;
-  }
-}
-
-// ==================== Server Details Modal ====================
-function showServerDetails(serverName) {
-  showLoading();
-
-  fetch(`${API_BASE}/api/status`)
-    .then((response) => response.json())
-    .then((data) => {
-      const server = data.servers.find((s) => s.name === serverName);
-      if (server) {
-        currentServer = server;
-        openModal(server);
-      }
-      hideLoading();
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-      hideLoading();
-    });
-}
-
-function openModal(server) {
-  const modal = document.getElementById("server-modal");
-  document.getElementById("modal-server-name").textContent = server.name;
-
-  modal.classList.add("show");
-  setupTabs();
-  renderOverviewTab(server);
-}
-
-function closeModal() {
-  document.getElementById("server-modal").classList.remove("show");
-  stopLiveCPUUpdates();
-  if (liveCPUChart) {
-    liveCPUChart.destroy();
-    liveCPUChart = null;
-  }
-}
-
-function setupTabs() {
-  const tabs = document.querySelectorAll(".tabs .tab");
-  const contents = document.querySelectorAll(".tab-content");
-
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      const tabName = tab.getAttribute("data-tab");
-
-      tabs.forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
-
-      contents.forEach((c) => c.classList.remove("active"));
-      document.getElementById(`${tabName}-tab`).classList.add("active");
-
-      if (tabName !== "overview") {
-        stopLiveCPUUpdates();
-      }
-
-      switch (tabName) {
-        case "overview":
-          renderOverviewTab(currentServer);
-          break;
-        case "storage":
-          renderStorageTab(currentServer);
-          break;
-        case "processes":
-          renderProcessesTab(currentServer);
-          break;
-        case "services":
-          renderServicesTab(currentServer);
-          break;
-        case "ssh":
-          renderSSHTab(currentServer);
-          break;
-      }
-    });
-  });
-}
-
-function renderOverviewTab(server) {
-  const memory = validateMemoryData(server.memory);
-  const cpuStatus = getCPUStatus(server.cpu);
-  const cpuValue =
-    server.cpu !== null && server.cpu !== undefined
-      ? server.cpu.toFixed(1) + "%"
-      : "N/A";
-
-  let html = `
-        <div class="overview-stats">
-            <div class="stat-section-grid">
-                <div class="stat-section">
-                    <h3><i class="fas fa-microchip"></i> Live CPU Usage</h3>
-                    <div class="live-cpu-container">
-                        <div id="live-cpu-chart"></div>
-                        <div class="current-cpu-display">
-                            <div class="cpu-value-large ${cpuStatus}">${cpuValue}</div>
-                            <div class="cpu-label">Current Usage</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stat-section">
-                    <h3><i class="fas fa-memory"></i> Memory Usage</h3>
-                    ${
-                      memory
-                        ? `
-                        <div class="memory-container">
-                            <div class="memory-chart-wrapper">
-                                <canvas id="memory-chart"></canvas>
-                            </div>
-                            <div class="memory-stats">
-                                <div class="memory-stat">
-                                    <span class="memory-label" style="background: #ef4444;"></span>
-                                    <span>Used: ${formatBytes(
-                                      memory.used
-                                    )}</span>
-                                </div>
-                                <div class="memory-stat">
-                                    <span class="memory-label" style="background: #3b82f6;"></span>
-                                    <span>Cached: ${formatBytes(
-                                      memory.cached
-                                    )}</span>
-                                </div>
-                                <div class="memory-stat">
-                                    <span class="memory-label" style="background: #f59e0b;"></span>
-                                    <span>Buffers: ${formatBytes(
-                                      memory.buffers
-                                    )}</span>
-                                </div>
-                                <div class="memory-stat">
-                                    <span class="memory-label" style="background: #10b981;"></span>
-                                    <span>Free: ${formatBytes(
-                                      memory.free
-                                    )}</span>
-                                </div>
-                                <div class="memory-total">
-                                    Total: ${formatBytes(memory.total)}
-                                </div>
-                            </div>
-                        </div>
-                    `
-                        : "<p>Memory data not available</p>"
-                    }
-                </div>
-            </div>
-
-            ${
-              server.load_average
-                ? `
-                <div class="stat-section">
-                    <h3><i class="fas fa-tachometer-alt"></i> System Load</h3>
-                    <div class="stat-grid">
-                        <div class="stat-box">
-                            <div class="stat-label">1 min</div>
-                            <div class="stat-value">${server.load_average.load_1min}</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">5 min</div>
-                            <div class="stat-value">${server.load_average.load_5min}</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">15 min</div>
-                            <div class="stat-value">${server.load_average.load_15min}</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">Processes</div>
-                            <div class="stat-value">${server.load_average.running_processes}/${server.load_average.total_processes}</div>
-                        </div>
-                    </div>
-                </div>
-            `
-                : ""
-            }
-
-            ${
-              server.uptime
-                ? `
-                <div class="stat-section">
-                    <h3><i class="fas fa-clock"></i> Uptime</h3>
-                    <div class="stat-box">
-                        <div class="stat-label">Running Since</div>
-                        <div class="stat-value">${server.uptime.uptime_human}</div>
-                        <div class="stat-label" style="margin-top: 0.5rem;">Boot Time: ${server.uptime.boot_time}</div>
-                    </div>
-                </div>
-            `
-                : ""
-            }
-
-            ${
-              server.network_stats && server.network_stats.length > 0
-                ? `
-                <div class="stat-section">
-                    <h3><i class="fas fa-network-wired"></i> Network Interfaces</h3>
-                    <table class="stats-table">
-                        <thead>
-                            <tr>
-                                <th>Interface</th>
-                                <th>RX (MB)</th>
-                                <th>TX (MB)</th>
-                                <th>Packets</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${server.network_stats
-                              .map((net) => {
-                                const rxMB = (
-                                  net.rx_bytes /
-                                  (1024 * 1024)
-                                ).toFixed(2);
-                                const txMB = (
-                                  net.tx_bytes /
-                                  (1024 * 1024)
-                                ).toFixed(2);
-                                return `
-                                    <tr>
-                                        <td><strong>${net.interface}</strong></td>
-                                        <td>${rxMB} MB</td>
-                                        <td>${txMB} MB</td>
-                                        <td>↓${net.rx_packets} ↑${net.tx_packets}</td>
-                                    </tr>
-                                `;
-                              })
-                              .join("")}
-                        </tbody>
-                    </table>
-                </div>
-            `
-                : ""
-            }
-
-            ${
-              server.top_cpu_processes && server.top_cpu_processes.length > 0
-                ? `
-                <div class="stat-section">
-                    <h3><i class="fas fa-microchip"></i> Top CPU Processes</h3>
-                    <table class="stats-table">
-                        <thead>
-                            <tr>
-                                <th>PID</th>
-                                <th>User</th>
-                                <th>CPU %</th>
-                                <th>MEM %</th>
-                                <th>Command</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${server.top_cpu_processes
-                              .map(
-                                (proc) => `
-                                <tr>
-                                    <td>${proc.pid}</td>
-                                    <td>${proc.user}</td>
-                                    <td><strong>${proc.cpu}%</strong></td>
-                                    <td>${proc.mem}%</td>
-                                    <td><code>${proc.command}</code></td>
-                                </tr>
-                            `
-                              )
-                              .join("")}
-                        </tbody>
-                    </table>
-                </div>
-            `
-                : ""
-            }
-
-            ${
-              server.top_mem_processes && server.top_mem_processes.length > 0
-                ? `
-                <div class="stat-section">
-                    <h3><i class="fas fa-memory"></i> Top Memory Processes</h3>
-                    <table class="stats-table">
-                        <thead>
-                            <tr>
-                                <th>PID</th>
-                                <th>User</th>
-                                <th>CPU %</th>
-                                <th>MEM %</th>
-                                <th>Command</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${server.top_mem_processes
-                              .map(
-                                (proc) => `
-                                <tr>
-                                    <td>${proc.pid}</td>
-                                    <td>${proc.user}</td>
-                                    <td>${proc.cpu}%</td>
-                                    <td><strong>${proc.mem}%</strong></td>
-                                    <td><code>${proc.command}</code></td>
-                                </tr>
-                            `
-                              )
-                              .join("")}
-                        </tbody>
-                    </table>
-                </div>
-            `
-                : ""
-            }
-        </div>
-    `;
-
-  document.getElementById("overview-tab").innerHTML = html;
-
-  if (memory) {
-    setTimeout(() => {
-      const canvas = document.getElementById("memory-chart");
-      if (canvas) {
-        drawMemoryPieChart(canvas, memory);
-      }
-    }, 100);
-  }
-
-  if (server.cpu !== null && server.cpu !== undefined) {
-    initLiveCPUChart(server.name, server.cpu);
-  }
-}
-
-function renderStorageTab(server) {
-    if (!server.storage || server.storage.length === 0) {
-        document.getElementById('storage-tab').innerHTML = `
-            <div class="empty-storage-state">
-                <i class="fas fa-hdd fa-4x"></i>
-                <h3>No Storage Data</h3>
-                <p>Storage information is not available for this server</p>
-            </div>
-        `;
+function displayEndpoints(endpoints) {
+    const grid = document.getElementById('endpointsGrid');
+    
+    if (endpoints.length === 0) {
+        grid.innerHTML = '<p class="placeholder-text">No endpoints match the current filter.</p>';
         return;
     }
-    
-    const html = `
-        <div class="storage-header-section">
-            <h3><i class="fas fa-database"></i> Storage Overview</h3>
-            <div class="storage-stats-summary">
-                <div class="storage-summary-item">
-                    <i class="fas fa-hdd"></i>
-                    <span>${server.storage.length} Partitions</span>
-                </div>
-                <div class="storage-summary-item">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span>${server.storage.filter(s => s.status !== 'normal').length} Alerts</span>
-                </div>
-            </div>
-        </div>
+
+    let html = '';
+    for (var i = 0; i < endpoints.length; i++) {
+        var endpoint = endpoints[i];
+        var apiUrl = endpoint.url || '';
         
-        <div class="storage-cards-grid">
-            ${server.storage.map((drive, index) => {
-                const usedPercent = drive.percent || 0;
-                
-                return `
-                    <div class="storage-card-modern ${drive.status}">
-                        <div class="storage-card-header">
-                            <div class="storage-icon-wrapper">
-                                <i class="fas ${drive.mountpoint === '/' ? 'fa-hard-drive' : 'fa-folder'}"></i>
-                            </div>
-                            <div class="storage-title-section">
-                                <h4>${drive.mountpoint}</h4>
-                                <span class="storage-filesystem">${drive.filesystem}</span>
-                            </div>
-                            <span class="storage-status-badge ${drive.status}">
-                                ${drive.status}
-                            </span>
-                        </div>
-                        
-                        <div class="storage-visualization">
-                            <canvas id="storage-chart-${index}" class="storage-mini-chart"></canvas>
-                            <div class="storage-center-info">
-                                <div class="storage-percent-large">${usedPercent.toFixed(1)}%</div>
-                                <div class="storage-percent-label">Used</div>
-                            </div>
-                        </div>
-                        
-                        <div class="storage-details-grid">
-                            <div class="storage-detail-item">
-                                <i class="fas fa-database"></i>
-                                <div class="storage-detail-content">
-                                    <span class="storage-detail-label">Total</span>
-                                    <span class="storage-detail-value">${formatBytes(drive.size)}</span>
-                                </div>
-                            </div>
-                            <div class="storage-detail-item">
-                                <i class="fas fa-chart-pie"></i>
-                                <div class="storage-detail-content">
-                                    <span class="storage-detail-label">Used</span>
-                                    <span class="storage-detail-value">${formatBytes(drive.used)}</span>
-                                </div>
-                            </div>
-                            <div class="storage-detail-item">
-                                <i class="fas fa-check-circle"></i>
-                                <div class="storage-detail-content">
-                                    <span class="storage-detail-label">Free</span>
-                                    <span class="storage-detail-value">${formatBytes(drive.available)}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="storage-progress-bar">
-                            <div class="storage-progress-fill ${drive.status}" style="width: ${usedPercent}%">
-                                <span class="storage-progress-text">${usedPercent.toFixed(1)}%</span>
-                            </div>
-                        </div>
-                        
-                        <button class="storage-analyze-btn" onclick="analyzeStorage('${server.name}', '${drive.mountpoint}')">
-                            <i class="fas fa-search-plus"></i>
-                            <span>Analyze Storage</span>
-                        </button>
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    `;
+        html += '<div class="endpoint-card">' +
+            '<div class="endpoint-header">' +
+                '<span class="status-indicator ' + endpoint.status + '"></span>' +
+                '<div class="endpoint-info">' +
+                    '<div class="endpoint-name">' + endpoint.name + '</div>' +
+                    '<div class="endpoint-meta">' +
+                        '<span class="badge">' + endpoint.category + '</span>' +
+                        '<span>📁 ' + endpoint.project + '</span>' +
+                        '<span>🔑 ID: ' + endpoint.id + '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="endpoint-stats">' +
+                '<span>⚡ ' + endpoint.response_time + 'ms</span>' +
+                '<span>📊 ' + endpoint.count + ' entities</span>' +
+                '<span>🕐 ' + endpoint.timestamp + '</span>' +
+            '</div>' +
+            '<div class="endpoint-actions">' +
+                '<a href="' + apiUrl + '" target="_blank" class="btn-small">🔗 Open API</a>' +
+                '<button class="btn-small btn-primary-small" onclick="startFilterCheck(' + endpoint.id + ')">' +
+                    '🔍 Run Filter Check' +
+                '</button>' +
+            '</div>';
+        
+        if (endpoint.error) {
+            html += '<div class="error-message">❌ <strong>Error:</strong> ' + endpoint.error + '</div>';
+        }
+        
+        html += '</div>';
+    }
     
-    document.getElementById('storage-tab').innerHTML = html;
-    
-    // Draw mini charts for each storage
-    server.storage.forEach((drive, index) => {
-        setTimeout(() => {
-            drawStorageMiniChart(index, drive.percent, drive.status);
-        }, 100);
-    });
+    grid.innerHTML = html;
 }
 
-function drawStorageMiniChart(index, usedPercent, status) {
-    const canvas = document.getElementById(`storage-chart-${index}`);
-    if (!canvas) {
-        console.error(`Canvas not found: storage-chart-${index}`);
-        return;
+function filterEndpoints() {
+    const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+    let filtered = allEndpoints.slice();
+
+    if (currentFilter !== 'all') {
+        filtered = filtered.filter(function(e) {
+            return e.status === currentFilter;
+        });
+    }
+
+    if (searchTerm) {
+        filtered = filtered.filter(function(e) {
+            return e.name.toLowerCase().indexOf(searchTerm) !== -1 ||
+                   e.category.toLowerCase().indexOf(searchTerm) !== -1 ||
+                   e.project.toLowerCase().indexOf(searchTerm) !== -1;
+        });
+    }
+
+    displayEndpoints(filtered);
+}
+
+function setFilter(filter) {
+    currentFilter = filter;
+    var buttons = document.querySelectorAll('.filter-btn');
+    for (var i = 0; i < buttons.length; i++) {
+        buttons[i].classList.remove('active');
+        if (buttons[i].getAttribute('data-filter') === filter) {
+            buttons[i].classList.add('active');
+        }
+    }
+    filterEndpoints();
+}
+
+function toggleAutoRefresh() {
+    const checkbox = document.getElementById('autoRefresh');
+    
+    if (checkbox.checked) {
+        const interval = parseInt(document.getElementById('refreshInterval').value) * 1000;
+        autoRefreshInterval = setInterval(runCheck, interval);
+        runCheck();
+    } else {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+    }
+}
+
+// Filter Check Functions
+async function startFilterCheck(sourceId) {
+    try {
+        document.getElementById('loadingOverlay').classList.add('active');
+        
+        const response = await fetch('/geoentity_monitoring/api/filter-check/start/' + sourceId, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'started') {
+            document.querySelectorAll('.tab-btn')[1].click();
+            document.getElementById('filterCheckStatus').style.display = 'block';
+            document.getElementById('filterCheckBadge').style.display = 'inline';
+            startFilterCheckPolling(sourceId);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to start filter check');
+    } finally {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    }
+}
+
+async function runAllFilterChecks() {
+    if (confirm('This will check all sources with their geoentities. This may take 10-30 minutes. Continue?')) {
+        try {
+            document.getElementById('loadingOverlay').classList.add('active');
+            document.getElementById('runAllBtn').disabled = true;
+            
+            const response = await fetch('/geoentity_monitoring/api/filter-check/start-all', {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'started') {
+                document.querySelectorAll('.tab-btn')[1].click();
+                document.getElementById('filterCheckStatus').style.display = 'block';
+                document.getElementById('filterCheckBadge').style.display = 'inline';
+                startFilterCheckPolling(null);
+            } else {
+                alert('Error: ' + data.error);
+                document.getElementById('runAllBtn').disabled = false;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to start filter check');
+            document.getElementById('runAllBtn').disabled = false;
+        } finally {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+    }
+}
+
+function startFilterCheckPolling(sourceId) {
+    if (filterCheckInterval) {
+        clearInterval(filterCheckInterval);
     }
     
-    const ctx = canvas.getContext('2d');
-    canvas.width = 160;
-    canvas.height = 160;
-    
-    const freePercent = 100 - usedPercent;
-    
-    // Color based on status
-    let usedColor = '#10b981'; // green
-    let freeColor = '#e5e7eb';
-    
-    if (status === 'critical') {
-        usedColor = '#ef4444'; // red
-    } else if (status === 'warning') {
-        usedColor = '#f59e0b'; // orange
-    } else if (status === 'moderate') {
-        usedColor = '#3b82f6'; // blue
-    }
-    
-    // Check if Chart is defined
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js is not loaded!');
-        // Draw simple text fallback
-        ctx.fillStyle = '#fff';
-        ctx.font = '20px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${usedPercent.toFixed(1)}%`, 80, 80);
-        return;
-    }
-    
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Used', 'Free'],
-            datasets: [{
-                data: [usedPercent, freePercent],
-                backgroundColor: [usedColor, freeColor],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: false,
-            maintainAspectRatio: false,
-            cutout: '75%',
-            plugins: {
-                legend: { display: false },
-                tooltip: { enabled: false }
+    filterCheckInterval = setInterval(function() {
+        updateFilterCheckStatus(sourceId);
+    }, 1000);
+}
+
+async function updateFilterCheckStatus(sourceId) {
+    try {
+        const response = await fetch('/geoentity_monitoring/api/filter-check/status');
+        const status = await response.json();
+        
+        if (status.last_daily_check) {
+            var elem = document.getElementById('lastDailyCheck');
+            if (elem) {
+                elem.textContent = 'Last auto-check: ' + status.last_daily_check;
             }
         }
-    });
-}
-
-function analyzeStorage(serverName, mountpoint) {
-    // Show modal with loading state
-    const modal = document.getElementById('server-modal');
-    const modalTitle = document.getElementById('modal-server-name');
-    const overviewTab = document.getElementById('overview-tab');
-    
-    modalTitle.textContent = `Storage Analysis: ${serverName} - ${mountpoint}`;
-    modal.classList.add('show');
-    
-    // Hide tabs temporarily
-    document.querySelectorAll('.tabs').forEach(tab => tab.style.display = 'none');
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    
-    overviewTab.classList.add('active');
-    overviewTab.innerHTML = `
-        <div class="analysis-loading-state">
-            <div class="loading-spinner"></div>
-            <p>Analyzing storage usage for ${mountpoint}...</p>
-            <p class="loading-subtext">This may take a few moments...</p>
-        </div>
-    `;
-    
-    // Fetch analysis
-    fetch(`${API_BASE}/api/analyze_storage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            server: serverName,
-            mountpoint: mountpoint
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            displayStorageAnalysisModal(data);
-        } else {
-            overviewTab.innerHTML = `
-                <div class="analysis-error-state">
-                    <i class="fas fa-exclamation-triangle fa-3x"></i>
-                    <h3>Analysis Failed</h3>
-                    <p>${data.error || 'Failed to analyze storage'}</p>
-                </div>
-            `;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        overviewTab.innerHTML = `
-            <div class="analysis-error-state">
-                <i class="fas fa-exclamation-triangle fa-3x"></i>
-                <h3>Connection Error</h3>
-                <p>Failed to connect to server for analysis</p>
-            </div>
-        `;
-    });
-}
-
-function displayStorageAnalysisModal(data) {
-    const overviewTab = document.getElementById('overview-tab');
-    const analysis = data.analysis;
-    
-    let html = `
-        <div class="storage-analysis-container">
-            <div class="analysis-summary-cards">
-                <div class="analysis-summary-card">
-                    <div class="summary-icon"><i class="fas fa-folder"></i></div>
-                    <div class="summary-info">
-                        <div class="summary-value">${analysis.top_directories.length}</div>
-                        <div class="summary-label">Directories Analyzed</div>
-                    </div>
-                </div>
-                <div class="analysis-summary-card">
-                    <div class="summary-icon"><i class="fas fa-file"></i></div>
-                    <div class="summary-info">
-                        <div class="summary-value">${analysis.top_files.length}</div>
-                        <div class="summary-label">Files Analyzed</div>
-                    </div>
-                </div>
-                <div class="analysis-summary-card">
-                    <div class="summary-icon"><i class="fas fa-chart-bar"></i></div>
-                    <div class="summary-info">
-                        <div class="summary-value">${analysis.file_types.length}</div>
-                        <div class="summary-label">File Types Found</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="analysis-tabs-modern">
-                <button class="analysis-tab-btn active" onclick="switchAnalysisTab(event, 'dirs')">
-                    <i class="fas fa-folder-tree"></i> Top Directories
-                </button>
-                <button class="analysis-tab-btn" onclick="switchAnalysisTab(event, 'files')">
-                    <i class="fas fa-file-alt"></i> Largest Files
-                </button>
-                <button class="analysis-tab-btn" onclick="switchAnalysisTab(event, 'types')">
-                    <i class="fas fa-chart-pie"></i> File Types
-                </button>
-                <button class="analysis-tab-btn" onclick="switchAnalysisTab(event, 'summary')">
-                    <i class="fas fa-layer-group"></i> Directory Summary
-                </button>
-            </div>
-            
-            <div class="analysis-content-wrapper">
-                <div class="analysis-section active" id="analysis-dirs">
-                    <h3><i class="fas fa-folder-open"></i> Top 20 Largest Directories</h3>
-                    <div class="analysis-table-wrapper">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th width="60">#</th>
-                                    <th width="120">Size</th>
-                                    <th>Path</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${analysis.top_directories.map((dir, index) => `
-                                    <tr>
-                                        <td><span class="rank-badge">${index + 1}</span></td>
-                                        <td><span class="size-tag">${dir.size}</span></td>
-                                        <td><code class="path-code">${dir.path}</code></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div class="analysis-section" id="analysis-files">
-                    <h3><i class="fas fa-file-code"></i> Top 20 Largest Files</h3>
-                    <div class="analysis-table-wrapper">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th width="60">#</th>
-                                    <th width="120">Size</th>
-                                    <th>Path</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${analysis.top_files.map((file, index) => `
-                                    <tr>
-                                        <td><span class="rank-badge">${index + 1}</span></td>
-                                        <td><span class="size-tag">${file.size}</span></td>
-                                        <td><code class="path-code">${file.path}</code></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div class="analysis-section" id="analysis-types">
-                    <h3><i class="fas fa-chart-bar"></i> File Type Distribution</h3>
-                    <div class="file-types-grid">
-                        ${analysis.file_types.map((type, index) => {
-                            const maxCount = analysis.file_types[0].count;
-                            const percentage = (type.count / maxCount) * 100;
-                            return `
-                                <div class="file-type-card">
-                                    <div class="file-type-header">
-                                        <span class="file-type-rank">#${index + 1}</span>
-                                        <span class="file-type-ext">.${type.extension}</span>
-                                        <span class="file-type-count">${type.count.toLocaleString()}</span>
-                                    </div>
-                                    <div class="file-type-progress">
-                                        <div class="file-type-progress-bar" style="width: ${percentage}%"></div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-                
-                <div class="analysis-section" id="analysis-summary">
-                    <h3><i class="fas fa-sitemap"></i> Directory Summary (Level 1)</h3>
-                    <div class="analysis-table-wrapper">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th width="120">Size</th>
-                                    <th>Path</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${analysis.directory_summary.map(dir => `
-                                    <tr>
-                                        <td><span class="size-tag">${dir.size}</span></td>
-                                        <td><code class="path-code">${dir.path}</code></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    overviewTab.innerHTML = html;
-}
-
-function switchAnalysisTab(event, tabName) {
-    // Remove active from all tabs
-    document.querySelectorAll('.analysis-tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.analysis-section').forEach(section => section.classList.remove('active'));
-    
-    // Add active to clicked tab
-    event.target.classList.add('active');
-    document.getElementById(`analysis-${tabName}`).classList.add('active');
-}
-
-function analyzeStorageInline(serverName, mountpoint) {
-  const panel = document.getElementById("storage-analysis-panel");
-  const content = document.getElementById("analysis-panel-content");
-  const title = document.getElementById("analysis-panel-title"); // Show panel with loading
-  panel.classList.add("show");
-  title.textContent = `Analyzing ${mountpoint}...`;
-  content.innerHTML = `
-        <div class="analysis-loading">
-            <div class="loading-spinner"></div>
-            <p>Analyzing storage usage...</p>
-        </div>
-    `;
-  fetch(`${API_BASE}/api/analyze_storage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      server: serverName,
-      mountpoint: mountpoint,
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        displayStorageAnalysis(data);
-      } else {
-        content.innerHTML = `
-                <div class="analysis-error">
-                    <i class="fas fa-exclamation-triangle fa-3x"></i>
-                    <p>Error: ${data.error || "Failed to analyze storage"}</p>
-                </div>
-            `;
-      }
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-      content.innerHTML = `
-            <div class="analysis-error">
-                <i class="fas fa-exclamation-triangle fa-3x"></i>
-                <p>Failed to analyze storage</p>
-            </div>
-        `;
-    });
-}
-
-function displayStorageAnalysis(data) {
-  const title = document.getElementById("analysis-panel-title");
-  const content = document.getElementById("analysis-panel-content");
-  title.textContent = `${data.server} - ${data.mountpoint}`;
-  const analysis = data.analysis;
-  let html = `
-        <div class="analysis-tabs-compact">
-            <button class="analysis-tab-compact active" onclick="showAnalysisTabCompact(event, 'directories')">
-                <i class="fas fa-folder"></i> Directories
-            </button>
-            <button class="analysis-tab-compact" onclick="showAnalysisTabCompact(event, 'files')">
-                <i class="fas fa-file"></i> Files
-            </button>
-            <button class="analysis-tab-compact" onclick="showAnalysisTabCompact(event, 'types')">
-                <i class="fas fa-chart-pie"></i> Types
-            </button>
-            <button class="analysis-tab-compact" onclick="showAnalysisTabCompact(event, 'summary')">
-                <i class="fas fa-list"></i> Summary
-            </button>
-        </div>
-        
-        <div class="analysis-tab-content-compact active" id="analysis-compact-directories">
-            <h4><i class="fas fa-folder-open"></i> Top 20 Largest Directories</h4>
-            <div class="analysis-list">
-                ${analysis.top_directories
-    .map(
-      (dir, index) => `
-                    <div class="analysis-item">
-                        <div class="analysis-rank">${index + 1}</div>
-                        <div class="analysis-details">
-                            <div class="analysis-size">${dir.size}</div>
-                            <div class="analysis-path">${dir.path}</div>
-                        </div>
-                    </div>
-                `
-    )
-    .join("")}
-            </div>
-        </div>
-        
-        <div class="analysis-tab-content-compact" id="analysis-compact-files">
-            <h4><i class="fas fa-file-alt"></i> Top 20 Largest Files</h4>
-            <div class="analysis-list">
-                ${analysis.top_files
-    .map(
-      (file, index) => `
-                    <div class="analysis-item">
-                        <div class="analysis-rank">${index + 1}</div>
-                        <div class="analysis-details">
-                            <div class="analysis-size">${file.size}</div>
-                            <div class="analysis-path">${file.path}</div>
-                        </div>
-                    </div>
-                `
-    )
-    .join("")}
-            </div>
-        </div>
-        
-        <div class="analysis-tab-content-compact" id="analysis-compact-types">
-            <h4><i class="fas fa-chart-bar"></i> File Type Distribution</h4>
-            <div class="analysis-list">
-                ${analysis.file_types
-    .map((type, index) => {
-      const maxCount = analysis.file_types[0].count;
-      const percentage = (type.count / maxCount) * 100;
-      return `
-                        <div class="analysis-item">
-                            <div class="analysis-rank">${index + 1}</div>
-                            <div class="analysis-details">
-                                <div class="file-type-info">
-                                    <span class="file-ext">.${
-        type.extension
-      }</span>
-                                    <span class="file-count">${type.count.toLocaleString()} files</span>
-                                </div>
-                                <div class="file-type-bar-compact">
-                                    <div class="file-type-fill-compact" style="width: ${percentage}%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-    })
-    .join("")}
-            </div>
-        </div>
-        
-        <div class="analysis-tab-content-compact" id="analysis-compact-summary">
-            <h4><i class="fas fa-sitemap"></i> Directory Summary</h4>
-            <div class="analysis-list">
-                ${analysis.directory_summary
-    .map(
-      (dir, index) => `
-                    <div class="analysis-item">
-                        <div class="analysis-details">
-                            <div class="analysis-size">${dir.size}</div>
-                            <div class="analysis-path">${dir.path}</div>
-                        </div>
-                    </div>
-                `
-    )
-    .join("")}
-            </div>
-        </div>
-    `;
-  content.innerHTML = html;
-}
-
-function showAnalysisTabCompact(event, tabName) {
-  // Remove active from all tabs and contents
-  document
-    .querySelectorAll(".analysis-tab-compact")
-    .forEach((tab) => tab.classList.remove("active"));
-  document
-    .querySelectorAll(".analysis-tab-content-compact")
-    .forEach((content) => content.classList.remove("active")); // Add active to selected
-  event.target.closest(".analysis-tab-compact").classList.add("active");
-  document
-    .getElementById(`analysis-compact-${tabName}`)
-    .classList.add("active");
-}
-
-function closeAnalysisPanel() {
-  document.getElementById("storage-analysis-panel").classList.remove("show");
-}
-
-function renderProcessesTab(server) {
-  document.getElementById("processes-tab").innerHTML =
-    "<p>Loading processes...</p>";
-
-  fetch(`${API_BASE}/api/user_services`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ server: server.name }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (!data.processes || data.processes.length === 0) {
-        document.getElementById("processes-tab").innerHTML =
-          "<p>No processes found</p>";
-        return;
-      }
-
-      const html = `
-            <table class="stats-table">
-                <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>IP</th>
-                        <th>Login</th>
-                        <th>TTY</th>
-                        <th>PID</th>
-                        <th>Command</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${data.processes
-                      .map(
-                        (proc) => `
-                        <tr>
-                            <td>${proc.user}</td>
-                            <td>${proc.ip}</td>
-                            <td>${proc.login_date} ${proc.login_time}</td>
-                            <td>${proc.tty}</td>
-                            <td>${proc.pid}</td>
-                            <td><code>${proc.cmd}</code></td>
-                        </tr>
-                    `
-                      )
-                      .join("")}
-                </tbody>
-            </table>
-        `;
-
-      document.getElementById("processes-tab").innerHTML = html;
-    })
-    .catch((error) => {
-      document.getElementById("processes-tab").innerHTML =
-        "<p>Error loading processes</p>";
-      console.error("Error:", error);
-    });
-}
-
-function renderServicesTab(server) {
-  const services = server.services || [];
-  const failedServices = server.failed_services || [];
-
-  if (services.length === 0 && failedServices.length === 0) {
-    document.getElementById("services-tab").innerHTML =
-      "<p>No services data available</p>";
-    return;
-  }
-
-  let html = "";
-
-  if (failedServices.length > 0) {
-    html += `
-            <div class="stat-section alert-section">
-                <h3><i class="fas fa-exclamation-triangle"></i> Failed Services (${
-                  failedServices.length
-                })</h3>
-                <table class="stats-table">
-                    <thead>
-                        <tr>
-                            <th>Service</th>
-                            <th>Status</th>
-                            <th>Reason</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${failedServices
-                          .map(
-                            (service) => `
-                            <tr class="warning-row">
-                                <td><strong>${service.name}</strong></td>
-                                <td><span class="status-badge offline">Failed</span></td>
-                                <td>${service.reason}</td>
-                            </tr>
-                        `
-                          )
-                          .join("")}
-                    </tbody>
-                </table>
-            </div>
-        `;
-  }
-
-  if (services.length > 0) {
-    html += `
-            <div class="stat-section">
-                <h3><i class="fas fa-check-circle"></i> Running Services (${
-                  services.length
-                })</h3>
-                <table class="stats-table">
-                    <thead>
-                        <tr>
-                            <th>Service</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${services
-                          .map(
-                            (service) => `
-                            <tr>
-                                <td><strong>${service.name}</strong></td>
-                                <td>${service.description || "N/A"}</td>
-                            </tr>
-                        `
-                          )
-                          .join("")}
-                    </tbody>
-                </table>
-            </div>
-        `;
-  }
-
-  document.getElementById("services-tab").innerHTML = html;
-}
-
-function renderSSHTab(server) {
-  if (!server.ssh_connections || server.ssh_connections.length === 0) {
-    document.getElementById("ssh-tab").innerHTML =
-      "<p>No active SSH connections</p>";
-    return;
-  }
-
-  const html = `
-        <table class="stats-table">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th>IP Address</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${server.ssh_connections
-                  .map(
-                    (conn) => `
-                    <tr>
-                        <td><strong>${conn.user}</strong></td>
-                        <td>${conn.ip}</td>
-                        <td>
-                            <button class="kick-btn" onclick="kickSSHUser('${server.name}', '${conn.ip}')">
-                                <i class="fas fa-user-times"></i> Kick
-                            </button>
-                        </td>
-                    </tr>
-                `
-                  )
-                  .join("")}
-            </tbody>
-        </table>
-    `;
-
-  document.getElementById("ssh-tab").innerHTML = html;
-}
-
-function kickSSHUser(serverName, ip) {
-  if (!confirm(`Are you sure you want to kick user from ${ip}?`)) return;
-
-  showLoading();
-  fetch(`${API_BASE}/api/kick_ssh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ server: serverName, ip: ip }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      hideLoading();
-      if (data.success) {
-        alert("User kicked successfully");
-        showServerDetails(serverName);
-      } else {
-        alert("Failed to kick user: " + (data.error || "Unknown error"));
-      }
-    })
-    .catch((error) => {
-      hideLoading();
-      console.error("Error:", error);
-      alert("Error kicking user");
-    });
-}
-
-// ==================== Alerts ====================
-function loadAlerts() {
-  fetch(`${API_BASE}/api/alerts`)
-    .then((response) => response.json())
-    .then((data) => {
-      const container = document.getElementById("alerts-container");
-
-      if (!data.alerts || data.alerts.length === 0) {
-        container.innerHTML = `
-                    <div class="no-alerts-state">
-                        <div class="success-icon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <h3>All Systems Operational</h3>
-                        <p>No alerts detected. All servers are running smoothly.</p>
-                        <div class="alert-stats">
-                            <div class="alert-stat-item">
-                                <i class="fas fa-server"></i>
-                                <span>${
-                                  data.total_servers || 0
-                                } Servers Monitored</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-        return;
-      }
-
-      // Group alerts by type
-      const alertsByType = {
-        Offline: [],
-        CPU: [],
-        Memory: [],
-        Storage: [],
-      };
-
-      data.alerts.forEach((alert) => {
-        if (alertsByType[alert.type]) {
-          alertsByType[alert.type].push(alert);
-        }
-      });
-
-      let html = `
-                <div class="alerts-summary">
-                    <div class="summary-card critical">
-                        <div class="summary-icon">
-                            <i class="fas fa-exclamation-circle"></i>
-                        </div>
-                        <div class="summary-content">
-                            <div class="summary-value">${
-                              data.alerts.length
-                            }</div>
-                            <div class="summary-label">Total Alerts</div>
-                        </div>
-                    </div>
-                    <div class="summary-card warning">
-                        <div class="summary-icon">
-                            <i class="fas fa-server"></i>
-                        </div>
-                        <div class="summary-content">
-                            <div class="summary-value">${
-                              data.alert_servers || 0
-                            }</div>
-                            <div class="summary-label">Affected Servers</div>
-                        </div>
-                    </div>
-                    <div class="summary-card info">
-                        <div class="summary-icon">
-                            <i class="fas fa-microchip"></i>
-                        </div>
-                        <div class="summary-content">
-                            <div class="summary-value">${
-                              alertsByType.CPU.length
-                            }</div>
-                            <div class="summary-label">CPU Alerts</div>
-                        </div>
-                    </div>
-                    <div class="summary-card success">
-                        <div class="summary-icon">
-                            <i class="fas fa-memory"></i>
-                        </div>
-                        <div class="summary-content">
-                            <div class="summary-value">${
-                              alertsByType.Memory.length
-                            }</div>
-                            <div class="summary-label">Memory Alerts</div>
-                        </div>
-                    </div>
-                </div>
+        
+        if (status.running) {
+            if (status.total_sources > 0) {
+                var progressPercent = status.total_sources > 0 ? 
+                    (status.completed_sources / status.total_sources * 100) : 0;
                 
-                <div class="alerts-list">
-            `;
-
-      // Render alerts by type
-      Object.keys(alertsByType).forEach((type) => {
-        if (alertsByType[type].length > 0) {
-          const typeIcons = {
-            Offline: "fa-power-off",
-            CPU: "fa-microchip",
-            Memory: "fa-memory",
-            Storage: "fa-hdd",
-          };
-
-          const typeColors = {
-            Offline: "offline-alert",
-            CPU: "cpu-alert",
-            Memory: "memory-alert",
-            Storage: "storage-alert",
-          };
-
-          html += `
-                        <div class="alert-category">
-                            <h3 class="category-header">
-                                <i class="fas ${typeIcons[type]}"></i>
-                                ${type} Alerts (${alertsByType[type].length})
-                            </h3>
-                            <div class="alert-items">
-                                ${alertsByType[type]
-                                  .map((alert) => {
-                                    // Extract percentage from message if available
-                                    const percentMatch =
-                                      alert.message.match(/\((\d+\.?\d*)%\)/);
-                                    const percentage = percentMatch
-                                      ? parseFloat(percentMatch[1])
-                                      : null;
-                                    const severity =
-                                      percentage >= 90
-                                        ? "critical"
-                                        : percentage >= 80
-                                        ? "warning"
-                                        : "moderate";
-
-                                    return `
-                                        <div class="alert-card ${
-                                          typeColors[type]
-                                        } ${severity}" onclick="showServerDetails('${
-                                      alert.server
-                                    }')">
-                                            <div class="alert-indicator ${severity}"></div>
-                                            <div class="alert-icon-circle">
-                                                <i class="fas ${
-                                                  typeIcons[type]
-                                                }"></i>
-                                            </div>
-                                            <div class="alert-content">
-                                                <div class="alert-header">
-                                                    <h4 class="alert-server">${
-                                                      alert.server
-                                                    }</h4>
-                                                    <span class="alert-time">${new Date().toLocaleTimeString()}</span>
-                                                </div>
-                                                <div class="alert-message">
-                                                    <strong>${type}:</strong> ${
-                                      alert.message
-                                    }
-                                                </div>
-                                                ${
-                                                  percentage
-                                                    ? `
-                                                    <div class="alert-progress">
-                                                        <div class="progress-bar ${severity}">
-                                                            <div class="progress-fill" style="width: ${percentage}%"></div>
-                                                        </div>
-                                                        <span class="progress-text">${percentage.toFixed(
-                                                          1
-                                                        )}%</span>
-                                                    </div>
-                                                `
-                                                    : ""
-                                                }
-                                            </div>
-                                            <div class="alert-action">
-                                                <i class="fas fa-chevron-right"></i>
-                                            </div>
-                                        </div>
-                                    `;
-                                  })
-                                  .join("")}
-                            </div>
-                        </div>
-                    `;
+                document.getElementById('filterStatusText').textContent = 
+                    'Checking all sources: ' + (status.current_source || 'Initializing...');
+                document.getElementById('filterProgress').textContent = 
+                    status.completed_sources + '/' + status.total_sources + ' sources';
+                document.getElementById('filterProgressBar').style.width = progressPercent + '%';
+                document.getElementById('currentCheckInfo').textContent = 
+                    'Current entity: ' + (status.current_entity || 'Please wait...');
+            } else {
+                var progressPercent = status.total > 0 ? (status.progress / status.total * 100) : 0;
+                
+                document.getElementById('filterStatusText').textContent = 
+                    'Checking: ' + (status.current_source || 'Initializing...');
+                document.getElementById('filterProgress').textContent = 
+                    status.progress + '/' + status.total;
+                document.getElementById('filterProgressBar').style.width = progressPercent + '%';
+                document.getElementById('currentCheckInfo').textContent = 
+                    'Current: ' + (status.current_entity || 'Please wait...');
+            }
+        } else {
+            clearInterval(filterCheckInterval);
+            filterCheckInterval = null;
+            
+            document.getElementById('filterCheckStatus').style.display = 'none';
+            document.getElementById('filterCheckBadge').style.display = 'none';
+            var runBtn = document.getElementById('runAllBtn');
+            if (runBtn) runBtn.disabled = false;
+            
+            loadAllFilterResults();
         }
-      });
-
-      html += "</div>";
-      container.innerHTML = html;
-    })
-    .catch((error) => {
-      console.error("Error loading alerts:", error);
-      document.getElementById("alerts-container").innerHTML = `
-                <div class="error-state">
-                    <i class="fas fa-exclamation-triangle fa-3x"></i>
-                    <h3>Error Loading Alerts</h3>
-                    <p>Failed to fetch alert information.</p>
-                </div>
-            `;
-    });
-}
-
-// ==================== Analytics with Highcharts ====================
-function loadAnalytics() {
-  fetch(`${API_BASE}/api/analytics`)
-    .then((response) => response.json())
-    .then((data) => {
-      drawAnalyticsCharts(data);
-    })
-    .catch((error) => {
-      console.error("Error loading analytics:", error);
-    });
-}
-
-function loadAnalyticsByDateRange() {
-  const fromDate = document.getElementById("date-from").value;
-  const toDate = document.getElementById("date-to").value;
-
-  if (!fromDate || !toDate) {
-    alert("Please select both start and end date.");
-    return;
-  }
-
-  fetch(`${API_BASE}/api/analytics_range?start=${fromDate}&end=${toDate}`)
-    .then((res) => res.json())
-    .then(drawAnalyticsCharts)
-    .catch((e) => {
-      console.error("Error fetching analytics data:", e);
-      alert("Error fetching analytics data");
-    });
-}
-
-function drawAnalyticsCharts(data) {
-  if (!data || !data.length) {
-    document.getElementById("cpuChart").innerHTML =
-      '<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">📊 No analytics data available. Data will appear after collecting metrics.</p>';
-    document.getElementById("memoryChart").innerHTML =
-      '<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">📊 No analytics data available. Data will appear after collecting metrics.</p>';
-    return;
-  }
-
-  const labels = data.map((d) =>
-    new Date(d.timestamp).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  );
-
-  const servers = [
-    ...new Set(data.flatMap((d) => d.servers.map((s) => s.name))),
-  ];
-
-  const colors = [
-    "#7cb5ec",
-    "#434348",
-    "#90ed7d",
-    "#f7a35c",
-    "#8085e9",
-    "#f15c80",
-    "#e4d354",
-    "#2b908f",
-    "#f45b5b",
-    "#91e8e1",
-  ];
-
-  const cpuSeries = servers.map((serverName, idx) => ({
-    name: serverName,
-    data: data.map((d) => {
-      const s = d.servers.find((s) => s.name === serverName);
-      return s && s.cpu !== null ? s.cpu : null;
-    }),
-    color: colors[idx % colors.length],
-    visible: true,
-    lineWidth: 2,
-    marker: {
-      enabled: false,
-      states: {
-        hover: {
-          enabled: true,
-          radius: 5,
-        },
-      },
-    },
-  }));
-
-  const memSeries = servers.map((serverName, idx) => ({
-    name: serverName,
-    data: data.map((d) => {
-      const s = d.servers.find((s) => s.name === serverName);
-      return s && s.memory_percent !== null ? s.memory_percent : null;
-    }),
-    color: colors[idx % colors.length],
-    visible: true,
-    lineWidth: 2,
-    marker: {
-      enabled: false,
-      states: {
-        hover: {
-          enabled: true,
-          radius: 5,
-        },
-      },
-    },
-  }));
-
-  // CPU Chart
-  Highcharts.chart("cpuChart", {
-    chart: {
-      type: "line",
-      zoomType: "x",
-      backgroundColor: "transparent",
-      height: null, // Auto height
-      spacingBottom: 80, // Add space for legend
-      style: {
-        fontFamily: "inherit",
-      },
-    },
-    title: { text: null },
-    xAxis: {
-      categories: labels,
-      labels: {
-        rotation: -45,
-        style: {
-          fontSize: "11px",
-          color: getComputedStyle(document.body).getPropertyValue(
-            "--text-secondary"
-          ),
-        },
-      },
-      gridLineColor: "rgba(255, 255, 255, 0.05)",
-    },
-    yAxis: {
-      title: {
-        text: "CPU Usage (%)",
-        style: {
-          color: getComputedStyle(document.body).getPropertyValue(
-            "--text-primary"
-          ),
-        },
-      },
-      min: 0,
-      max: 100,
-      gridLineColor: "rgba(255, 255, 255, 0.05)",
-      labels: {
-        style: {
-          color: getComputedStyle(document.body).getPropertyValue(
-            "--text-secondary"
-          ),
-        },
-      },
-      plotLines: [
-        {
-          value: 70,
-          color: "#f59e0b",
-          label: {
-            text: "Warning (70%)",
-            style: { color: "#f59e0b" },
-            align: "right",
-            x: -10,
-          },
-          dashStyle: "ShortDash",
-          width: 2,
-          zIndex: 5,
-        },
-        {
-          value: 90,
-          color: "#ef4444",
-          label: {
-            text: "Critical (90%)",
-            style: { color: "#ef4444" },
-            align: "right",
-            x: -10,
-          },
-          dashStyle: "ShortDash",
-          width: 2,
-          zIndex: 5,
-        },
-      ],
-    },
-    legend: {
-      enabled: true,
-      align: "center",
-      verticalAlign: "bottom",
-      layout: "horizontal",
-      backgroundColor: "transparent",
-      itemStyle: {
-        color: getComputedStyle(document.body).getPropertyValue(
-          "--text-primary"
-        ),
-        cursor: "pointer",
-        fontSize: "13px",
-        fontWeight: "500",
-      },
-      itemHoverStyle: {
-        color: getComputedStyle(document.body).getPropertyValue("--accent"),
-      },
-      itemHiddenStyle: {
-        color: getComputedStyle(document.body).getPropertyValue(
-          "--text-secondary"
-        ),
-      },
-      padding: 20,
-      itemMarginBottom: 10,
-      y: 20, // Push legend down
-      floating: false,
-      maxHeight: 100,
-    },
-    tooltip: {
-      shared: true,
-      valueSuffix: "%",
-      crosshairs: true,
-      backgroundColor: "rgba(0, 0, 0, 0.85)",
-      borderColor: "rgba(255, 255, 255, 0.2)",
-      borderWidth: 1,
-      style: {
-        color: "#fff",
-        fontSize: "13px",
-      },
-      formatter: function () {
-        let tooltip = "<b>" + this.x + "</b><br/>";
-        this.points.forEach((point) => {
-          if (point.y !== null) {
-            tooltip +=
-              '<span style="color:' +
-              point.color +
-              '">●</span> ' +
-              point.series.name +
-              ": <b>" +
-              point.y.toFixed(1) +
-              "%</b><br/>";
-          }
-        });
-        return tooltip;
-      },
-    },
-    plotOptions: {
-      series: {
-        states: {
-          hover: {
-            lineWidthPlus: 1,
-          },
-        },
-      },
-    },
-    series: cpuSeries,
-    credits: { enabled: false },
-  });
-
-  // Memory Chart (same fixes)
-  Highcharts.chart("memoryChart", {
-    chart: {
-      type: "line",
-      zoomType: "x",
-      backgroundColor: "transparent",
-      height: null,
-      spacingBottom: 80,
-      style: {
-        fontFamily: "inherit",
-      },
-    },
-    title: { text: null },
-    xAxis: {
-      categories: labels,
-      labels: {
-        rotation: -45,
-        style: {
-          fontSize: "11px",
-          color: getComputedStyle(document.body).getPropertyValue(
-            "--text-secondary"
-          ),
-        },
-      },
-      gridLineColor: "rgba(255, 255, 255, 0.05)",
-    },
-    yAxis: {
-      min: 0,
-      max: 100,
-      title: {
-        text: "Memory Usage (%)",
-        style: {
-          color: getComputedStyle(document.body).getPropertyValue(
-            "--text-primary"
-          ),
-        },
-      },
-      gridLineColor: "rgba(255, 255, 255, 0.05)",
-      labels: {
-        style: {
-          color: getComputedStyle(document.body).getPropertyValue(
-            "--text-secondary"
-          ),
-        },
-      },
-      plotLines: [
-        {
-          value: 75,
-          color: "#f59e0b",
-          label: {
-            text: "Warning (75%)",
-            style: { color: "#f59e0b" },
-            align: "right",
-            x: -10,
-          },
-          dashStyle: "ShortDash",
-          width: 2,
-          zIndex: 5,
-        },
-        {
-          value: 90,
-          color: "#ef4444",
-          label: {
-            text: "Critical (90%)",
-            style: { color: "#ef4444" },
-            align: "right",
-            x: -10,
-          },
-          dashStyle: "ShortDash",
-          width: 2,
-          zIndex: 5,
-        },
-      ],
-    },
-    legend: {
-      enabled: true,
-      align: "center",
-      verticalAlign: "bottom",
-      layout: "horizontal",
-      backgroundColor: "transparent",
-      itemStyle: {
-        color: getComputedStyle(document.body).getPropertyValue(
-          "--text-primary"
-        ),
-        cursor: "pointer",
-        fontSize: "13px",
-        fontWeight: "500",
-      },
-      itemHoverStyle: {
-        color: getComputedStyle(document.body).getPropertyValue("--accent"),
-      },
-      itemHiddenStyle: {
-        color: getComputedStyle(document.body).getPropertyValue(
-          "--text-secondary"
-        ),
-      },
-      padding: 20,
-      itemMarginBottom: 10,
-      y: 20,
-      floating: false,
-      maxHeight: 100,
-    },
-    tooltip: {
-      shared: true,
-      valueSuffix: "%",
-      crosshairs: true,
-      backgroundColor: "rgba(0, 0, 0, 0.85)",
-      borderColor: "rgba(255, 255, 255, 0.2)",
-      borderWidth: 1,
-      style: {
-        color: "#fff",
-        fontSize: "13px",
-      },
-      formatter: function () {
-        let tooltip = "<b>" + this.x + "</b><br/>";
-        this.points.forEach((point) => {
-          if (point.y !== null) {
-            tooltip +=
-              '<span style="color:' +
-              point.color +
-              '">●</span> ' +
-              point.series.name +
-              ": <b>" +
-              point.y.toFixed(1) +
-              "%</b><br/>";
-          }
-        });
-        return tooltip;
-      },
-    },
-    plotOptions: {
-      series: {
-        states: {
-          hover: {
-            lineWidthPlus: 1,
-          },
-        },
-      },
-    },
-    series: memSeries,
-    credits: { enabled: false },
-  });
-}
-
-// ==================== User Tracking ====================
-function loadUserTracking() {
-  fetch(`${API_BASE}/api/user_tracking`)
-    .then((res) => res.json())
-    .then((data) => {
-      const container = document.getElementById("user-tracking-container");
-
-      if (!data.users || !data.users.length) {
-        container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-users fa-3x"></i>
-                        <h3>No User Activity Yet</h3>
-                        <p>User SSH tracking data will appear here once users connect to servers.</p>
-                    </div>
-                `;
-        return;
-      }
-
-      // Filter out invalid IPs (like :pts/10:S.0, :1, tty2, :0, etc.)
-      const validUsers = data.users.filter((user) => {
-        const ip = user.user_ip;
-        // Check if it's a valid IP format
-        return /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip);
-      });
-
-      if (validUsers.length === 0) {
-        container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-users fa-3x"></i>
-                        <h3>No External User Activity</h3>
-                        <p>Only local/console sessions detected. External SSH connections will appear here.</p>
-                    </div>
-                `;
-        return;
-      }
-
-      let html = `
-                <div class="user-tracking-grid">
-                    ${validUsers
-                      .map((user) => {
-                        const ipDisplay =
-                          IP_NAME_MAP[user.user_ip] || user.user_ip;
-                        const hasName = IP_NAME_MAP[user.user_ip] !== undefined;
-
-                        return `
-                            <div class="user-card">
-                                <div class="user-card-header">
-                                    <div class="user-icon">
-                                        <i class="fas fa-user-circle"></i>
-                                    </div>
-                                    <div class="user-info">
-                                        <h3 class="user-name">${
-                                          user.user_name
-                                        }</h3>
-                                        <p class="user-ip">
-                                            ${
-                                              hasName
-                                                ? `<span class="ip-badge named">${ipDisplay}</span>`
-                                                : `<span class="ip-badge">${ipDisplay}</span>`
-                                            }
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <div class="user-stats">
-                                    <div class="user-stat">
-                                        <div class="stat-icon">
-                                            <i class="fas fa-server"></i>
-                                        </div>
-                                        <div class="stat-content">
-                                            <div class="stat-value">${
-                                              user.total_servers
-                                            }</div>
-                                            <div class="stat-label">Servers</div>
-                                        </div>
-                                    </div>
-                                    <div class="user-stat">
-                                        <div class="stat-icon">
-                                            <i class="fas fa-clock"></i>
-                                        </div>
-                                        <div class="stat-content">
-                                            <div class="stat-value">${
-                                              user.total_time_hours
-                                            }h</div>
-                                            <div class="stat-label">Total Time</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="server-sessions">
-                                    <h4><i class="fas fa-list"></i> Server Sessions</h4>
-                                   ${user.servers
-                                     .map((srv) => {
-                                       const firstSeen = new Date(
-                                         srv.first_seen
-                                       );
-                                       const lastSeen = new Date(srv.last_seen);
-                                       const duration =
-                                         (lastSeen - firstSeen) / 1000 / 60; // minutes
-
-                                       return `
-                                            <div class="session-item">
-                                                <div class="session-header">
-                                                    <span class="server-name">${
-                                                      srv.server_name
-                                                    }</span>
-                                                    <span class="session-count">${
-                                                      srv.session_count
-                                                    } ${
-                                         srv.session_count === 1
-                                           ? "session"
-                                           : "sessions"
-                                       }</span>
-                                                </div>
-                                                <div class="session-details">
-                                                    <div class="session-time">
-                                                        <i class="fas fa-sign-in-alt"></i>
-                                                        Login: ${firstSeen.toLocaleString()}
-                                                    </div>
-                                                    <div class="session-time">
-                                                        <i class="fas fa-clock"></i>
-                                                        Last Seen: ${lastSeen.toLocaleString()}
-                                                    </div>
-                                                    <div class="session-time">
-                                                        <i class="fas fa-hourglass-half"></i>
-                                                        Duration: ${duration.toFixed(
-                                                          1
-                                                        )} minutes
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        `;
-                                     })
-                                     .join("")}
-                                </div>
-                            </div>
-                        `;
-                      })
-                      .join("")}
-                </div>
-            `;
-
-      container.innerHTML = html;
-    })
-    .catch((error) => {
-      console.error("Error loading user tracking:", error);
-      document.getElementById("user-tracking-container").innerHTML = `
-                <div class="error-state">
-                    <i class="fas fa-exclamation-triangle fa-3x"></i>
-                    <h3>Error Loading Data</h3>
-                    <p>Failed to load user tracking information.</p>
-                </div>
-            `;
-    });
-}
-
-// ==================== All Servers ====================
-function loadAllServers() {
-  fetch(`${API_BASE}/api/status`)
-    .then((response) => response.json())
-    .then((data) => {
-      const container = document.getElementById("all-servers-list");
-      container.innerHTML = `
-                <div class="servers-grid">
-                    ${data.servers
-                      .map((server) => {
-                        const memory = validateMemoryData(server.memory);
-                        const cpuStatus = getCPUStatus(server.cpu);
-                        const cpuValue =
-                          server.cpu !== null && server.cpu !== undefined
-                            ? server.cpu.toFixed(1) + "%"
-                            : "N/A";
-                        const cpuPercent = server.cpu || 0;
-
-                        const memValue = memory
-                          ? calculateMemoryPercent(
-                              memory.used,
-                              memory.total
-                            ).toFixed(1) + "%"
-                          : "N/A";
-                        const memPercent = memory
-                          ? calculateMemoryPercent(memory.used, memory.total)
-                          : 0;
-                        const memStatus = memory ? memory.status : "";
-
-                        // Get ROOT storage
-                        let storageValue = "N/A";
-                        let storagePercent = 0;
-                        let storageStatus = "";
-
-                        if (server.storage && server.storage.length > 0) {
-                          const rootStorage = server.storage.find(
-                            (s) =>
-                              s.mountpoint === "/" || s.mountpoint === "/root"
-                          );
-                          if (
-                            rootStorage &&
-                            rootStorage.percent !== null &&
-                            rootStorage.percent !== undefined
-                          ) {
-                            storagePercent = rootStorage.percent;
-                            storageValue = storagePercent.toFixed(1) + "%";
-                            storageStatus = rootStorage.status || "";
-                          }
-                        }
-
-                        // Blink classes
-                        const cpuBlinkClass =
-                          cpuPercent >= 90
-                            ? "blink-critical"
-                            : cpuPercent >= 70
-                            ? "blink-warning"
-                            : "";
-                        const memBlinkClass =
-                          memPercent >= 90
-                            ? "blink-critical"
-                            : memPercent >= 75
-                            ? "blink-warning"
-                            : "";
-                        const storageBlinkClass =
-                          storagePercent >= 90
-                            ? "blink-critical"
-                            : storagePercent >= 80
-                            ? "blink-warning"
-                            : "";
-
-                        return `
-                            <div class="server-card ${server.status}" onclick="showServerDetails('${server.name}')">
-                                <div class="server-header">
-                                    <h3>${server.name}</h3>
-                                    <span class="status-badge ${server.status}">${server.status}</span>
-                                </div>
-                                <div class="server-stats">
-                                    <div class="stat ${cpuBlinkClass}">
-                                        <span class="stat-label">CPU</span>
-                                        <span class="stat-value ${cpuStatus}">${cpuValue}</span>
-                                    </div>
-                                    <div class="stat ${memBlinkClass}">
-                                        <span class="stat-label">Memory</span>
-                                        <span class="stat-value ${memStatus}">${memValue}</span>
-                                    </div>
-                                    <div class="stat ${storageBlinkClass}">
-                                        <span class="stat-label">Storage</span>
-                                        <span class="stat-value ${storageStatus}">${storageValue}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                      })
-                      .join("")}
-                </div>
-            `;
-    });
-}
-
-// ==================== Loading ====================
-function showLoading() {
-  document.getElementById("loading").classList.add("show");
-}
-
-function hideLoading() {
-  document.getElementById("loading").classList.remove("show");
-}
-
-// ==================== Search ====================
-function initSearch() {
-  const searchInput = document.getElementById("serverSearch");
-  searchInput.addEventListener("input", (e) => {
-    const query = e.target.value.toLowerCase();
-    const cards = document.querySelectorAll(".server-card");
-
-    cards.forEach((card) => {
-      const name = card.querySelector("h3").textContent.toLowerCase();
-      if (name.includes(query)) {
-        card.style.display = "block";
-      } else {
-        card.style.display = "none";
-      }
-    });
-  });
-}
-
-// ==================== Initialize ====================
-document.addEventListener("DOMContentLoaded", () => {
-  initNavigation();
-  initSidebarToggle();
-  initThemeSwitcher();
-  initSearch();
-  loadSettings();
-
-  updateTimeDisplay();
-  updateServers();
-
-  setInterval(updateTimeDisplay, 1000);
-  window.refreshTimer = setInterval(updateServers, refreshInterval);
-
-  document.getElementById("server-modal").addEventListener("click", (e) => {
-    if (e.target.id === "server-modal") {
-      closeModal();
+    } catch (error) {
+        console.error('Error polling status:', error);
     }
-  });
-});
+}
+
+async function loadAllFilterResults() {
+    try {
+        var summaryGrid = document.getElementById('filterSummaryGrid');
+        if (!summaryGrid) {
+            console.error('filterSummaryGrid element not found');
+            return;
+        }
+        
+        summaryGrid.innerHTML = '<p class="placeholder-text">Loading summary...</p>';
+        
+        const response = await fetch('/geoentity_monitoring/api/filter-check/summary');
+        const summary = await response.json();
+        
+        displayFilterSummary(summary);
+    } catch (error) {
+        console.error('Error loading summary:', error);
+        var summaryGrid = document.getElementById('filterSummaryGrid');
+        if (summaryGrid) {
+            summaryGrid.innerHTML = '<p class="placeholder-text">Error loading results. Please try again.</p>';
+        }
+    }
+}
+
+function displayFilterSummary(summary) {
+    const grid = document.getElementById('filterSummaryGrid');
+    
+    if (!grid) {
+        console.error('filterSummaryGrid element not found');
+        return;
+    }
+    
+    if (Object.keys(summary).length === 0) {
+        grid.innerHTML = '<p class="placeholder-text">No filter checks completed yet. Run a filter check from the Basic Monitoring tab.</p>';
+        return;
+    }
+    
+    let html = '';
+    
+    for (let key in summary) {
+        const s = summary[key];
+        const successRate = s.total_checks > 0 ? ((s.success_count / s.total_checks) * 100).toFixed(1) : 0;
+        
+        html += '<div class="source-summary-card" onclick="openDetailModal(' + s.source_id + ')">' +
+            '<div class="source-summary-header">' +
+                '<div class="source-summary-id">Source ' + s.source_id + '</div>' +
+                '<div class="source-summary-type">' + (s.type || 'N/A') + '</div>' +
+            '</div>' +
+            '<div class="source-summary-stats">' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Total Checks</span>' +
+                    '<span class="source-summary-stat-value">' + s.total_checks + '</span>' +
+                '</div>' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Success Rate</span>' +
+                    '<span class="source-summary-stat-value success">' + successRate + '%</span>' +
+                '</div>' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Success</span>' +
+                    '<span class="source-summary-stat-value success">' + s.success_count + '</span>' +
+                '</div>' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Failed</span>' +
+                    '<span class="source-summary-stat-value error">' + s.fail_count + '</span>' +
+                '</div>' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Avg Time</span>' +
+                    '<span class="source-summary-stat-value">' + s.avg_response_time + 'ms</span>' +
+                '</div>' +
+                '<div class="source-summary-stat">' +
+                    '<span class="source-summary-stat-label">Status</span>' +
+                    '<span class="source-summary-stat-value">' + (s.status || 'N/A') + '</span>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }
+    
+    grid.innerHTML = html;
+}
+
+async function openDetailModal(sourceId) {
+    currentDetailSourceId = sourceId;
+    currentDetailPage = 1;
+    
+    document.getElementById('detailModal').style.display = 'flex';
+    document.getElementById('modalTitle').textContent = 'Source ' + sourceId + ' - Loading...';
+    document.getElementById('modalBody').innerHTML = '<p class="placeholder-text">Loading details...</p>';
+    
+    await loadDetailPage(sourceId, 1);
+}
+
+function closeDetailModal() {
+    document.getElementById('detailModal').style.display = 'none';
+    currentDetailSourceId = null;
+    currentDetailPage = 1;
+}
+
+async function loadDetailPage(sourceId, page) {
+    try {
+        const response = await fetch('/geoentity_monitoring/api/filter-check/result/' + sourceId + '/paginated?page=' + page + '&per_page=50');
+        const data = await response.json();
+        
+        displayDetailPage(data);
+    } catch (error) {
+        console.error('Error loading details:', error);
+        document.getElementById('modalBody').innerHTML = '<p class="placeholder-text">Error loading details.</p>';
+    }
+}
+
+function displayDetailPage(data) {
+    document.getElementById('modalTitle').textContent = 
+        'Source ' + data.source_id + ' - Page ' + data.pagination.page + ' of ' + data.pagination.total_pages;
+    
+    let html = '<div class="filter-checks-grid">';
+    
+    for (let i = 0; i < data.checks.length; i++) {
+        const check = data.checks[i];
+        const statusClass = check.status === 'success' ? 'success' : 'error';
+        const statusIcon = check.status === 'success' ? '✓' : '✗';
+        
+        html += '<div class="filter-check-item ' + statusClass + '">' +
+            '<div class="filter-check-info">' +
+                '<div class="filter-check-name">' + statusIcon + ' ';
+        
+        if (check.entity_name) {
+            html += check.entity_name + ' (' + check.geoentity_id + ')';
+        } else if (check.bbox) {
+            html += 'BBox: ' + check.bbox;
+        } else {
+            html += check.geoentity_id || 'Check';
+        }
+        
+        html += '</div>' +
+            '<div class="filter-check-details">';
+        
+        if (check.parent_name) {
+            html += 'Parent: ' + check.parent_name + ' | ';
+        }
+        
+        html += '<a href="' + check.url + '" target="_blank" style="color: #667eea;">🔗 Open</a>' +
+            '</div>' +
+            '</div>' +
+            '<div class="filter-check-stats">' +
+                '<span>' + check.response_time + 'ms</span>' +
+                '<span>Count: ' + (check.count || 0) + '</span>' +
+            '</div>' +
+        '</div>';
+    }
+    
+    html += '</div>';
+    
+    document.getElementById('modalBody').innerHTML = html;
+    displayPagination(data.pagination);
+}
+
+function displayPagination(pagination) {
+    let html = '';
+    
+    html += '<button class="pagination-btn" onclick="changePage(' + (pagination.page - 1) + ')" ' + 
+        (pagination.has_prev ? '' : 'disabled') + '>← Previous</button>';
+    
+    html += '<span style="padding: 0 16px; font-weight: 600; color: #4a5568;">Page ' + 
+        pagination.page + ' of ' + pagination.total_pages + '</span>';
+    
+    html += '<button class="pagination-btn" onclick="changePage(' + (pagination.page + 1) + ')" ' + 
+        (pagination.has_next ? '' : 'disabled') + '>Next →</button>';
+    
+    document.getElementById('paginationControls').innerHTML = html;
+}
+
+function changePage(page) {
+    currentDetailPage = page;
+    loadDetailPage(currentDetailSourceId, page);
+}
+
+// Initial check on page load
+window.onload = function() {
+    setTimeout(runCheck, 500);
+};
