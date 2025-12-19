@@ -1,44 +1,32 @@
-├── app
-│   ├── alert_push.py
-│   ├── __init__.py
-│   ├── __pycache__
-│   │   ├── alert_push.cpython-313.pyc
-│   │   ├── __init__.cpython-310.pyc
-│   │   ├── __init__.cpython-312.pyc
-│   │   ├── __init__.cpython-313.pyc
-│   │   ├── routes.cpython-310.pyc
-│   │   ├── routes.cpython-312.pyc
-│   │   └── routes.cpython-313.pyc
-│   ├── routes.py
-│   ├── static
-│   │   ├── css
-│   │   │   ├── alert-notifications.css
-│   │   │   ├── all.min.css
-│   │   │   ├── fontawesome.min.css
-│   │   │   └── style.css
-│   │   └── js
-│   │       ├── alert-notifications.js
-│   │       ├── lib
-│   │       │   ├── boost.js
-│   │       │   ├── chart.js
-│   │       │   ├── chart.min.js
-│   │       │   ├── exporting.js
-│   │       │   ├── highcharts.js
-│   │       │   └── socket.io.min.js
-│   │       └── monitor.js
-│   └── templates
-│       ├── index copy.html
-│       └── index.html
-├── config.py
-├── detailed_history
-├── __pycache__
-│   ├── config.cpython-310.pyc
-│   ├── config.cpython-312.pyc
-│   ├── config.cpython-313.pyc
-│   └── run.cpython-313.pyc
-├── README.md
-├── run.py
-├── server_cache.json
-├── server_history.json
-├── user_tracking_1.json
-└── user_tracking.json
+/* Add this to your CSS, in the PLANETS section */
+.planet {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(0deg);
+    font-size: 32px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    transition: all 0.3s ease;
+    cursor: pointer;
+    animation: planet-spin 4s linear infinite reverse;
+    
+    /* FIX: Ensure emoji renders correctly */
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    unicode-bidi: isolate; /* Prevents RTL issues */
+}
+
+.saturn {
+    font-size: 45px;
+    filter: drop-shadow(0 6px 16px rgba(220, 180, 120, 0.7));
+}
+
+
+<!-- Saturn -->
+<div class="orbit orbit-saturn">
+    <div class="planet-wrapper saturn-wrapper">
+        <div class="planet saturn">🪐</div>
+        <div class="planet-label">Saturn</div>
+    </div>
+</div>
